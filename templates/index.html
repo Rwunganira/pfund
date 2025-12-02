@@ -222,14 +222,33 @@
 
 {% block scripts %}
 <script>
-// Activity data for modal - load via AJAX to avoid template errors
+// Activity data for modal (embedded in page)
 var activityData = {};
-
-// Function to load activity data
-function loadActivityData() {
-    // We'll fetch this via AJAX or embed it differently
-    // For now, leave empty to test if template renders
-}
+{% if activities_with_urls and activities_with_urls|length > 0 %}
+    {% for item in activities_with_urls %}
+        {% set a = item.activity %}
+        {% if a and a.id is defined and a.id %}
+        activityData[{{ a.id }}] = {
+            code: {{ (a.code or '')|tojson }},
+            initial_activity: {{ (a.initial_activity or '')|tojson }},
+            proposed_activity: {{ (a.proposed_activity or '')|tojson }},
+            notes: {{ (a.notes or '')|tojson }},
+            implementing_entity: {{ (a.implementing_entity or '')|tojson }},
+            delivery_partner: {{ (a.delivery_partner or '')|tojson }},
+            results_area: {{ (a.results_area or '')|tojson }},
+            category: {{ (a.category or '')|tojson }},
+            budget_year1: {{ (a.budget_year1 or 0) }},
+            budget_year2: {{ (a.budget_year2 or 0) }},
+            budget_year3: {{ (a.budget_year3 or 0) }},
+            budget_total: {{ (a.budget_total or 0) }},
+            budget_used: {{ (a.budget_used or 0) }},
+            status: {{ (a.status or 'Unknown')|tojson }},
+            progress: {{ (a.progress or 0) }},
+            edit_url: {{ (item.edit_url or '#')|tojson }}
+        };
+        {% endif %}
+    {% endfor %}
+{% endif %}
 
 function openDetailsModal(activityId) {
     const data = activityData[activityId];
@@ -396,3 +415,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endblock %}
