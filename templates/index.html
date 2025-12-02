@@ -230,28 +230,32 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
         {% set a = item.activity %}
         {% if a and a.id is defined and a.id %}
         // Store with both string and number keys for compatibility
-        var actId = {{ a.id }};
-        var actData = {
-            code: {{ (a.code or '')|tojson }},
-            initial_activity: {{ (a.initial_activity or '')|tojson }},
-            proposed_activity: {{ (a.proposed_activity or '')|tojson }},
-            notes: {{ (a.notes or '')|tojson }},
-            implementing_entity: {{ (a.implementing_entity or '')|tojson }},
-            delivery_partner: {{ (a.delivery_partner or '')|tojson }},
-            results_area: {{ (a.results_area or '')|tojson }},
-            category: {{ (a.category or '')|tojson }},
-            budget_year1: {{ (a.budget_year1 or 0) }},
-            budget_year2: {{ (a.budget_year2 or 0) }},
-            budget_year3: {{ (a.budget_year3 or 0) }},
-            budget_total: {{ (a.budget_total or 0) }},
-            budget_used: {{ (a.budget_used or 0) }},
-            status: {{ (a.status or 'Unknown')|tojson }},
-            progress: {{ (a.progress or 0) }},
-            edit_url: {{ (item.edit_url or '#')|tojson }}
-        };
-        // Store with both number and string keys
-        activityData[actId] = actData;
-        activityData[String(actId)] = actData;
+        try {
+            var actId = {{ a.id }};
+            var actData = {
+                code: {{ (a.code or '')|tojson }},
+                initial_activity: {{ (a.initial_activity or '')|tojson }},
+                proposed_activity: {{ (a.proposed_activity or '')|tojson }},
+                notes: {{ (a.notes or '')|tojson }},
+                implementing_entity: {{ (a.implementing_entity or '')|tojson }},
+                delivery_partner: {{ (a.delivery_partner or '')|tojson }},
+                results_area: {{ (a.results_area or '')|tojson }},
+                category: {{ (a.category or '')|tojson }},
+                budget_year1: {{ (a.budget_year1 or 0) }},
+                budget_year2: {{ (a.budget_year2 or 0) }},
+                budget_year3: {{ (a.budget_year3 or 0) }},
+                budget_total: {{ (a.budget_total or 0) }},
+                budget_used: {{ (a.budget_used or 0) }},
+                status: {{ (a.status or 'Unknown')|tojson }},
+                progress: {{ (a.progress or 0) }},
+                edit_url: {{ (item.edit_url or '#')|tojson }}
+            };
+            // Store with both number and string keys
+            activityData[actId] = actData;
+            activityData[String(actId)] = actData;
+        } catch(e) {
+            console.error('Error loading activity {{ a.id }}:', e);
+        }
         {% endif %}
     {% endfor %}
 {% else %}
@@ -260,7 +264,15 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
 
 // Debug: Log how many activities were loaded
 console.log('Loaded activity data for', Object.keys(activityData).length, 'activities');
-console.log('Activity IDs:', Object.keys(activityData));
+console.log('Activity IDs (first 10):', Object.keys(activityData).slice(0, 10));
+console.log('Sample activity (first ID):', activityData[Object.keys(activityData)[0]]);
+// Test if ID 638 exists
+if (activityData[638] || activityData['638']) {
+    console.log('✓ Activity 638 found in data');
+} else {
+    console.warn('✗ Activity 638 NOT found in data');
+    console.log('All IDs:', Object.keys(activityData).map(k => parseInt(k)).sort((a,b) => a-b).slice(0, 20));
+}
 
 // Make function globally accessible - define it before DOMContentLoaded
 function openDetailsModal(activityId) {
