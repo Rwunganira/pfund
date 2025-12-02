@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-card">
+    <h1>User management</h1>
+    <p>Change roles between <strong>admin</strong> and <strong>viewer</strong>. Only admins can access this page.</p>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+            <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.role }}</td>
+                <td>
+                    <form method="post" style="display:inline-flex; gap:0.25rem; align-items:center;">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <select name="role">
+                            <option value="viewer" {% if u.role == 'viewer' %}selected{% endif %}>viewer</option>
+                            <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>admin</option>
+                        </select>
+                        <button type="submit">Save</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4" class="empty">No users yet.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+

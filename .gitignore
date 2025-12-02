@@ -1,0 +1,6 @@
+.flaskenv
+__pycache__/
+*.pyc
+project_activities.db
+
+

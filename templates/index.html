@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    <div class="cards">
+        <div class="card">
+            <div class="card-label">Total activities</div>
+            <div class="card-value">{{ summary.total_activities or 0 }}</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Total budget</div>
+            <div class="card-value">{{ "%.0f"|format(summary.total_budget or 0) }}</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Budget used</div>
+            <div class="card-value">{{ "%.0f"|format(summary.total_used or 0) }}</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Avg. progress</div>
+            <div class="card-value">{{ "%.0f"|format(summary.avg_progress or 0) }}%</div>
+        </div>
+    </div>
+
+    <div class="status-summary">
+        <h2>Status overview</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Status</th>
+                <th>Activities</th>
+                <th>Total budget</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for s in status_rows %}
+                <tr>
+                    <td>{{ s.status or "Unknown" }}</td>
+                    <td class="num">{{ s.count }}</td>
+                    <td class="num">{{ "%.0f"|format(s.budget or 0) }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="3" class="empty">No data yet.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="filters">
+    <form method="get">
+        <div class="field-group">
+            <label for="status">Status</label>
+            <select name="status" id="status">
+                <option value="">All</option>
+                {% for s in ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"] %}
+                    <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label for="implementing_entity">Implementing Entity</label>
+            <select name="implementing_entity" id="implementing_entity">
+                <option value="">All</option>
+                {% for e in entities %}
+                    <option value="{{ e }}" {% if entity_filter == e %}selected{% endif %}>{{ e }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit">Apply filters</button>
+        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}"
+           class="secondary" style="margin-left:0.5rem;">Download CSV</a>
+    </form>
+
+    {% if current_user.role == 'admin' %}
+        <form method="post" action="{{ url_for('activity.upload_excel') }}" enctype="multipart/form-data" class="upload-form">
+            <div class="field-group">
+                <label for="file">Upload Excel to populate activities</label>
+                <input type="file" id="file" name="file" accept=".xlsx,.xls">
+            </div>
+            <button type="submit">Upload</button>
+        </form>
+
+        <form method="post" action="{{ url_for('activity.delete_all_activities') }}" onsubmit="return confirm('Delete ALL activities? This cannot be undone.');">
+            <button type="submit" class="danger-all">Delete all activities</button>
+        </form>
+    {% endif %}
+</section>
+
+<section class="table-section">
+    <table>
+        <thead>
+        <tr>
+            <th>Code</th>
+            <th>Initial Activity</th>
+            <th>Proposed Activity</th>
+            <th>Notes</th>
+            <th>Implementing Entity</th>
+            <th>Delivery Partner</th>
+            <th>Results Area</th>
+            <th>Category</th>
+            <th>Budget Y1</th>
+            <th>Budget Y2</th>
+            <th>Budget Y3</th>
+            <th>Total Budget</th>
+            <th>Budget Used</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for a in activities %}
+            <tr>
+                <td>{{ a.code }}</td>
+                <td>{{ a.initial_activity }}</td>
+                <td>{{ a.proposed_activity }}</td>
+                <td>{{ a.notes }}</td>
+                <td>{{ a.implementing_entity }}</td>
+                <td>{{ a.delivery_partner }}</td>
+                <td>{{ a.results_area }}</td>
+                <td>{{ a.category }}</td>
+                <td class="num">{{ "%.0f"|format(a.budget_year1 or 0) }}</td>
+                <td class="num">{{ "%.0f"|format(a.budget_year2 or 0) }}</td>
+                <td class="num">{{ "%.0f"|format(a.budget_year3 or 0) }}</td>
+                <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
+                <td class="num">{{ "%.0f"|format(a.budget_used or 0) }}</td>
+                <td>{{ a.status }}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ a.progress or 0 }}%"></div>
+                    </div>
+                    <span class="progress-label">{{ a.progress or 0 }}%</span>
+                </td>
+                <td class="actions">
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('activity.edit_activity', activity_id=a.id) }}">Edit</a>
+                        <form action="{{ url_for('activity.delete_activity', activity_id=a.id) }}" method="post"
+                              onsubmit="return confirm('Delete this activity?');">
+                            <button type="submit" class="link danger">Delete</button>
+                        </form>
+                    {% else %}
+                        <span class="muted">View only</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="12" class="empty">No activities yet. Click “New Activity” to add one.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+

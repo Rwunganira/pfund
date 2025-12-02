@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-card">
+    <h1>{{ "Edit Activity" if activity else "New Activity" }}</h1>
+
+    <form method="post">
+        <div class="grid">
+            <div class="field-group">
+                <label for="code">Code</label>
+                <input id="code" name="code" value="{{ activity.code if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="implementing_entity">Implementing Entity</label>
+                {% set current_ie = activity.implementing_entity if activity else "" %}
+                <select id="implementing_entity" name="implementing_entity">
+                    {% for ie in ["UNICEF", "WHO", "FAO", "AIIB/CHAI"] %}
+                        <option value="{{ ie }}" {% if current_ie == ie %}selected{% endif %}>{{ ie }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="delivery_partner">Delivery Partner</label>
+                <input id="delivery_partner" name="delivery_partner"
+                       value="{{ activity.delivery_partner if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="results_area">Results Area</label>
+                {% set current_ra = activity.results_area if activity else "" %}
+                <select id="results_area" name="results_area">
+                    {% for ra in [
+                        "Surveillance & Early Warning",
+                        "Laboratory Systems",
+                        "Workforce Development",
+                        "Cross-Cutting Enablers (Policy, Research, M&E, KM)",
+                        "Community Engagement",
+                        "One Health",
+                        "Coordination & Institutional Capacity"
+                    ] %}
+                        <option value="{{ ra }}" {% if current_ra == ra %}selected{% endif %}>{{ ra }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="category">Category</label>
+                {% set current_cat = activity.category if activity else "" %}
+                <select id="category" name="category">
+                    {% for cat in [
+                        "Training",
+                        "Knowledge Management",
+                        "Supervision & Mentorship",
+                        "Community Engagement",
+                        "Policy/Research",
+                        "Coordination",
+                        "Construction – Laboratory Infrastructure",
+                        "Digital Systems",
+                        "Procurement",
+                        "Other",
+                        "Surveillance Infrastructure"
+                    ] %}
+                        <option value="{{ cat }}" {% if current_cat == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="budget_year1">Budget Year 1</label>
+                <input id="budget_year1" name="budget_year1" type="number" step="0.01"
+                       value="{{ activity.budget_year1 if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="budget_year2">Budget Year 2</label>
+                <input id="budget_year2" name="budget_year2" type="number" step="0.01"
+                       value="{{ activity.budget_year2 if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="budget_year3">Budget Year 3</label>
+                <input id="budget_year3" name="budget_year3" type="number" step="0.01"
+                       value="{{ activity.budget_year3 if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="budget_total">Total Budget</label>
+                <input id="budget_total" name="budget_total" type="number" step="0.01"
+                       value="{{ activity.budget_total if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="budget_used">Budget Used</label>
+                <input id="budget_used" name="budget_used" type="number" step="0.01"
+                       value="{{ activity.budget_used if activity else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    {% set current_status = activity.status if activity else "Planned" %}
+                    {% for s in ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"] %}
+                        <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="progress">Progress (%)</label>
+                <input id="progress" name="progress" type="number" min="0" max="100"
+                       value="{{ activity.progress if activity else 0 }}">
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="initial_activity">Initial Activity</label>
+            <textarea id="initial_activity" name="initial_activity" rows="2">{{ activity.initial_activity if activity else "" }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="proposed_activity">New Proposed Project Activity</label>
+            <textarea id="proposed_activity" name="proposed_activity" rows="3">{{ activity.proposed_activity if activity else "" }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3">{{ activity.notes if activity else "" }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary">Save</button>
+            <a href="{{ url_for('index') }}" class="secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+

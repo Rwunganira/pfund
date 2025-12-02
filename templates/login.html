@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-card">
+    <h1>Login</h1>
+    <form method="post">
+        <div class="field-group">
+            <label for="username">Username</label>
+            <input id="username" name="username" required>
+        </div>
+        <div class="field-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="primary">Login</button>
+            <a href="{{ url_for('auth.register') }}" class="secondary">Register</a>
+        </div>
+        <p style="margin-top:0.75rem; font-size:0.85rem;">
+            Didn’t get the confirmation email?
+            <a href="{{ url_for('auth.resend_confirmation') }}">Resend confirmation link</a>.
+        </p>
+    </form>
+</section>
+{% endblock %}
+
+
