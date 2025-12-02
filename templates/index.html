@@ -222,29 +222,31 @@
 <script>
 // Activity data for modal (embedded in page)
 const activityData = {
-    {% for item in activities_with_urls %}
-    {% set a = item.activity %}
-    {% if a.id %}
-    {{ a.id }}: {
-        code: {{ (a.code or '')|tojson }},
-        initial_activity: {{ (a.initial_activity or '')|tojson }},
-        proposed_activity: {{ (a.proposed_activity or '')|tojson }},
-        notes: {{ (a.notes or '')|tojson }},
-        implementing_entity: {{ (a.implementing_entity or '')|tojson }},
-        delivery_partner: {{ (a.delivery_partner or '')|tojson }},
-        results_area: {{ (a.results_area or '')|tojson }},
-        category: {{ (a.category or '')|tojson }},
-        budget_year1: {{ a.budget_year1 or 0 }},
-        budget_year2: {{ a.budget_year2 or 0 }},
-        budget_year3: {{ a.budget_year3 or 0 }},
-        budget_total: {{ a.budget_total or 0 }},
-        budget_used: {{ a.budget_used or 0 }},
-        status: {{ (a.status or 'Unknown')|tojson }},
-        progress: {{ a.progress or 0 }},
-        edit_url: {{ item.edit_url|tojson }}
-    }{% if not loop.last %},{% endif %}
+    {% if activities_with_urls %}
+        {% for item in activities_with_urls %}
+        {% set a = item.activity %}
+        {% if a and a.id %}
+        {{ a.id }}: {
+            code: {{ (a.code or '')|tojson }},
+            initial_activity: {{ (a.initial_activity or '')|tojson }},
+            proposed_activity: {{ (a.proposed_activity or '')|tojson }},
+            notes: {{ (a.notes or '')|tojson }},
+            implementing_entity: {{ (a.implementing_entity or '')|tojson }},
+            delivery_partner: {{ (a.delivery_partner or '')|tojson }},
+            results_area: {{ (a.results_area or '')|tojson }},
+            category: {{ (a.category or '')|tojson }},
+            budget_year1: {{ a.budget_year1 or 0 }},
+            budget_year2: {{ a.budget_year2 or 0 }},
+            budget_year3: {{ a.budget_year3 or 0 }},
+            budget_total: {{ a.budget_total or 0 }},
+            budget_used: {{ a.budget_used or 0 }},
+            status: {{ (a.status or 'Unknown')|tojson }},
+            progress: {{ a.progress or 0 }},
+            edit_url: {{ (item.edit_url or '#')|tojson }}
+        }{% if not loop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
     {% endif %}
-    {% endfor %}
 };
 
 function openDetailsModal(activityId) {

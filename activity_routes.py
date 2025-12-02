@@ -69,16 +69,35 @@ def index():
     ]
 
     # Pre-generate edit URLs for activities to avoid url_for calls in template
+    # This prevents template rendering errors
     activities_with_urls = []
-    for a in activities:
-        try:
-            edit_url = url_for('activity.edit_activity', activity_id=a.id) if a.id else '#'
-        except Exception:
-            edit_url = '#'
-        activities_with_urls.append({
-            'activity': a,
-            'edit_url': edit_url
-        })
+    try:
+        for a in activities:
+            if a and hasattr(a, 'id') and a.id:
+                try:
+                    # Generate edit URL - this must be done in request context
+                    edit_url = url_for('activity.edit_activity', activity_id=a.id)
+                except Exception:
+                    # Fallback if URL generation fails
+                    edit_url = f'/activity/{a.id}/edit' if a.id else '#'
+            else:
+                edit_url = '#'
+            activities_with_urls.append({
+                'activity': a,
+                'edit_url': edit_url
+            })
+    except Exception as e:
+        # If URL generation fails completely, create simple URLs
+        activities_with_urls = []
+        for a in activities:
+            if a and hasattr(a, 'id') and a.id:
+                edit_url = f'/activity/{a.id}/edit'
+            else:
+                edit_url = '#'
+            activities_with_urls.append({
+                'activity': a,
+                'edit_url': edit_url
+            })
 
     return render_template(
         "index.html",
@@ -88,7 +107,7 @@ def index():
         status_rows=status_rows,
         status_filter=status_filter,
         entity_filter=entity_filter,
-        entities=entities,
+        entities=entities or [],
     )
 
 
