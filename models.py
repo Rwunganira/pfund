@@ -59,13 +59,20 @@ class User(db.Model):
 
 
 def init_db(app) -> None:
-    """Initialize SQLAlchemy and create tables."""
+    """Initialize SQLAlchemy and (in development) create tables.
+
+    In production (e.g. on Heroku) we rely on Alembic/Flask-Migrate
+    to create and alter tables, so we skip db.create_all() there to
+    avoid 'table ... already exists' errors.
+    """
     app.config.setdefault("SQLALCHEMY_DATABASE_URI", f"sqlite:///{DB_PATH}")
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
 
     db.init_app(app)
-    with app.app_context():
-        db.create_all()
+    # Only auto-create tables in a development environment
+    if app.config.get("ENV") == "development":
+        with app.app_context():
+            db.create_all()
 
 
 
