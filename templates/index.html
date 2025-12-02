@@ -164,7 +164,7 @@
                     <td class="actions">
                         <button
                             class="btn-view-details"
-                            onclick="event.stopPropagation(); openDetailsModal({{ a.id }})"
+                            onclick="event.stopPropagation(); openDetailsModal({{ a.id }}); return false;"
                             type="button">
                             View Details
                         </button>
@@ -250,16 +250,29 @@ var activityData = {};
     {% endfor %}
 {% endif %}
 
+// Debug: Log how many activities were loaded
+console.log('Loaded activity data for', Object.keys(activityData).length, 'activities');
+
+// Make function globally accessible
 function openDetailsModal(activityId) {
+    console.log('Opening modal for activity:', activityId);
+    console.log('Available activities:', Object.keys(activityData));
     const data = activityData[activityId];
     if (!data) {
-        alert('Activity details not available. Please refresh the page.');
+        console.error('Activity data not found for ID:', activityId);
+        alert('Activity details not available. Activity ID: ' + activityId + '. Please refresh the page.');
         return;
     }
 
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('modalBody');
     const editLink = document.getElementById('editLink');
+    
+    if (!modal || !modalBody) {
+        console.error('Modal elements not found!');
+        alert('Modal elements not found. Please refresh the page.');
+        return;
+    }
 
     // Build the details HTML
     modalBody.innerHTML = `
@@ -366,8 +379,10 @@ function openDetailsModal(activityId) {
 
 function closeDetailsModal() {
     const modal = document.getElementById('detailsModal');
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 }
 
 // Make table rows clickable
