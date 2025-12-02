@@ -65,17 +65,25 @@ def index():
     ]
 
     # For filter dropdowns (distinct implementing_entity)
-    entities = [
-        row[0]
-        for row in db.session.query(Activity.implementing_entity)
-        .filter(
-            Activity.implementing_entity.isnot(None),
-            Activity.implementing_entity != "",
-        )
-        .distinct()
-        .order_by(Activity.implementing_entity)
-        .all()
-    ]
+    try:
+        entities = [
+            row[0]
+            for row in db.session.query(Activity.implementing_entity)
+            .filter(
+                Activity.implementing_entity.isnot(None),
+                Activity.implementing_entity != "",
+            )
+            .distinct()
+            .order_by(Activity.implementing_entity)
+            .all()
+        ]
+    except Exception as e:
+        # If query fails, get entities from activities list
+        import traceback
+        print(f"Error fetching entities: {e}")
+        print(traceback.format_exc())
+        entities = list(set([a.implementing_entity for a in activities if a.implementing_entity]))
+        entities.sort()
 
     # Pre-generate ALL URLs for activities to avoid url_for calls in template
     # Create a dictionary for quick lookup by activity ID
@@ -100,6 +108,24 @@ def index():
             'edit_url': edit_url
         })
 
+    # Ensure all variables are defined
+    if not activities:
+        activities = []
+    if not activities_with_urls:
+        activities_with_urls = []
+    if not activity_urls:
+        activity_urls = {}
+    if not summary:
+        summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
+    if not status_rows:
+        status_rows = []
+    if not entities:
+        entities = []
+    if not status_filter:
+        status_filter = ""
+    if not entity_filter:
+        entity_filter = ""
+
     try:
         return render_template(
             "index.html",
@@ -110,25 +136,16 @@ def index():
             status_rows=status_rows,
             status_filter=status_filter,
             entity_filter=entity_filter,
-            entities=entities or [],
+            entities=entities,
         )
     except Exception as e:
         # If template rendering fails, log and return error
         import traceback
+        error_trace = traceback.format_exc()
         print(f"Template rendering error: {e}")
-        print(traceback.format_exc())
-        flash(f"Error loading page: {str(e)}", "error")
-        return render_template(
-            "index.html",
-            activities=[],
-            activities_with_urls=[],
-            activity_urls={},
-            summary={"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0},
-            status_rows=[],
-            status_filter="",
-            entity_filter="",
-            entities=[],
-        )
+        print(error_trace)
+        # Re-raise the error so Flask's error handler can catch it
+        raise
 
 
 @activity_bp.route("/activity/new", methods=["GET", "POST"])

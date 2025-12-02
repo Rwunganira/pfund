@@ -34,6 +34,19 @@ def inject_current_user():
     }
 
 
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors and log debug info."""
+    import traceback
+    error_msg = str(error)
+    tb = traceback.format_exc()
+    print(f"500 Error: {error_msg}")
+    print(tb)
+    # On Heroku, this will appear in logs
+    # Return a simple error page
+    return "<h1>Internal Server Error</h1><p>An error occurred. Please check the logs.</p>", 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 
