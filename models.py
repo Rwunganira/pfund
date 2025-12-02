@@ -1,5 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
+import os
+
 from flask import current_app
+from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeTimedSerializer
 
 from config import DB_PATH
@@ -59,20 +61,27 @@ class User(db.Model):
 
 
 def init_db(app) -> None:
-    """Initialize SQLAlchemy and (in development) create tables.
+    """Initialize SQLAlchemy and configure DB.
 
-    In production (e.g. on Heroku) we rely on Alembic/Flask-Migrate
-    to create and alter tables, so we skip db.create_all() there to
-    avoid 'table ... already exists' errors.
+    - On Heroku: use DATABASE_URL (Postgres).
+    - Locally: fall back to SQLite file.
+    - Only auto-create tables in development.
     """
-    app.config.setdefault("SQLALCHEMY_DATABASE_URI", f"sqlite:///{DB_PATH}")
+    uri = os.getenv("DATABASE_URL")
+    if uri:
+        # Heroku gives postgres://, SQLAlchemy expects postgresql://
+        if uri.startswith("postgres://"):
+            uri = uri.replace("postgres://", "postgresql://", 1)
+        app.config["SQLALCHEMY_DATABASE_URI"] = uri
+    else:
+        app.config.setdefault("SQLALCHEMY_DATABASE_URI", f"sqlite:///{DB_PATH}")
+
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
 
     db.init_app(app)
-    # Only auto-create tables in a development environment
+
+    # Only create tables automatically in development
     if app.config.get("ENV") == "development":
         with app.app_context():
             db.create_all()
-
-
 
