@@ -15,17 +15,26 @@ activity_bp = Blueprint("activity", __name__)
 @activity_bp.route("/")
 @login_required
 def index():
-    status_filter = request.args.get("status", "")
-    entity_filter = request.args.get("implementing_entity", "")
+    try:
+        status_filter = request.args.get("status", "")
+        entity_filter = request.args.get("implementing_entity", "")
 
-    # Build query with filters
-    query = Activity.query
-    if status_filter:
-        query = query.filter_by(status=status_filter)
-    if entity_filter:
-        query = query.filter_by(implementing_entity=entity_filter)
+        # Build query with filters
+        query = Activity.query
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        if entity_filter:
+            query = query.filter_by(implementing_entity=entity_filter)
 
-    activities = query.order_by(Activity.code).all()
+        activities = query.order_by(Activity.code).all()
+    except Exception as e:
+        # Log error and return empty list
+        import traceback
+        print(f"Error fetching activities: {e}")
+        print(traceback.format_exc())
+        activities = []
+        status_filter = ""
+        entity_filter = ""
 
     # Summary metrics computed in Python
     total_activities = len(activities)
@@ -68,47 +77,58 @@ def index():
         .all()
     ]
 
-    # Pre-generate edit URLs for activities to avoid url_for calls in template
-    # This prevents template rendering errors
+    # Pre-generate ALL URLs for activities to avoid url_for calls in template
+    # Create a dictionary for quick lookup by activity ID
+    activity_urls = {}
+    for a in activities:
+        if a and hasattr(a, 'id') and a.id:
+            # Generate URLs manually to avoid url_for issues
+            activity_urls[a.id] = {
+                'edit_url': f'/activity/{a.id}/edit',
+                'delete_url': f'/activity/{a.id}/delete'
+            }
+    
+    # Also create list format for JavaScript
     activities_with_urls = []
-    try:
-        for a in activities:
-            if a and hasattr(a, 'id') and a.id:
-                try:
-                    # Generate edit URL - this must be done in request context
-                    edit_url = url_for('activity.edit_activity', activity_id=a.id)
-                except Exception:
-                    # Fallback if URL generation fails
-                    edit_url = f'/activity/{a.id}/edit' if a.id else '#'
-            else:
-                edit_url = '#'
-            activities_with_urls.append({
-                'activity': a,
-                'edit_url': edit_url
-            })
-    except Exception as e:
-        # If URL generation fails completely, create simple URLs
-        activities_with_urls = []
-        for a in activities:
-            if a and hasattr(a, 'id') and a.id:
-                edit_url = f'/activity/{a.id}/edit'
-            else:
-                edit_url = '#'
-            activities_with_urls.append({
-                'activity': a,
-                'edit_url': edit_url
-            })
+    for a in activities:
+        if a and hasattr(a, 'id') and a.id:
+            edit_url = f'/activity/{a.id}/edit'
+        else:
+            edit_url = '#'
+        activities_with_urls.append({
+            'activity': a,
+            'edit_url': edit_url
+        })
 
-    return render_template(
-        "index.html",
-        activities=activities,
-        activities_with_urls=activities_with_urls,
-        summary=summary,
-        status_rows=status_rows,
-        status_filter=status_filter,
-        entity_filter=entity_filter,
-        entities=entities or [],
-    )
+    try:
+        return render_template(
+            "index.html",
+            activities=activities,
+            activities_with_urls=activities_with_urls,
+            activity_urls=activity_urls,
+            summary=summary,
+            status_rows=status_rows,
+            status_filter=status_filter,
+            entity_filter=entity_filter,
+            entities=entities or [],
+        )
+    except Exception as e:
+        # If template rendering fails, log and return error
+        import traceback
+        print(f"Template rendering error: {e}")
+        print(traceback.format_exc())
+        flash(f"Error loading page: {str(e)}", "error")
+        return render_template(
+            "index.html",
+            activities=[],
+            activities_with_urls=[],
+            activity_urls={},
+            summary={"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0},
+            status_rows=[],
+            status_filter="",
+            entity_filter="",
+            entities=[],
+        )
 
 
 @activity_bp.route("/activity/new", methods=["GET", "POST"])
