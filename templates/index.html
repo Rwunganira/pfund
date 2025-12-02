@@ -224,11 +224,14 @@
 <script>
 // Activity data for modal (embedded in page)
 var activityData = {};
+console.log('Initializing activityData. activities_with_urls length:', {{ activities_with_urls|length if activities_with_urls else 0 }});
 {% if activities_with_urls and activities_with_urls|length > 0 %}
     {% for item in activities_with_urls %}
         {% set a = item.activity %}
         {% if a and a.id is defined and a.id %}
-        activityData[{{ a.id }}] = {
+        // Store with both string and number keys for compatibility
+        var actId = {{ a.id }};
+        var actData = {
             code: {{ (a.code or '')|tojson }},
             initial_activity: {{ (a.initial_activity or '')|tojson }},
             proposed_activity: {{ (a.proposed_activity or '')|tojson }},
@@ -246,8 +249,13 @@ var activityData = {};
             progress: {{ (a.progress or 0) }},
             edit_url: {{ (item.edit_url or '#')|tojson }}
         };
+        // Store with both number and string keys
+        activityData[actId] = actData;
+        activityData[String(actId)] = actData;
         {% endif %}
     {% endfor %}
+{% else %}
+    console.warn('No activities_with_urls data available!');
 {% endif %}
 
 // Debug: Log how many activities were loaded
@@ -256,26 +264,29 @@ console.log('Activity IDs:', Object.keys(activityData));
 
 // Make function globally accessible - define it before DOMContentLoaded
 function openDetailsModal(activityId) {
-    // Convert to number in case it's a string
-    activityId = parseInt(activityId);
-    console.log('openDetailsModal called with ID:', activityId, 'Type:', typeof activityId);
-    console.log('Available activity keys:', Object.keys(activityData));
-    console.log('Looking for key:', activityId);
+    // Convert to number and string for lookup
+    const numId = parseInt(activityId);
+    const strId = String(activityId);
     
-    // Try both string and number keys
-    let data = activityData[activityId];
+    console.log('openDetailsModal called with ID:', activityId);
+    console.log('Looking for:', numId, 'or', strId);
+    console.log('Available activity keys:', Object.keys(activityData));
+    console.log('First few keys:', Object.keys(activityData).slice(0, 5));
+    
+    // Try number key first, then string key
+    let data = activityData[numId] || activityData[strId];
+    
     if (!data) {
-        data = activityData[String(activityId)];
-    }
-    if (!data) {
-        data = activityData[Number(activityId)];
+        // Try the original value as-is
+        data = activityData[activityId];
     }
     
     if (!data) {
         console.error('Activity data not found for ID:', activityId);
-        console.error('Available keys:', Object.keys(activityData));
-        console.error('Tried:', activityId, String(activityId), Number(activityId));
-        alert('Activity details not available. Activity ID: ' + activityId + '. Please refresh the page.');
+        console.error('Tried keys:', numId, strId, activityId);
+        console.error('Available keys (first 10):', Object.keys(activityData).slice(0, 10));
+        console.error('Sample activity data:', activityData[Object.keys(activityData)[0]]);
+        alert('Activity details not available. Activity ID: ' + activityId + '. Please check console for details.');
         return;
     }
     

@@ -119,36 +119,6 @@ def index():
         entities = list(set([a.implementing_entity for a in activities if a.implementing_entity]))
         entities.sort()
 
-    # Pre-generate ALL URLs for activities to avoid url_for calls in template
-    try:
-        # Create a dictionary for quick lookup by activity ID
-        activity_urls = {}
-        for a in activities:
-            if a and hasattr(a, 'id') and a.id:
-                # Generate URLs manually to avoid url_for issues
-                activity_urls[a.id] = {
-                    'edit_url': f'/activity/{a.id}/edit',
-                    'delete_url': f'/activity/{a.id}/delete'
-                }
-        
-        # Also create list format for JavaScript
-        activities_with_urls = []
-        for a in activities:
-            if a and hasattr(a, 'id') and a.id:
-                edit_url = f'/activity/{a.id}/edit'
-            else:
-                edit_url = '#'
-            activities_with_urls.append({
-                'activity': a,
-                'edit_url': edit_url
-            })
-    except Exception as e:
-        import traceback
-        print(f"Error generating URLs: {e}")
-        print(traceback.format_exc())
-        activity_urls = {}
-        activities_with_urls = []
-
     # Compute summary safely
     try:
         total_activities = len(activities) if activities else 0
@@ -190,21 +160,25 @@ def index():
     except:
         entities = []
 
-    # Generate URLs
+    # Generate URLs - create both dictionary and list formats
     try:
         activity_urls = {}
         activities_with_urls = []
         for a in activities:
-            if a and hasattr(a, 'id') and getattr(a, 'id', None):
-                aid = getattr(a, 'id')
-                activity_urls[aid] = {
-                    'edit_url': f'/activity/{aid}/edit',
-                    'delete_url': f'/activity/{aid}/delete'
-                }
-                activities_with_urls.append({
-                    'activity': a,
-                    'edit_url': f'/activity/{aid}/edit'
-                })
+            if a and hasattr(a, 'id'):
+                aid = getattr(a, 'id', None)
+                if aid:  # Only process if ID exists
+                    # Create URL dictionary for template
+                    activity_urls[aid] = {
+                        'edit_url': f'/activity/{aid}/edit',
+                        'delete_url': f'/activity/{aid}/delete'
+                    }
+                    # Create list for JavaScript data
+                    activities_with_urls.append({
+                        'activity': a,
+                        'edit_url': f'/activity/{aid}/edit'
+                    })
+        print(f"Generated URLs for {len(activities_with_urls)} activities")
     except Exception as e:
         import traceback
         print(f"Error generating URLs: {e}")
