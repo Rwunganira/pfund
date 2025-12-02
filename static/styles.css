@@ -57,6 +57,14 @@ body {
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
+.download-btn {
+    border-radius: 999px;
+    border: 1px solid #0369a1;
+    color: #0369a1;
+    padding: 0.4rem 1rem;
+    background: #ecfeff;
+}
+
 .filters {
     display: flex;
     flex-direction: column;
@@ -202,12 +210,47 @@ th {
     padding: 1.5rem 0.75rem;
 }
 
+tbody tr:nth-child(odd) {
+    background-color: #f9f9fb;
+}
+
+tbody tr:hover {
+    background-color: #eef2ff;
+}
+
+.truncate {
+    display: inline-block;
+    max-width: 260px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .dashboard {
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr);
     gap: 1rem;
+}
+
+.hero-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.hero-header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.hero-header p {
+    margin: 0.35rem 0 0;
+    color: #6b7280;
+    font-size: 0.9rem;
 }
 
 .cards {
@@ -239,6 +282,22 @@ th {
     color: #0f172a;
 }
 
+.card-total {
+    border-left: 4px solid #0ea5e9;
+}
+
+.card-budget {
+    border-left: 4px solid #22c55e;
+}
+
+.card-used {
+    border-left: 4px solid #f97316;
+}
+
+.card-progress {
+    border-left: 4px solid #a855f7;
+}
+
 .status-summary {
     background: #ffffff;
     border-radius: 0.9rem;
@@ -250,6 +309,53 @@ th {
     margin-top: 0;
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
+}
+
+.status-row {
+    transition: background-color 0.15s ease;
+}
+
+.status-row:hover {
+    background-color: #f3f4f6;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-pill.status-planned {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.status-pill.status-in-progress {
+    background: #ecfeff;
+    color: #0369a1;
+}
+
+.status-pill.status-completed {
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.status-pill.status-on-hold {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.status-pill.status-cancelled {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.status-pill.status-unknown {
+    background: #e5e7eb;
+    color: #374151;
 }
 
 .form-card {

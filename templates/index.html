@@ -2,22 +2,31 @@
 
 {% block content %}
 <section class="dashboard">
-    <div class="cards">
-        <div class="card">
-            <div class="card-label">Total activities</div>
-            <div class="card-value">{{ summary.total_activities or 0 }}</div>
+    <div>
+        <div class="hero-header">
+            <div>
+                <h1>PFUND Implementation Dashboard</h1>
+                <p>Monitor project activities, budgets and delivery partners across the portfolio.</p>
+            </div>
         </div>
-        <div class="card">
-            <div class="card-label">Total budget</div>
-            <div class="card-value">{{ "%.0f"|format(summary.total_budget or 0) }}</div>
-        </div>
-        <div class="card">
-            <div class="card-label">Budget used</div>
-            <div class="card-value">{{ "%.0f"|format(summary.total_used or 0) }}</div>
-        </div>
-        <div class="card">
-            <div class="card-label">Avg. progress</div>
-            <div class="card-value">{{ "%.0f"|format(summary.avg_progress or 0) }}%</div>
+
+        <div class="cards">
+            <div class="card card-total">
+                <div class="card-label">Total activities</div>
+                <div class="card-value">{{ summary.total_activities or 0 }}</div>
+            </div>
+            <div class="card card-budget">
+                <div class="card-label">Total budget</div>
+                <div class="card-value">{{ "%.0f"|format(summary.total_budget or 0) }}</div>
+            </div>
+            <div class="card card-used">
+                <div class="card-label">Budget used</div>
+                <div class="card-value">{{ "%.0f"|format(summary.total_used or 0) }}</div>
+            </div>
+            <div class="card card-progress">
+                <div class="card-label">Avg. progress</div>
+                <div class="card-value">{{ "%.0f"|format(summary.avg_progress or 0) }}%</div>
+            </div>
         </div>
     </div>
 
@@ -33,8 +42,13 @@
             </thead>
             <tbody>
             {% for s in status_rows %}
-                <tr>
-                    <td>{{ s.status or "Unknown" }}</td>
+                {% set status_name = s.status or "Unknown" %}
+                <tr class="status-row status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
+                    <td>
+                        <span class="status-pill status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
+                            {{ status_name }}
+                        </span>
+                    </td>
                     <td class="num">{{ s.count }}</td>
                     <td class="num">{{ "%.0f"|format(s.budget or 0) }}</td>
                 </tr>
@@ -72,7 +86,7 @@
 
         <button type="submit">Apply filters</button>
         <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}"
-           class="secondary" style="margin-left:0.5rem;">Download CSV</a>
+           class="secondary download-btn">Download CSV</a>
     </form>
 
     {% if current_user.role == 'admin' %}
@@ -116,9 +130,9 @@
         {% for a in activities %}
             <tr>
                 <td>{{ a.code }}</td>
-                <td>{{ a.initial_activity }}</td>
-                <td>{{ a.proposed_activity }}</td>
-                <td>{{ a.notes }}</td>
+                <td><span class="truncate" title="{{ a.initial_activity }}">{{ a.initial_activity }}</span></td>
+                <td><span class="truncate" title="{{ a.proposed_activity }}">{{ a.proposed_activity }}</span></td>
+                <td><span class="truncate" title="{{ a.notes }}">{{ a.notes }}</span></td>
                 <td>{{ a.implementing_entity }}</td>
                 <td>{{ a.delivery_partner }}</td>
                 <td>{{ a.results_area }}</td>
@@ -128,7 +142,12 @@
                 <td class="num">{{ "%.0f"|format(a.budget_year3 or 0) }}</td>
                 <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
                 <td class="num">{{ "%.0f"|format(a.budget_used or 0) }}</td>
-                <td>{{ a.status }}</td>
+                <td>
+                    {% set status_name = a.status or "Unknown" %}
+                    <span class="status-pill status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
+                        {{ status_name }}
+                    </span>
+                </td>
                 <td>
                     <div class="progress-bar">
                         <div class="progress" style="width: {{ a.progress or 0 }}%"></div>
