@@ -68,9 +68,22 @@ def index():
         .all()
     ]
 
+    # Pre-generate edit URLs for activities to avoid url_for calls in template
+    activities_with_urls = []
+    for a in activities:
+        try:
+            edit_url = url_for('activity.edit_activity', activity_id=a.id) if a.id else '#'
+        except Exception:
+            edit_url = '#'
+        activities_with_urls.append({
+            'activity': a,
+            'edit_url': edit_url
+        })
+
     return render_template(
         "index.html",
         activities=activities,
+        activities_with_urls=activities_with_urls,
         summary=summary,
         status_rows=status_rows,
         status_filter=status_filter,

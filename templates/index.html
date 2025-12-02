@@ -222,25 +222,28 @@
 <script>
 // Activity data for modal (embedded in page)
 const activityData = {
-    {% for a in activities %}
+    {% for item in activities_with_urls %}
+    {% set a = item.activity %}
+    {% if a.id %}
     {{ a.id }}: {
-        code: {{ a.code|tojson }},
-        initial_activity: {{ a.initial_activity|tojson }},
-        proposed_activity: {{ a.proposed_activity|tojson }},
-        notes: {{ a.notes|tojson }},
-        implementing_entity: {{ a.implementing_entity|tojson }},
-        delivery_partner: {{ a.delivery_partner|tojson }},
-        results_area: {{ a.results_area|tojson }},
-        category: {{ a.category|tojson }},
+        code: {{ (a.code or '')|tojson }},
+        initial_activity: {{ (a.initial_activity or '')|tojson }},
+        proposed_activity: {{ (a.proposed_activity or '')|tojson }},
+        notes: {{ (a.notes or '')|tojson }},
+        implementing_entity: {{ (a.implementing_entity or '')|tojson }},
+        delivery_partner: {{ (a.delivery_partner or '')|tojson }},
+        results_area: {{ (a.results_area or '')|tojson }},
+        category: {{ (a.category or '')|tojson }},
         budget_year1: {{ a.budget_year1 or 0 }},
         budget_year2: {{ a.budget_year2 or 0 }},
         budget_year3: {{ a.budget_year3 or 0 }},
         budget_total: {{ a.budget_total or 0 }},
         budget_used: {{ a.budget_used or 0 }},
-        status: {{ a.status|tojson }},
+        status: {{ (a.status or 'Unknown')|tojson }},
         progress: {{ a.progress or 0 }},
-        edit_url: {{ url_for('activity.edit_activity', activity_id=a.id)|tojson }}
+        edit_url: {{ item.edit_url|tojson }}
     }{% if not loop.last %},{% endif %}
+    {% endif %}
     {% endfor %}
 };
 
@@ -313,27 +316,27 @@ function openDetailsModal(activityId) {
                 <div class="budget-grid">
                     <div class="budget-item">
                         <label>Year 1:</label>
-                        <span class="num">${data.budget_year1.toLocaleString()}</span>
+                        <span class="num">${(Number(data.budget_year1) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item">
                         <label>Year 2:</label>
-                        <span class="num">${data.budget_year2.toLocaleString()}</span>
+                        <span class="num">${(Number(data.budget_year2) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item">
                         <label>Year 3:</label>
-                        <span class="num">${data.budget_year3.toLocaleString()}</span>
+                        <span class="num">${(Number(data.budget_year3) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item budget-total">
                         <label>Total Budget:</label>
-                        <span class="num">${data.budget_total.toLocaleString()}</span>
+                        <span class="num">${(Number(data.budget_total) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item budget-used">
                         <label>Budget Used:</label>
-                        <span class="num">${data.budget_used.toLocaleString()}</span>
+                        <span class="num">${(Number(data.budget_used) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item budget-remaining">
                         <label>Remaining:</label>
-                        <span class="num">${(data.budget_total - data.budget_used).toLocaleString()}</span>
+                        <span class="num">${((Number(data.budget_total) || 0) - (Number(data.budget_used) || 0)).toLocaleString()}</span>
                     </div>
                 </div>
             </div>
