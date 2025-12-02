@@ -12,12 +12,28 @@ from models import Activity, db
 activity_bp = Blueprint("activity", __name__)
 
 
+@activity_bp.route("/test")
+def test():
+    """Minimal test route to check if app is working."""
+    return "App is working!"
+
+
 @activity_bp.route("/")
 @login_required
 def index():
+    # Initialize all variables with safe defaults first
+    activities = []
+    status_filter = ""
+    entity_filter = ""
+    summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
+    status_rows = []
+    entities = []
+    activities_with_urls = []
+    activity_urls = {}
+    
     try:
-        status_filter = request.args.get("status", "")
-        entity_filter = request.args.get("implementing_entity", "")
+        status_filter = request.args.get("status", "") or ""
+        entity_filter = request.args.get("implementing_entity", "") or ""
 
         # Build query with filters
         query = Activity.query
@@ -26,43 +42,54 @@ def index():
         if entity_filter:
             query = query.filter_by(implementing_entity=entity_filter)
 
-        activities = query.order_by(Activity.code).all()
+        activities = query.order_by(Activity.code).all() or []
     except Exception as e:
         # Log error and return empty list
         import traceback
         print(f"Error fetching activities: {e}")
         print(traceback.format_exc())
         activities = []
-        status_filter = ""
-        entity_filter = ""
 
     # Summary metrics computed in Python
-    total_activities = len(activities)
-    total_budget = sum(a.budget_total or 0 for a in activities)
-    total_used = sum(a.budget_used or 0 for a in activities)
-    avg_progress = (
-        sum(a.progress or 0 for a in activities) / total_activities
-        if total_activities
-        else 0
-    )
-    summary = {
-        "total_activities": total_activities,
-        "total_budget": total_budget,
-        "total_used": total_used,
-        "avg_progress": avg_progress,
-    }
+    try:
+        total_activities = len(activities) if activities else 0
+        total_budget = sum((a.budget_total or 0) for a in activities) if activities else 0
+        total_used = sum((a.budget_used or 0) for a in activities) if activities else 0
+        avg_progress = (
+            sum((a.progress or 0) for a in activities) / total_activities
+            if total_activities > 0
+            else 0
+        )
+        summary = {
+            "total_activities": total_activities,
+            "total_budget": total_budget,
+            "total_used": total_used,
+            "avg_progress": avg_progress,
+        }
+    except Exception as e:
+        import traceback
+        print(f"Error computing summary: {e}")
+        print(traceback.format_exc())
+        summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
 
     # Breakdown by status
-    by_status = defaultdict(lambda: {"count": 0, "budget": 0.0})
-    for a in activities:
-        key = a.status or "Unknown"
-        by_status[key]["count"] += 1
-        by_status[key]["budget"] += a.budget_total or 0
+    try:
+        by_status = defaultdict(lambda: {"count": 0, "budget": 0.0})
+        for a in activities:
+            if a:
+                key = a.status or "Unknown"
+                by_status[key]["count"] += 1
+                by_status[key]["budget"] += a.budget_total or 0
 
-    status_rows = [
-        {"status": status, "count": data["count"], "budget": data["budget"]}
-        for status, data in sorted(by_status.items())
-    ]
+        status_rows = [
+            {"status": status, "count": data["count"], "budget": data["budget"]}
+            for status, data in sorted(by_status.items())
+        ]
+    except Exception as e:
+        import traceback
+        print(f"Error computing status breakdown: {e}")
+        print(traceback.format_exc())
+        status_rows = []
 
     # For filter dropdowns (distinct implementing_entity)
     try:
@@ -86,27 +113,34 @@ def index():
         entities.sort()
 
     # Pre-generate ALL URLs for activities to avoid url_for calls in template
-    # Create a dictionary for quick lookup by activity ID
-    activity_urls = {}
-    for a in activities:
-        if a and hasattr(a, 'id') and a.id:
-            # Generate URLs manually to avoid url_for issues
-            activity_urls[a.id] = {
-                'edit_url': f'/activity/{a.id}/edit',
-                'delete_url': f'/activity/{a.id}/delete'
-            }
-    
-    # Also create list format for JavaScript
-    activities_with_urls = []
-    for a in activities:
-        if a and hasattr(a, 'id') and a.id:
-            edit_url = f'/activity/{a.id}/edit'
-        else:
-            edit_url = '#'
-        activities_with_urls.append({
-            'activity': a,
-            'edit_url': edit_url
-        })
+    try:
+        # Create a dictionary for quick lookup by activity ID
+        activity_urls = {}
+        for a in activities:
+            if a and hasattr(a, 'id') and a.id:
+                # Generate URLs manually to avoid url_for issues
+                activity_urls[a.id] = {
+                    'edit_url': f'/activity/{a.id}/edit',
+                    'delete_url': f'/activity/{a.id}/delete'
+                }
+        
+        # Also create list format for JavaScript
+        activities_with_urls = []
+        for a in activities:
+            if a and hasattr(a, 'id') and a.id:
+                edit_url = f'/activity/{a.id}/edit'
+            else:
+                edit_url = '#'
+            activities_with_urls.append({
+                'activity': a,
+                'edit_url': edit_url
+            })
+    except Exception as e:
+        import traceback
+        print(f"Error generating URLs: {e}")
+        print(traceback.format_exc())
+        activity_urls = {}
+        activities_with_urls = []
 
     # Ensure all variables are defined
     if not activities:
