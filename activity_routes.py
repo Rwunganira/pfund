@@ -21,34 +21,41 @@ def test():
 @activity_bp.route("/")
 @login_required
 def index():
-    # Initialize all variables with safe defaults first
-    activities = []
-    status_filter = ""
-    entity_filter = ""
-    summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
-    status_rows = []
-    entities = []
-    activities_with_urls = []
-    activity_urls = {}
-    
+    """Simplified index route with maximum error handling."""
+    # Start with absolute minimal setup
     try:
+        # Try to get activities - if this fails, use empty list
+        try:
+            activities = Activity.query.order_by(Activity.code).all()
+        except Exception as db_error:
+            import traceback
+            print(f"Database error: {db_error}")
+            print(traceback.format_exc())
+            activities = []
+        
+        # Get filters
         status_filter = request.args.get("status", "") or ""
         entity_filter = request.args.get("implementing_entity", "") or ""
-
-        # Build query with filters
-        query = Activity.query
+        
+        # Apply filters if provided
         if status_filter:
-            query = query.filter_by(status=status_filter)
+            try:
+                activities = [a for a in activities if a.status == status_filter]
+            except:
+                pass
         if entity_filter:
-            query = query.filter_by(implementing_entity=entity_filter)
-
-        activities = query.order_by(Activity.code).all() or []
+            try:
+                activities = [a for a in activities if a.implementing_entity == entity_filter]
+            except:
+                pass
+                
     except Exception as e:
-        # Log error and return empty list
         import traceback
-        print(f"Error fetching activities: {e}")
+        print(f"Error in index route: {e}")
         print(traceback.format_exc())
         activities = []
+        status_filter = ""
+        entity_filter = ""
 
     # Summary metrics computed in Python
     try:
@@ -142,44 +149,98 @@ def index():
         activity_urls = {}
         activities_with_urls = []
 
-    # Ensure all variables are defined
-    if not activities:
-        activities = []
-    if not activities_with_urls:
-        activities_with_urls = []
-    if not activity_urls:
-        activity_urls = {}
-    if not summary:
+    # Compute summary safely
+    try:
+        total_activities = len(activities) if activities else 0
+        total_budget = sum((getattr(a, 'budget_total', None) or 0) for a in activities) if activities else 0
+        total_used = sum((getattr(a, 'budget_used', None) or 0) for a in activities) if activities else 0
+        avg_progress = (sum((getattr(a, 'progress', None) or 0) for a in activities) / total_activities) if total_activities > 0 else 0
+        summary = {
+            "total_activities": total_activities,
+            "total_budget": total_budget,
+            "total_used": total_used,
+            "avg_progress": avg_progress,
+        }
+    except Exception as e:
+        import traceback
+        print(f"Error computing summary: {e}")
+        print(traceback.format_exc())
         summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
-    if not status_rows:
-        status_rows = []
-    if not entities:
-        entities = []
-    if not status_filter:
-        status_filter = ""
-    if not entity_filter:
-        entity_filter = ""
 
+    # Status breakdown
+    try:
+        by_status = {}
+        for a in activities:
+            if a:
+                key = getattr(a, 'status', None) or "Unknown"
+                if key not in by_status:
+                    by_status[key] = {"count": 0, "budget": 0.0}
+                by_status[key]["count"] += 1
+                by_status[key]["budget"] += getattr(a, 'budget_total', None) or 0
+        status_rows = [{"status": k, "count": v["count"], "budget": v["budget"]} for k, v in sorted(by_status.items())]
+    except Exception as e:
+        import traceback
+        print(f"Error computing status breakdown: {e}")
+        print(traceback.format_exc())
+        status_rows = []
+
+    # Entities for filter
+    try:
+        entities = sorted(list(set([getattr(a, 'implementing_entity', None) for a in activities if getattr(a, 'implementing_entity', None)])))
+    except:
+        entities = []
+
+    # Generate URLs
+    try:
+        activity_urls = {}
+        activities_with_urls = []
+        for a in activities:
+            if a and hasattr(a, 'id') and getattr(a, 'id', None):
+                aid = getattr(a, 'id')
+                activity_urls[aid] = {
+                    'edit_url': f'/activity/{aid}/edit',
+                    'delete_url': f'/activity/{aid}/delete'
+                }
+                activities_with_urls.append({
+                    'activity': a,
+                    'edit_url': f'/activity/{aid}/edit'
+                })
+    except Exception as e:
+        import traceback
+        print(f"Error generating URLs: {e}")
+        print(traceback.format_exc())
+        activity_urls = {}
+        activities_with_urls = []
+
+    # Render template with all variables
     try:
         return render_template(
             "index.html",
-            activities=activities,
-            activities_with_urls=activities_with_urls,
-            activity_urls=activity_urls,
+            activities=activities or [],
+            activities_with_urls=activities_with_urls or [],
+            activity_urls=activity_urls or {},
             summary=summary,
-            status_rows=status_rows,
-            status_filter=status_filter,
-            entity_filter=entity_filter,
-            entities=entities,
+            status_rows=status_rows or [],
+            status_filter=status_filter or "",
+            entity_filter=entity_filter or "",
+            entities=entities or [],
         )
     except Exception as e:
-        # If template rendering fails, log and return error
         import traceback
         error_trace = traceback.format_exc()
-        print(f"Template rendering error: {e}")
+        print(f"CRITICAL: Template rendering error: {e}")
         print(error_trace)
-        # Re-raise the error so Flask's error handler can catch it
-        raise
+        # Return a simple HTML response instead of crashing
+        return f"""
+        <html>
+        <body>
+        <h1>Template Error</h1>
+        <p>Error: {str(e)}</p>
+        <pre>{error_trace}</pre>
+        <p>Activities count: {len(activities) if activities else 0}</p>
+        </body>
+        </html>
+        """, 500
 
 
 @activity_bp.route("/activity/new", methods=["GET", "POST"])
