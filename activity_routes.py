@@ -262,6 +262,7 @@ def upload_excel():
             delivery_partner = get_val(row, "Delivery partner")
             results_area = get_val(row, "results_area", "Results Area")
             category = get_val(row, "sr_category", "Category")
+            notes = get_val(row, "Notes", "Note", "Comments")
 
             def get_num(row, *names):
                 for n in names:
@@ -283,7 +284,6 @@ def upload_excel():
             # Default status and progress for imported rows
             status = "Planned"
             progress = 0
-            notes = None
 
             # Skip completely empty rows
             if not any([code, initial_activity, proposed_activity]):
@@ -310,6 +310,8 @@ def upload_excel():
             )
 
         if rows_to_insert:
+            created = 0
+            updated = 0
             for row in rows_to_insert:
                 (
                     code,
@@ -329,27 +331,49 @@ def upload_excel():
                     notes,
                 ) = row
 
-                activity = Activity(
-                    code=code,
-                    initial_activity=initial_activity,
-                    proposed_activity=proposed_activity,
-                    implementing_entity=implementing_entity,
-                    delivery_partner=delivery_partner,
-                    results_area=results_area,
-                    category=category,
-                    budget_year1=budget_year1,
-                    budget_year2=budget_year2,
-                    budget_year3=budget_year3,
-                    budget_total=budget_total,
-                    budget_used=budget_used,
-                    status=status,
-                    progress=progress,
-                    notes=notes,
-                )
-                db.session.add(activity)
+                existing = None
+                if code:
+                    existing = Activity.query.filter_by(code=code).first()
+                if existing:
+                    # Update existing record
+                    existing.initial_activity = initial_activity
+                    existing.proposed_activity = proposed_activity
+                    existing.implementing_entity = implementing_entity
+                    existing.delivery_partner = delivery_partner
+                    existing.results_area = results_area
+                    existing.category = category
+                    existing.budget_year1 = budget_year1
+                    existing.budget_year2 = budget_year2
+                    existing.budget_year3 = budget_year3
+                    existing.budget_total = budget_total
+                    existing.budget_used = budget_used
+                    existing.status = status
+                    existing.progress = progress
+                    existing.notes = notes
+                    updated += 1
+                else:
+                    activity = Activity(
+                        code=code,
+                        initial_activity=initial_activity,
+                        proposed_activity=proposed_activity,
+                        implementing_entity=implementing_entity,
+                        delivery_partner=delivery_partner,
+                        results_area=results_area,
+                        category=category,
+                        budget_year1=budget_year1,
+                        budget_year2=budget_year2,
+                        budget_year3=budget_year3,
+                        budget_total=budget_total,
+                        budget_used=budget_used,
+                        status=status,
+                        progress=progress,
+                        notes=notes,
+                    )
+                    db.session.add(activity)
+                    created += 1
 
             db.session.commit()
-            flash(f"Imported {len(rows_to_insert)} activities from Excel.", "success")
+            flash(f"Imported {created} new activities, updated {updated} existing.", "success")
         else:
             flash("No valid rows found in Excel file.", "info")
     except Exception as exc:  # pylint: disable=broad-except
