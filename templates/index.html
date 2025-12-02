@@ -164,7 +164,7 @@
                     <td class="actions">
                         <button
                             class="btn-view-details"
-                            onclick="event.stopPropagation(); openDetailsModal({{ a.id }}); return false;"
+                            onclick="event.stopPropagation(); event.preventDefault(); openDetailsModal({{ a.id }});"
                             type="button">
                             View Details
                         </button>
@@ -252,17 +252,34 @@ var activityData = {};
 
 // Debug: Log how many activities were loaded
 console.log('Loaded activity data for', Object.keys(activityData).length, 'activities');
+console.log('Activity IDs:', Object.keys(activityData));
 
-// Make function globally accessible
+// Make function globally accessible - define it before DOMContentLoaded
 function openDetailsModal(activityId) {
-    console.log('Opening modal for activity:', activityId);
-    console.log('Available activities:', Object.keys(activityData));
-    const data = activityData[activityId];
+    // Convert to number in case it's a string
+    activityId = parseInt(activityId);
+    console.log('openDetailsModal called with ID:', activityId, 'Type:', typeof activityId);
+    console.log('Available activity keys:', Object.keys(activityData));
+    console.log('Looking for key:', activityId);
+    
+    // Try both string and number keys
+    let data = activityData[activityId];
+    if (!data) {
+        data = activityData[String(activityId)];
+    }
+    if (!data) {
+        data = activityData[Number(activityId)];
+    }
+    
     if (!data) {
         console.error('Activity data not found for ID:', activityId);
+        console.error('Available keys:', Object.keys(activityData));
+        console.error('Tried:', activityId, String(activityId), Number(activityId));
         alert('Activity details not available. Activity ID: ' + activityId + '. Please refresh the page.');
         return;
     }
+    
+    console.log('Found activity data:', data);
 
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('modalBody');
@@ -385,16 +402,41 @@ function closeDetailsModal() {
     }
 }
 
+// Test if function is accessible
+console.log('openDetailsModal function defined:', typeof openDetailsModal);
+
 // Make table rows clickable
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up event listeners');
+    // Also add click handlers to View Details buttons directly
+    const viewButtons = document.querySelectorAll('.btn-view-details');
+    console.log('Found', viewButtons.length, 'View Details buttons');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            const row = this.closest('.activity-row');
+            if (row) {
+                const activityId = parseInt(row.getAttribute('data-activity-id'));
+                console.log('Button clicked, activity ID:', activityId);
+                if (activityId) {
+                    openDetailsModal(activityId);
+                }
+            }
+        });
+    });
+    
     const rows = document.querySelectorAll('.activity-row');
+    console.log('Found', rows.length, 'activity rows');
     rows.forEach(row => {
         row.addEventListener('click', function(e) {
-            // Don't open modal if clicking on buttons/links
-            if (e.target.closest('button, a, form')) {
+            // Don't open modal if clicking on buttons/links/forms
+            if (e.target.closest('button, a, form, input, select')) {
+                console.log('Click on button/link/form, ignoring row click');
                 return;
             }
             const activityId = parseInt(this.getAttribute('data-activity-id'));
+            console.log('Row clicked, activity ID:', activityId);
             if (activityId) {
                 openDetailsModal(activityId);
             }
