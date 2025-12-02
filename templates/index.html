@@ -105,75 +105,249 @@
 </section>
 
 <section class="table-section">
-    <table>
-        <thead>
-        <tr>
-            <th>Code</th>
-            <th>Initial Activity</th>
-            <th>Proposed Activity</th>
-            <th>Notes</th>
-            <th>Implementing Entity</th>
-            <th>Delivery Partner</th>
-            <th>Results Area</th>
-            <th>Category</th>
-            <th>Budget Y1</th>
-            <th>Budget Y2</th>
-            <th>Budget Y3</th>
-            <th>Total Budget</th>
-            <th>Budget Used</th>
-            <th>Status</th>
-            <th>Progress</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for a in activities %}
+    <div class="table-header">
+        <h2>Activities ({{ activities|length }})</h2>
+        <p class="table-hint">Click <strong>View Details</strong> to see full information including notes and initial activity</p>
+    </div>
+    <div class="table-wrapper">
+        <table class="compact-table">
+            <thead>
             <tr>
-                <td>{{ a.code }}</td>
-                <td><span class="truncate" title="{{ a.initial_activity }}">{{ a.initial_activity }}</span></td>
-                <td><span class="truncate" title="{{ a.proposed_activity }}">{{ a.proposed_activity }}</span></td>
-                <td><span class="truncate" title="{{ a.notes }}">{{ a.notes }}</span></td>
-                <td>{{ a.implementing_entity }}</td>
-                <td>{{ a.delivery_partner }}</td>
-                <td>{{ a.results_area }}</td>
-                <td>{{ a.category }}</td>
-                <td class="num">{{ "%.0f"|format(a.budget_year1 or 0) }}</td>
-                <td class="num">{{ "%.0f"|format(a.budget_year2 or 0) }}</td>
-                <td class="num">{{ "%.0f"|format(a.budget_year3 or 0) }}</td>
-                <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
-                <td class="num">{{ "%.0f"|format(a.budget_used or 0) }}</td>
-                <td>
-                    {% set status_name = a.status or "Unknown" %}
-                    <span class="status-pill status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
-                        {{ status_name }}
-                    </span>
-                </td>
-                <td>
-                    <div class="progress-bar">
-                        <div class="progress" style="width: {{ a.progress or 0 }}%"></div>
-                    </div>
-                    <span class="progress-label">{{ a.progress or 0 }}%</span>
-                </td>
-                <td class="actions">
-                    {% if current_user.role == 'admin' %}
-                        <a href="{{ url_for('activity.edit_activity', activity_id=a.id) }}">Edit</a>
-                        <form action="{{ url_for('activity.delete_activity', activity_id=a.id) }}" method="post"
-                              onsubmit="return confirm('Delete this activity?');">
-                            <button type="submit" class="link danger">Delete</button>
-                        </form>
-                    {% else %}
-                        <span class="muted">View only</span>
-                    {% endif %}
-                </td>
+                <th>Code</th>
+                <th>Proposed Activity</th>
+                <th>Entity</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Total Budget</th>
+                <th>Budget Used</th>
+                <th>Actions</th>
             </tr>
-        {% else %}
-            <tr>
-                <td colspan="12" class="empty">No activities yet. Click “New Activity” to add one.</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+            {% for a in activities %}
+                <tr data-activity-id="{{ a.id }}">
+                    <td><strong>{{ a.code or '-' }}</strong></td>
+                    <td>
+                        <span class="truncate-text" title="{{ a.proposed_activity }}">
+                            {{ a.proposed_activity or '-' }}
+                        </span>
+                    </td>
+                    <td>{{ a.implementing_entity or '-' }}</td>
+                    <td>
+                        {% set status_name = a.status or "Unknown" %}
+                        <span class="status-pill status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
+                            {{ status_name }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ a.progress or 0 }}%"></div>
+                            </div>
+                            <span class="progress-label">{{ a.progress or 0 }}%</span>
+                        </div>
+                    </td>
+                    <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
+                    <td class="num budget-used">{{ "%.0f"|format(a.budget_used or 0) }}</td>
+                    <td class="actions">
+                        <button class="btn-view-details" onclick="openDetailsModal({{ a.id }})" title="View full details">
+                            View Details
+                        </button>
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('activity.edit_activity', activity_id=a.id) }}" class="btn-edit">Edit</a>
+                            <form action="{{ url_for('activity.delete_activity', activity_id=a.id) }}" method="post"
+                                  onsubmit="return confirm('Delete this activity?');" style="display: inline;">
+                                <button type="submit" class="btn-delete">Delete</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="8" class="empty">No activities yet. Click "New Activity" to add one.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Activity Details</h2>
+            <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+            {% if current_user.role == 'admin' %}
+                <a id="editLink" href="#" class="btn-primary">Edit Activity</a>
+            {% endif %}
+            <button onclick="closeDetailsModal()" class="btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Activity data for modal (embedded in page)
+const activityData = {
+    {% for a in activities %}
+    {{ a.id }}: {
+        code: {{ a.code|tojson }},
+        initial_activity: {{ a.initial_activity|tojson }},
+        proposed_activity: {{ a.proposed_activity|tojson }},
+        notes: {{ a.notes|tojson }},
+        implementing_entity: {{ a.implementing_entity|tojson }},
+        delivery_partner: {{ a.delivery_partner|tojson }},
+        results_area: {{ a.results_area|tojson }},
+        category: {{ a.category|tojson }},
+        budget_year1: {{ a.budget_year1 or 0 }},
+        budget_year2: {{ a.budget_year2 or 0 }},
+        budget_year3: {{ a.budget_year3 or 0 }},
+        budget_total: {{ a.budget_total or 0 }},
+        budget_used: {{ a.budget_used or 0 }},
+        status: {{ a.status|tojson }},
+        progress: {{ a.progress or 0 }},
+        edit_url: {{ url_for('activity.edit_activity', activity_id=a.id)|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+function openDetailsModal(activityId) {
+    const data = activityData[activityId];
+    if (!data) return;
+
+    const modal = document.getElementById('detailsModal');
+    const modalBody = document.getElementById('modalBody');
+    const editLink = document.getElementById('editLink');
+
+    // Build the details HTML
+    modalBody.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h3>Basic Information</h3>
+                <div class="detail-item">
+                    <label>Code:</label>
+                    <span>${data.code || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status:</label>
+                    <span class="status-pill status-${(data.status || 'Unknown').toLowerCase().replace(/[ /]/g, '-')}">${data.status || 'Unknown'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Progress:</label>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress" style="width: ${data.progress || 0}%"></div>
+                        </div>
+                        <span class="progress-label">${data.progress || 0}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Activity Description</h3>
+                <div class="detail-item full-width">
+                    <label>Initial Activity:</label>
+                    <div class="detail-text">${data.initial_activity || '<em>Not specified</em>'}</div>
+                </div>
+                <div class="detail-item full-width">
+                    <label>Proposed Activity:</label>
+                    <div class="detail-text">${data.proposed_activity || '<em>Not specified</em>'}</div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Organizational Details</h3>
+                <div class="detail-item">
+                    <label>Implementing Entity:</label>
+                    <span>${data.implementing_entity || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Delivery Partner:</label>
+                    <span>${data.delivery_partner || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Results Area:</label>
+                    <span>${data.results_area || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Category:</label>
+                    <span>${data.category || '-'}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Budget Information</h3>
+                <div class="budget-grid">
+                    <div class="budget-item">
+                        <label>Year 1:</label>
+                        <span class="num">${data.budget_year1.toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Year 2:</label>
+                        <span class="num">${data.budget_year2.toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Year 3:</label>
+                        <span class="num">${data.budget_year3.toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item budget-total">
+                        <label>Total Budget:</label>
+                        <span class="num">${data.budget_total.toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item budget-used">
+                        <label>Budget Used:</label>
+                        <span class="num">${data.budget_used.toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item budget-remaining">
+                        <label>Remaining:</label>
+                        <span class="num">${(data.budget_total - data.budget_used).toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section full-width">
+                <h3>Notes</h3>
+                <div class="detail-item full-width">
+                    <div class="notes-content">${data.notes ? data.notes.replace(/\\n/g, '<br>') : '<em class="muted">No notes available</em>'}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (editLink) {
+        editLink.href = data.edit_url;
+    }
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDetailsModal() {
+    const modal = document.getElementById('detailsModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('detailsModal');
+    if (event.target === modal) {
+        closeDetailsModal();
+    }
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeDetailsModal();
+    }
+});
+</script>
 {% endblock %}
 
 
