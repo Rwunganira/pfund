@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <section class="dashboard">
     <div>
         <div class="hero-header">
@@ -34,11 +35,11 @@
         <h2>Status overview</h2>
         <table>
             <thead>
-            <tr>
-                <th>Status</th>
-                <th>Activities</th>
-                <th>Total budget</th>
-            </tr>
+                <tr>
+                    <th>Status</th>
+                    <th>Activities</th>
+                    <th>Total budget</th>
+                </tr>
             </thead>
             <tbody>
             {% for s in status_rows %}
@@ -85,8 +86,7 @@
         </div>
 
         <button type="submit">Apply filters</button>
-        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}"
-           class="secondary download-btn">Download CSV</a>
+        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}" class="secondary download-btn">Download CSV</a>
     </form>
 
     {% if current_user.role == 'admin' %}
@@ -107,38 +107,48 @@
 <section class="table-section">
     <div class="table-header">
         <h2>Activities ({{ activities|length }})</h2>
-        <p class="table-hint">Click <strong>View Details</strong> to see full information including notes and initial activity</p>
+        <p class="table-hint">Click a row or <strong>View Details</strong> to see full information.</p>
     </div>
+
     <div class="table-wrapper">
         <table class="compact-table">
             <thead>
-            <tr>
-                <th>Code</th>
-                <th>Proposed Activity</th>
-                <th>Entity</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th>Total Budget</th>
-                <th>Budget Used</th>
-                <th>Actions</th>
-            </tr>
+                <tr>
+                    <th>Code</th>
+                    <th>Proposed Activity</th>
+                    <th>Entity</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Total Budget</th>
+                    <th>Budget Used</th>
+                    <th>Actions</th>
+                </tr>
             </thead>
             <tbody>
+
             {% for a in activities %}
-                <tr data-activity-id="{{ a.id }}">
+                <tr class="activity-row"
+                    data-activity-id="{{ a.id }}"
+                    tabindex="0"
+                    aria-label="View activity {{ a.code or a.proposed_activity }}">
+
                     <td><strong>{{ a.code or '-' }}</strong></td>
+
                     <td>
                         <span class="truncate-text" title="{{ a.proposed_activity }}">
                             {{ a.proposed_activity or '-' }}
                         </span>
                     </td>
+
                     <td>{{ a.implementing_entity or '-' }}</td>
+
                     <td>
                         {% set status_name = a.status or "Unknown" %}
                         <span class="status-pill status-{{ status_name|lower|replace(' ', '-')|replace('/', '-') }}">
                             {{ status_name }}
                         </span>
                     </td>
+
                     <td>
                         <div class="progress-container">
                             <div class="progress-bar">
@@ -147,26 +157,39 @@
                             <span class="progress-label">{{ a.progress or 0 }}%</span>
                         </div>
                     </td>
+
                     <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
                     <td class="num budget-used">{{ "%.0f"|format(a.budget_used or 0) }}</td>
+
                     <td class="actions">
-                        <button class="btn-view-details" onclick="openDetailsModal({{ a.id }})" title="View full details">
+                        <button
+                            class="btn-view-details"
+                            onclick="event.stopPropagation(); openDetailsModal({{ a.id }})"
+                            type="button">
                             View Details
                         </button>
+
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('activity.edit_activity', activity_id=a.id) }}" class="btn-edit">Edit</a>
-                            <form action="{{ url_for('activity.delete_activity', activity_id=a.id) }}" method="post"
-                                  onsubmit="return confirm('Delete this activity?');" style="display: inline;">
-                                <button type="submit" class="btn-delete">Delete</button>
+                            <a href="{{ url_for('activity.edit_activity', activity_id=a.id) }}"
+                               class="btn-edit"
+                               onclick="event.stopPropagation();">Edit</a>
+
+                            <form action="{{ url_for('activity.delete_activity', activity_id=a.id) }}"
+                                  method="post"
+                                  style="display:inline;"
+                                  onsubmit="event.stopPropagation(); return confirm('Delete this activity?');">
+                                <button class="btn-delete" type="submit">Delete</button>
                             </form>
                         {% endif %}
                     </td>
                 </tr>
+
             {% else %}
                 <tr>
-                    <td colspan="8" class="empty">No activities yet. Click "New Activity" to add one.</td>
+                    <td colspan="8" class="empty">No activities yet.</td>
                 </tr>
             {% endfor %}
+
             </tbody>
         </table>
     </div>
@@ -175,22 +198,27 @@
 <!-- Details Modal -->
 <div id="detailsModal" class="modal">
     <div class="modal-content">
+
         <div class="modal-header">
             <h2>Activity Details</h2>
             <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
         </div>
-        <div class="modal-body" id="modalBody">
-            <!-- Content will be populated by JavaScript -->
-        </div>
+
+        <div class="modal-body" id="modalBody"></div>
+
         <div class="modal-footer">
             {% if current_user.role == 'admin' %}
                 <a id="editLink" href="#" class="btn-primary">Edit Activity</a>
             {% endif %}
             <button onclick="closeDetailsModal()" class="btn-secondary">Close</button>
         </div>
+
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
 // Activity data for modal (embedded in page)
 const activityData = {
@@ -333,21 +361,48 @@ function closeDetailsModal() {
     document.body.style.overflow = '';
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('detailsModal');
-    if (event.target === modal) {
-        closeDetailsModal();
-    }
-}
+// Make table rows clickable
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.activity-row');
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't open modal if clicking on buttons/links
+            if (e.target.closest('button, a, form')) {
+                return;
+            }
+            const activityId = parseInt(this.getAttribute('data-activity-id'));
+            if (activityId) {
+                openDetailsModal(activityId);
+            }
+        });
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeDetailsModal();
+        // Add keyboard support
+        row.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const activityId = parseInt(this.getAttribute('data-activity-id'));
+                if (activityId) {
+                    openDetailsModal(activityId);
+                }
+            }
+        });
+    });
+
+    // Close modal when clicking outside
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeDetailsModal();
+            }
+        });
     }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDetailsModal();
+        }
+    });
 });
 </script>
-{% endblock %}
-
-

@@ -475,6 +475,21 @@ tbody tr:hover {
     font-size: 0.9rem;
 }
 
+.activity-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.activity-row:hover {
+    background-color: #eef2ff !important;
+    transform: translateX(2px);
+}
+
+.activity-row:focus {
+    outline: 2px solid #0369a1;
+    outline-offset: -2px;
+}
+
 .truncate-text {
     display: inline-block;
     max-width: 300px;
