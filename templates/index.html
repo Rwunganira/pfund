@@ -11,6 +11,9 @@
             </div>
         </div>
 
+        {# Compute overall budget execution (used / total) in percent #}
+        {% set exec_pct = (summary.total_used / summary.total_budget * 100) if summary.total_budget else 0 %}
+
         <div class="cards">
             <div class="card card-total">
                 <div class="card-label">Total activities</div>
@@ -25,8 +28,8 @@
                 <div class="card-value">{{ "%.0f"|format(summary.total_used or 0) }}</div>
             </div>
             <div class="card card-progress">
-                <div class="card-label">Avg. progress</div>
-                <div class="card-value">{{ "%.0f"|format(summary.avg_progress or 0) }}%</div>
+                <div class="card-label">% budget execution</div>
+                <div class="card-value">{{ "%.0f"|format(exec_pct or 0) }}%</div>
             </div>
         </div>
     </div>
