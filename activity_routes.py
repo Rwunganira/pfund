@@ -355,32 +355,54 @@ def edit_activity(activity_id):
 @admin_required
 def add_challenge():
     """Add a new implementation challenge row."""
-    challenge_text = (request.form.get("challenge") or "").strip()
-    action_text = (request.form.get("action") or "").strip()
-    responsible = (request.form.get("responsible") or "").strip()
-    timeline = (request.form.get("timeline") or "").strip()
-    status = (request.form.get("status") or "pending").strip().lower()
+    try:
+        challenge_text = (request.form.get("challenge") or "").strip()
+        action_text = (request.form.get("action") or "").strip()
+        responsible = (request.form.get("responsible") or "").strip()
+        timeline = (request.form.get("timeline") or "").strip()
+        status = (request.form.get("status") or "pending").strip().lower()
 
-    if not challenge_text or not action_text:
-        flash("Please provide both a challenge and an action.", "error")
-        return redirect(request.form.get("next") or url_for("activity.index"))
+        if not challenge_text or not action_text:
+            flash("Please provide both a challenge and an action.", "error")
+            return redirect(request.form.get("next") or url_for("activity.index"))
 
-    # Validate status
-    if status not in ["pending", "completed", "canceled"]:
-        status = "pending"
+        # Validate status
+        if status not in ["pending", "completed", "canceled"]:
+            status = "pending"
 
-    ch = Challenge(
-        challenge=challenge_text,
-        action=action_text,
-        responsible=responsible or None,
-        timeline=timeline or None,
-        status=status,
-    )
-    db.session.add(ch)
-    db.session.commit()
-    flash("Challenge added.", "success")
+        # Check if status column exists (for backward compatibility)
+        try:
+            ch = Challenge(
+                challenge=challenge_text,
+                action=action_text,
+                responsible=responsible or None,
+                timeline=timeline or None,
+                status=status,
+            )
+        except Exception as e:
+            # If status column doesn't exist, create without it
+            import traceback
+            print(f"Error creating challenge with status: {e}")
+            print(traceback.format_exc())
+            ch = Challenge(
+                challenge=challenge_text,
+                action=action_text,
+                responsible=responsible or None,
+                timeline=timeline or None,
+            )
+        
+        db.session.add(ch)
+        db.session.commit()
+        flash("Challenge added.", "success")
 
-    return redirect(request.form.get("next") or url_for("activity.index"))
+    except Exception as e:
+        import traceback
+        print(f"Error adding challenge: {e}")
+        print(traceback.format_exc())
+        db.session.rollback()
+        flash("An error occurred while adding the challenge. Please check the logs.", "error")
+
+    return redirect(request.form.get("next") or url_for("activity.challenges_page"))
 
 
 @activity_bp.route("/challenges", methods=["GET"])
