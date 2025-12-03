@@ -195,7 +195,8 @@
 
                         {% if current_user.role == 'admin' %}
                             {% if a.id and activity_urls.get(a.id) %}
-                                <a href="{{ activity_urls[a.id].edit_url }}"
+                                {# Preserve current filters by passing the full path as `next` #}
+                                <a href="{{ activity_urls[a.id].edit_url }}?next={{ request.full_path|urlencode }}"
                                    class="btn-edit"
                                    onclick="event.stopPropagation();">Edit</a>
 

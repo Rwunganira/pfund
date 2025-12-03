@@ -331,6 +331,11 @@ def edit_activity(activity_id):
 
         db.session.commit()
         flash("Activity updated successfully", "success")
+
+        # If we came from a filtered view, go back there
+        next_url = request.args.get("next")
+        if next_url:
+            return redirect(next_url)
         return redirect(url_for("activity.index"))
 
     return render_template("form.html", activity=activity)
