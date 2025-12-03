@@ -417,7 +417,65 @@ def challenges_page():
         print(traceback.format_exc())
         challenges = []
 
-    return render_template("challenges.html", challenges=challenges)
+    return render_template("challenges.html", challenges=challenges, admin_email=ADMIN_EMAIL)
+
+
+@activity_bp.route("/challenges/<int:challenge_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_challenge(challenge_id):
+    """Edit an existing challenge."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    
+    if request.method == "POST":
+        try:
+            challenge.challenge = (request.form.get("challenge") or "").strip()
+            challenge.action = (request.form.get("action") or "").strip()
+            challenge.responsible = (request.form.get("responsible") or "").strip() or None
+            challenge.timeline = (request.form.get("timeline") or "").strip() or None
+            status = (request.form.get("status") or "pending").strip().lower()
+            
+            if not challenge.challenge or not challenge.action:
+                flash("Please provide both a challenge and an action.", "error")
+                return redirect(url_for("activity.edit_challenge", challenge_id=challenge_id))
+            
+            # Validate status
+            if status not in ["pending", "completed", "canceled"]:
+                status = "pending"
+            challenge.status = status
+            
+            db.session.commit()
+            flash("Challenge updated.", "success")
+            return redirect(request.form.get("next") or url_for("activity.challenges_page"))
+            
+        except Exception as e:
+            import traceback
+            print(f"Error updating challenge: {e}")
+            print(traceback.format_exc())
+            db.session.rollback()
+            flash("An error occurred while updating the challenge.", "error")
+            return redirect(url_for("activity.edit_challenge", challenge_id=challenge_id))
+    
+    # GET request - show edit form
+    return render_template("challenge_form.html", challenge=challenge, is_edit=True)
+
+
+@activity_bp.route("/challenges/<int:challenge_id>/delete", methods=["POST"])
+@admin_required
+def delete_challenge(challenge_id):
+    """Delete a challenge. Only superadmin can delete."""
+    # Only the super admin (configured admin email) can delete.
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can delete challenges.", "error")
+        return redirect(url_for("activity.challenges_page"))
+    
+    challenge = Challenge.query.get(challenge_id)
+    if challenge:
+        db.session.delete(challenge)
+        db.session.commit()
+        flash("Challenge deleted.", "info")
+    else:
+        flash("Challenge not found.", "error")
+    return redirect(request.form.get("next") or url_for("activity.challenges_page"))
 
 
 @activity_bp.route("/activity/<int:activity_id>/delete", methods=["POST"])

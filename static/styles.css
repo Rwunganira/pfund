@@ -134,6 +134,40 @@ button {
     font-size: 0.9rem;
 }
 
+.button {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 999px;
+    border: none;
+    background: #0369a1;
+    color: #e5f3ff;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.button.small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.button.danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.button.secondary {
+    background: #6b7280;
+    color: #ffffff;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

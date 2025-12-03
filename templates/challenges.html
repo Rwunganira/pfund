@@ -14,11 +14,14 @@
         <table class="compact-table">
             <thead>
             <tr>
-                <th style="width: 30%;">Challenge</th>
-                <th style="width: 30%;">Agreed action</th>
-                <th style="width: 12%;">Responsible</th>
-                <th style="width: 13%;">Timeline</th>
-                <th style="width: 15%;">Status</th>
+                <th style="width: 25%;">Challenge</th>
+                <th style="width: 25%;">Agreed action</th>
+                <th style="width: 10%;">Responsible</th>
+                <th style="width: 10%;">Timeline</th>
+                <th style="width: 10%;">Status</th>
+                {% if current_user.role == 'admin' %}
+                <th style="width: 10%;">Actions</th>
+                {% endif %}
             </tr>
             </thead>
             <tbody>
@@ -33,10 +36,27 @@
                             {{ (c.status or 'pending').title() }}
                         </span>
                     </td>
+                    {% if current_user.role == 'admin' %}
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ url_for('activity.edit_challenge', challenge_id=c.id, next=request.full_path) }}" 
+                               class="button small" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Edit</a>
+                            {% if current_user.email == admin_email %}
+                            <form method="post" 
+                                  action="{{ url_for('activity.delete_challenge', challenge_id=c.id) }}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('Are you sure you want to delete this challenge?');">
+                                <input type="hidden" name="next" value="{{ request.full_path }}">
+                                <button type="submit" class="button small danger" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endif %}
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="5" class="empty">
+                    <td colspan="{% if current_user.role == 'admin' %}6{% else %}5{% endif %}" class="empty">
                         No challenges have been recorded yet.
                         {% if current_user.role == 'admin' %}
                             Use the form below to add the first one.

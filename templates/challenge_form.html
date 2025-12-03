@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="table-section">
+    <div class="table-header">
+        <h2>{% if is_edit %}Edit Challenge{% else %}Add New Challenge{% endif %}</h2>
+    </div>
+
+    <form method="post"
+          action="{% if is_edit %}{{ url_for('activity.edit_challenge', challenge_id=challenge.id) }}{% else %}{{ url_for('activity.add_challenge') }}{% endif %}"
+          class="upload-form">
+        <input type="hidden" name="next" value="{{ request.args.get('next') or url_for('activity.challenges_page') }}">
+        
+        <div class="field-group">
+            <label for="challenge">Challenge</label>
+            <textarea id="challenge" name="challenge" rows="3" required
+                      placeholder="Describe the implementation challenge">{% if is_edit %}{{ challenge.challenge }}{% endif %}</textarea>
+        </div>
+        
+        <div class="field-group">
+            <label for="action">Agreed action</label>
+            <textarea id="action" name="action" rows="3" required
+                      placeholder="Describe what will be done to address it">{% if is_edit %}{{ challenge.action }}{% endif %}</textarea>
+        </div>
+        
+        <div class="field-group">
+            <label for="responsible">Responsible</label>
+            <input id="responsible" name="responsible" type="text" 
+                   placeholder="Person / team"
+                   value="{% if is_edit %}{{ challenge.responsible or '' }}{% endif %}">
+        </div>
+        
+        <div class="field-group">
+            <label for="timeline">Timeline</label>
+            <input id="timeline" name="timeline" type="text" 
+                   placeholder="e.g. Q1 2026, by 30 June"
+                   value="{% if is_edit %}{{ challenge.timeline or '' }}{% endif %}">
+        </div>
+        
+        <div class="field-group">
+            <label for="status">Status</label>
+            <select id="status" name="status" required>
+                <option value="pending" {% if is_edit and challenge.status == 'pending' %}selected{% elif not is_edit %}selected{% endif %}>Pending</option>
+                <option value="completed" {% if is_edit and challenge.status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="canceled" {% if is_edit and challenge.status == 'canceled' %}selected{% endif %}>Canceled</option>
+            </select>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit">{% if is_edit %}Update Challenge{% else %}Add Challenge{% endif %}</button>
+            <a href="{{ request.args.get('next') or url_for('activity.challenges_page') }}" class="button secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+{% endblock %}
+
