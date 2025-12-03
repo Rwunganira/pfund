@@ -359,16 +359,22 @@ def add_challenge():
     action_text = (request.form.get("action") or "").strip()
     responsible = (request.form.get("responsible") or "").strip()
     timeline = (request.form.get("timeline") or "").strip()
+    status = (request.form.get("status") or "pending").strip().lower()
 
     if not challenge_text or not action_text:
         flash("Please provide both a challenge and an action.", "error")
         return redirect(request.form.get("next") or url_for("activity.index"))
+
+    # Validate status
+    if status not in ["pending", "completed", "canceled"]:
+        status = "pending"
 
     ch = Challenge(
         challenge=challenge_text,
         action=action_text,
         responsible=responsible or None,
         timeline=timeline or None,
+        status=status,
     )
     db.session.add(ch)
     db.session.commit()
