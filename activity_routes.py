@@ -36,18 +36,23 @@ def index():
         # Get filters
         status_filter = request.args.get("status", "") or ""
         entity_filter = request.args.get("implementing_entity", "") or ""
-        
+        category_filter = request.args.get("category", "") or ""
+        results_filter = request.args.get("results_area", "") or ""
+
         # Apply filters if provided
-        if status_filter:
-            try:
-                activities = [a for a in activities if a.status == status_filter]
-            except:
-                pass
-        if entity_filter:
-            try:
-                activities = [a for a in activities if a.implementing_entity == entity_filter]
-            except:
-                pass
+        try:
+            if status_filter:
+                activities = [a for a in activities if getattr(a, "status", None) == status_filter]
+            if entity_filter:
+                activities = [a for a in activities if getattr(a, "implementing_entity", None) == entity_filter]
+            if category_filter:
+                activities = [a for a in activities if getattr(a, "category", None) == category_filter]
+            if results_filter:
+                activities = [a for a in activities if getattr(a, "results_area", None) == results_filter]
+        except Exception as e:
+            import traceback
+            print(f"Error applying filters: {e}")
+            print(traceback.format_exc())
                 
     except Exception as e:
         import traceback
@@ -160,6 +165,18 @@ def index():
     except:
         entities = []
 
+    # Categories (activity type) for filter
+    try:
+        categories = sorted(list(set([getattr(a, 'category', None) for a in activities if getattr(a, 'category', None)])))
+    except:
+        categories = []
+
+    # Results areas for filter
+    try:
+        results_areas = sorted(list(set([getattr(a, 'results_area', None) for a in activities if getattr(a, 'results_area', None)])))
+    except:
+        results_areas = []
+
     # Generate URLs - create both dictionary and list formats
     try:
         activity_urls = {}
@@ -197,7 +214,11 @@ def index():
             status_rows=status_rows or [],
             status_filter=status_filter or "",
             entity_filter=entity_filter or "",
+            category_filter=category_filter or "",
+            results_filter=results_filter or "",
             entities=entities or [],
+            categories=categories or [],
+            results_areas=results_areas or [],
         )
     except Exception as e:
         import traceback

@@ -88,8 +88,29 @@
             </select>
         </div>
 
+        <div class="field-group">
+            <label for="category">Activity type</label>
+            <select name="category" id="category">
+                <option value="">All</option>
+                {% for c in categories %}
+                    <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label for="results_area">Results area</label>
+            <select name="results_area" id="results_area">
+                <option value="">All</option>
+                {% for r in results_areas %}
+                    <option value="{{ r }}" {% if results_filter == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
         <button type="submit">Apply filters</button>
-        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}" class="secondary download-btn">Download CSV</a>
+        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}"
+           class="secondary download-btn">Download CSV</a>
     </form>
 
     {% if current_user.role == 'admin' %}
