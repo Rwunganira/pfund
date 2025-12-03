@@ -18,8 +18,16 @@ depends_on = None
 
 def upgrade():
     # Only adjust the users table for this migration.
+    # Check if 'confirmed' column already exists (for production databases)
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [col['name'] for col in inspector.get_columns('users')]
+    confirmed_exists = 'confirmed' in columns
+    
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('confirmed', sa.Boolean(), nullable=True))
+        # Only add 'confirmed' column if it doesn't exist
+        if not confirmed_exists:
+            batch_op.add_column(sa.Column('confirmed', sa.Boolean(), nullable=True))
         batch_op.alter_column('id',
                existing_type=sa.INTEGER(),
                nullable=False,
@@ -40,7 +48,12 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=False)
-        batch_op.create_unique_constraint('uq_users_email', ['email'])
+    
+    # Check if unique constraint already exists before creating
+    constraints = [c['name'] for c in inspector.get_unique_constraints('users')]
+    if 'uq_users_email' not in constraints:
+        with op.batch_alter_table('users', schema=None) as batch_op:
+            batch_op.create_unique_constraint('uq_users_email', ['email'])
 
     # ### end Alembic commands ###
 
