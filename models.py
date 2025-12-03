@@ -31,6 +31,16 @@ class Activity(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
 
+class Challenge(db.Model):
+    __tablename__ = "challenges"
+
+    id = db.Column(db.Integer, primary_key=True)
+    challenge = db.Column(db.Text, nullable=False)
+    action = db.Column(db.Text, nullable=False)
+    responsible = db.Column(db.String, nullable=True)
+    timeline = db.Column(db.String, nullable=True)
+
+
 class User(db.Model):
     __tablename__ = "users"
 

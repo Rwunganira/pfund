@@ -6,7 +6,7 @@ import tempfile
 import pandas as pd
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
-from models import Activity, db
+from models import Activity, Challenge, db
 
 
 activity_bp = Blueprint("activity", __name__)
@@ -203,6 +203,15 @@ def index():
         activity_urls = {}
         activities_with_urls = []
 
+    # Load challenges for the challenges table
+    try:
+        challenges = Challenge.query.order_by(Challenge.id.desc()).all()
+    except Exception as e:
+        import traceback
+        print(f"Error loading challenges: {e}")
+        print(traceback.format_exc())
+        challenges = []
+
     # Render template with all variables
     try:
         return render_template(
@@ -219,6 +228,7 @@ def index():
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
+            challenges=challenges or [],
         )
     except Exception as e:
         import traceback
@@ -339,6 +349,47 @@ def edit_activity(activity_id):
         return redirect(url_for("activity.index"))
 
     return render_template("form.html", activity=activity)
+
+
+@activity_bp.route("/challenges/new", methods=["POST"])
+@admin_required
+def add_challenge():
+    """Add a new implementation challenge row."""
+    challenge_text = (request.form.get("challenge") or "").strip()
+    action_text = (request.form.get("action") or "").strip()
+    responsible = (request.form.get("responsible") or "").strip()
+    timeline = (request.form.get("timeline") or "").strip()
+
+    if not challenge_text or not action_text:
+        flash("Please provide both a challenge and an action.", "error")
+        return redirect(request.form.get("next") or url_for("activity.index"))
+
+    ch = Challenge(
+        challenge=challenge_text,
+        action=action_text,
+        responsible=responsible or None,
+        timeline=timeline or None,
+    )
+    db.session.add(ch)
+    db.session.commit()
+    flash("Challenge added.", "success")
+
+    return redirect(request.form.get("next") or url_for("activity.index"))
+
+
+@activity_bp.route("/challenges", methods=["GET"])
+@login_required
+def challenges_page():
+    """Standalone page for viewing and managing implementation challenges."""
+    try:
+        challenges = Challenge.query.order_by(Challenge.id.desc()).all()
+    except Exception as e:
+        import traceback
+        print(f"Error loading challenges on challenges_page: {e}")
+        print(traceback.format_exc())
+        challenges = []
+
+    return render_template("challenges.html", challenges=challenges)
 
 
 @activity_bp.route("/activity/<int:activity_id>/delete", methods=["POST"])
