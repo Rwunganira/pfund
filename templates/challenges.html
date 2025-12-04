@@ -14,7 +14,7 @@
                    <a href="{{ url_for('activity.download_challenges') }}"
                       class="button secondary"
                       style="margin-right: 0.5rem;">
-                       Download CSV
+                       Download follow-up CSV
                    </a>
                    {% if current_user.role == 'admin' %}
                        <form method="post"
@@ -22,7 +22,7 @@
                              enctype="multipart/form-data"
                              class="upload-form"
                              style="display: inline-flex; gap: 0.5rem; align-items: center;">
-                           <label for="challenges_file" style="margin: 0;">Upload Excel</label>
+                           <label for="challenges_file" style="margin: 0;">Upload follow-up Excel</label>
                            <input type="file"
                                   id="challenges_file"
                                   name="file"
