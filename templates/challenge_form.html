@@ -4,7 +4,7 @@
 
 <section class="table-section">
     <div class="table-header">
-        <h2>{% if is_edit %}Edit Challenge{% else %}Add New Challenge{% endif %}</h2>
+        <h2>{% if is_edit %}Edit Follow-up Item{% else %}Add New Follow-up Item{% endif %}</h2>
     </div>
 
     <form method="post"
@@ -13,9 +13,9 @@
         <input type="hidden" name="next" value="{{ request.args.get('next') or url_for('activity.challenges_page') }}">
         
         <div class="field-group">
-            <label for="challenge">Challenge</label>
+            <label for="challenge">Item</label>
             <textarea id="challenge" name="challenge" rows="3" required
-                      placeholder="Describe the implementation challenge">{% if is_edit %}{{ challenge.challenge }}{% endif %}</textarea>
+                      placeholder="Describe the follow-up item">{% if is_edit %}{{ challenge.challenge }}{% endif %}</textarea>
         </div>
         
         <div class="field-group">
@@ -48,7 +48,7 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit">{% if is_edit %}Update Challenge{% else %}Add Challenge{% endif %}</button>
+            <button type="submit">{% if is_edit %}Update Item{% else %}Add Item{% endif %}</button>
             <a href="{{ request.args.get('next') or url_for('activity.challenges_page') }}" class="button secondary">Cancel</a>
         </div>
     </form>

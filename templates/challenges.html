@@ -5,9 +5,9 @@
 <section class="table-section">
            <div class="table-header">
                <div>
-                   <h2>Implementation challenges and actions</h2>
+                   <h2>Follow-up items and actions</h2>
                    <p class="table-hint">
-                       Track key implementation bottlenecks, agreed actions, responsible leads and timelines.
+                       Track key follow-up items, agreed actions, responsible leads and timelines.
                    </p>
                </div>
                <div class="table-actions">
@@ -38,7 +38,7 @@
         <table class="compact-table">
             <thead>
             <tr>
-                <th style="width: 25%;">Challenge</th>
+                <th style="width: 25%;">Item</th>
                 <th style="width: 25%;">Agreed action</th>
                 <th style="width: 10%;">Responsible</th>
                 <th style="width: 10%;">Timeline</th>
@@ -81,7 +81,7 @@
             {% else %}
                 <tr>
                     <td colspan="{% if current_user.role == 'admin' %}6{% else %}5{% endif %}" class="empty">
-                        No challenges have been recorded yet.
+                        No follow-up items have been recorded yet.
                         {% if current_user.role == 'admin' %}
                             Use the form below to add the first one.
                         {% endif %}
@@ -99,9 +99,9 @@
               style="margin-top: 1rem;">
             <input type="hidden" name="next" value="{{ request.full_path }}">
             <div class="field-group">
-                <label for="challenge">New challenge</label>
+                <label for="challenge">New item</label>
                 <textarea id="challenge" name="challenge" rows="2"
-                          placeholder="Describe the implementation challenge"></textarea>
+                          placeholder="Describe the follow-up item"></textarea>
             </div>
             <div class="field-group">
                 <label for="action">Agreed action</label>
