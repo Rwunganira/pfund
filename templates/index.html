@@ -198,7 +198,7 @@
         <table class="compact-table">
             <thead>
                 <tr>
-                    <th>Code</th>
+                    <th>Activity Type</th>
                     <th>Proposed Activity</th>
                     <th>Entity</th>
                     <th>Status</th>
@@ -214,9 +214,9 @@
                 <tr class="activity-row"
                     data-activity-id="{{ a.id }}"
                     tabindex="0"
-                    aria-label="View activity {{ a.code or a.proposed_activity }}">
+                    aria-label="View activity {{ a.category or a.proposed_activity }}">
 
-                    <td><strong>{{ a.code or '-' }}</strong></td>
+                    <td><strong>{{ a.category or '-' }}</strong></td>
 
                     <td>
                         <span class="truncate-text" title="{{ a.proposed_activity }}">
@@ -413,8 +413,8 @@ function openDetailsModal(activityId) {
             <div class="detail-section">
                 <h3>Basic Information</h3>
                 <div class="detail-item">
-                    <label>Code:</label>
-                    <span>${data.code || '-'}</span>
+                    <label>Activity Type:</label>
+                    <span>${data.category || '-'}</span>
                 </div>
                 <div class="detail-item">
                     <label>Status:</label>
@@ -456,10 +456,6 @@ function openDetailsModal(activityId) {
                 <div class="detail-item">
                     <label>Results Area:</label>
                     <span>${data.results_area || '-'}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Category:</label>
-                    <span>${data.category || '-'}</span>
                 </div>
             </div>
 
