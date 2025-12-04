@@ -668,10 +668,13 @@ def manage_subactivities(activity_id):
         # Quick test query – if the table is missing, this will raise ProgrammingError
         _ = db.session.query(SubActivity).first()
     except ProgrammingError as e:
+        # Always rollback the failed transaction first
+        db.session.rollback()
         if "sub_activities" in str(e):
             # Create any missing tables, including sub_activities
             db.create_all()
         else:
+            # Re-raise unexpected errors
             raise
 
     if request.method == "POST":
