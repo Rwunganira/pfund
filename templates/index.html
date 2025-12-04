@@ -80,42 +80,90 @@
 
         <div class="field-group">
             <label for="status">Status</label>
-            <select name="status" id="status">
-                <option value="">All</option>
-                {% for s in ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"] %}
-                    <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-            </select>
+            <div class="multiselect-wrapper">
+                <div class="multiselect-display" data-target="status">
+                    <span class="multiselect-placeholder">All</span>
+                    <span class="multiselect-arrow">▼</span>
+                </div>
+                <div class="multiselect-dropdown" id="status-dropdown">
+                    <input type="text" class="multiselect-search" placeholder="Search status..." data-filter="status">
+                    <div class="multiselect-options" id="status-options">
+                        {% for s in ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"] %}
+                            <label class="multiselect-option">
+                                <input type="checkbox" name="status" value="{{ s }}" 
+                                       {% if s in (status_filter.split(',') if status_filter else []) %}checked{% endif %}>
+                                <span>{{ s }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="field-group">
             <label for="implementing_entity">Implementing Entity</label>
-            <select name="implementing_entity" id="implementing_entity">
-                <option value="">All</option>
-                {% for e in entities %}
-                    <option value="{{ e }}" {% if entity_filter == e %}selected{% endif %}>{{ e }}</option>
-                {% endfor %}
-            </select>
+            <div class="multiselect-wrapper">
+                <div class="multiselect-display" data-target="implementing_entity">
+                    <span class="multiselect-placeholder">All</span>
+                    <span class="multiselect-arrow">▼</span>
+                </div>
+                <div class="multiselect-dropdown" id="implementing_entity-dropdown">
+                    <input type="text" class="multiselect-search" placeholder="Search entities..." data-filter="implementing_entity">
+                    <div class="multiselect-options" id="implementing_entity-options">
+                        {% for e in entities %}
+                            <label class="multiselect-option">
+                                <input type="checkbox" name="implementing_entity" value="{{ e }}" 
+                                       {% if e in (entity_filter.split(',') if entity_filter else []) %}checked{% endif %}>
+                                <span>{{ e }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="field-group">
             <label for="category">Activity type</label>
-            <select name="category" id="category">
-                <option value="">All</option>
-                {% for c in categories %}
-                    <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
-                {% endfor %}
-            </select>
+            <div class="multiselect-wrapper">
+                <div class="multiselect-display" data-target="category">
+                    <span class="multiselect-placeholder">All</span>
+                    <span class="multiselect-arrow">▼</span>
+                </div>
+                <div class="multiselect-dropdown" id="category-dropdown">
+                    <input type="text" class="multiselect-search" placeholder="Search categories..." data-filter="category">
+                    <div class="multiselect-options" id="category-options">
+                        {% for c in categories %}
+                            <label class="multiselect-option">
+                                <input type="checkbox" name="category" value="{{ c }}" 
+                                       {% if c in (category_filter.split(',') if category_filter else []) %}checked{% endif %}>
+                                <span>{{ c }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="field-group">
             <label for="results_area">Results area</label>
-            <select name="results_area" id="results_area">
-                <option value="">All</option>
-                {% for r in results_areas %}
-                    <option value="{{ r }}" {% if results_filter == r %}selected{% endif %}>{{ r }}</option>
-                {% endfor %}
-            </select>
+            <div class="multiselect-wrapper">
+                <div class="multiselect-display" data-target="results_area">
+                    <span class="multiselect-placeholder">All</span>
+                    <span class="multiselect-arrow">▼</span>
+                </div>
+                <div class="multiselect-dropdown" id="results_area-dropdown">
+                    <input type="text" class="multiselect-search" placeholder="Search results areas..." data-filter="results_area">
+                    <div class="multiselect-options" id="results_area-options">
+                        {% for r in results_areas %}
+                            <label class="multiselect-option">
+                                <input type="checkbox" name="results_area" value="{{ r }}" 
+                                       {% if r in (results_filter.split(',') if results_filter else []) %}checked{% endif %}>
+                                <span>{{ r }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <button type="submit">Apply filters</button>
@@ -536,6 +584,130 @@ document.addEventListener('DOMContentLoaded', function() {
             closeDetailsModal();
         }
     });
+
+    // Multi-select functionality
+    function initMultiSelect() {
+        const wrappers = document.querySelectorAll('.multiselect-wrapper');
+        
+        wrappers.forEach(wrapper => {
+            const display = wrapper.querySelector('.multiselect-display');
+            const dropdown = wrapper.querySelector('.multiselect-dropdown');
+            const searchInput = wrapper.querySelector('.multiselect-search');
+            const options = wrapper.querySelectorAll('.multiselect-option');
+            const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
+            const targetName = display.getAttribute('data-target');
+            
+            // Update display text based on selected items
+            function updateDisplay() {
+                const selected = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                
+                const placeholder = display.querySelector('.multiselect-placeholder');
+                const tagsContainer = display.querySelector('.multiselect-tags');
+                
+                if (selected.length === 0) {
+                    if (placeholder) placeholder.textContent = 'All';
+                    if (tagsContainer) tagsContainer.innerHTML = '';
+                } else {
+                    if (placeholder) placeholder.textContent = '';
+                    if (!tagsContainer) {
+                        const newTags = document.createElement('div');
+                        newTags.className = 'multiselect-tags';
+                        display.insertBefore(newTags, display.querySelector('.multiselect-arrow'));
+                    }
+                    const tags = display.querySelector('.multiselect-tags');
+                    tags.innerHTML = selected.map(value => {
+                        const label = Array.from(options).find(opt => 
+                            opt.querySelector('input').value === value
+                        )?.querySelector('span')?.textContent || value;
+                        return `<span class="multiselect-tag">
+                            ${label}
+                            <span class="multiselect-tag-remove" data-value="${value}">×</span>
+                        </span>`;
+                    }).join('');
+                    
+                    // Add click handlers to remove buttons
+                    tags.querySelectorAll('.multiselect-tag-remove').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const value = btn.getAttribute('data-value');
+                            const checkbox = Array.from(checkboxes).find(cb => cb.value === value);
+                            if (checkbox) {
+                                checkbox.checked = false;
+                                updateDisplay();
+                            }
+                        });
+                    });
+                }
+            }
+            
+            // Toggle dropdown
+            display.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isActive = dropdown.classList.contains('active');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('active');
+                });
+                document.querySelectorAll('.multiselect-display').forEach(d => {
+                    if (d !== display) d.classList.remove('active');
+                });
+                
+                dropdown.classList.toggle('active', !isActive);
+                display.classList.toggle('active', !isActive);
+                
+                if (!isActive && searchInput) {
+                    setTimeout(() => searchInput.focus(), 10);
+                }
+            });
+            
+            // Search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    options.forEach(option => {
+                        const text = option.querySelector('span').textContent.toLowerCase();
+                        if (text.includes(query)) {
+                            option.classList.remove('hidden');
+                        } else {
+                            option.classList.add('hidden');
+                        }
+                    });
+                });
+                
+                // Prevent form submission on Enter
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            // Update display when checkboxes change
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateDisplay);
+            });
+            
+            // Initialize display
+            updateDisplay();
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.multiselect-wrapper')) {
+                document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                    d.classList.remove('active');
+                });
+                document.querySelectorAll('.multiselect-display').forEach(d => {
+                    d.classList.remove('active');
+                });
+            }
+        });
+    }
+    
+    initMultiSelect();
 });
 </script>
 {% endblock %}

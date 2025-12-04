@@ -35,23 +35,30 @@ def index():
             print(traceback.format_exc())
             activities = []
         
-        # Get filters and search term
-        status_filter = request.args.get("status", "") or ""
-        entity_filter = request.args.get("implementing_entity", "") or ""
-        category_filter = request.args.get("category", "") or ""
-        results_filter = request.args.get("results_area", "") or ""
+        # Get filters and search term - support multiple values
+        # Use getlist() to handle multiple checkbox selections
+        status_list = request.args.getlist("status")
+        entity_list = request.args.getlist("implementing_entity")
+        category_list = request.args.getlist("category")
+        results_list = request.args.getlist("results_area")
         search_query = request.args.get("q", "") or ""
+        
+        # For backward compatibility and display, also keep string versions (comma-separated)
+        status_filter = ",".join(status_list) if status_list else ""
+        entity_filter = ",".join(entity_list) if entity_list else ""
+        category_filter = ",".join(category_list) if category_list else ""
+        results_filter = ",".join(results_list) if results_list else ""
 
         # Apply filters if provided
         try:
-            if status_filter:
-                activities = [a for a in activities if getattr(a, "status", None) == status_filter]
-            if entity_filter:
-                activities = [a for a in activities if getattr(a, "implementing_entity", None) == entity_filter]
-            if category_filter:
-                activities = [a for a in activities if getattr(a, "category", None) == category_filter]
-            if results_filter:
-                activities = [a for a in activities if getattr(a, "results_area", None) == results_filter]
+            if status_list:
+                activities = [a for a in activities if getattr(a, "status", None) in status_list]
+            if entity_list:
+                activities = [a for a in activities if getattr(a, "implementing_entity", None) in entity_list]
+            if category_list:
+                activities = [a for a in activities if getattr(a, "category", None) in category_list]
+            if results_list:
+                activities = [a for a in activities if getattr(a, "results_area", None) in results_list]
             if search_query:
                 q = search_query.lower()
                 filtered = []
@@ -252,6 +259,7 @@ def index():
             entity_filter=entity_filter or "",
             category_filter=category_filter or "",
             results_filter=results_filter or "",
+            search_query=search_query or "",
             search_query=search_query or "",
             entities=entities or [],
             categories=categories or [],
