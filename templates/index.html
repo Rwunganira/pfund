@@ -68,6 +68,16 @@
 
 <section class="filters">
     <form method="get">
+        <div class="field-group" style="min-width: 220px;">
+            <label for="q">Search</label>
+            <input
+                type="text"
+                id="q"
+                name="q"
+                value="{{ search_query or '' }}"
+                placeholder="Search by code, activity, entity…">
+        </div>
+
         <div class="field-group">
             <label for="status">Status</label>
             <select name="status" id="status">

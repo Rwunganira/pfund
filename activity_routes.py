@@ -35,11 +35,12 @@ def index():
             print(traceback.format_exc())
             activities = []
         
-        # Get filters
+        # Get filters and search term
         status_filter = request.args.get("status", "") or ""
         entity_filter = request.args.get("implementing_entity", "") or ""
         category_filter = request.args.get("category", "") or ""
         results_filter = request.args.get("results_area", "") or ""
+        search_query = request.args.get("q", "") or ""
 
         # Apply filters if provided
         try:
@@ -51,6 +52,25 @@ def index():
                 activities = [a for a in activities if getattr(a, "category", None) == category_filter]
             if results_filter:
                 activities = [a for a in activities if getattr(a, "results_area", None) == results_filter]
+            if search_query:
+                q = search_query.lower()
+                filtered = []
+                for a in activities:
+                    if not a:
+                        continue
+                    # Search over a few key text fields
+                    fields = [
+                        getattr(a, "code", None),
+                        getattr(a, "initial_activity", None),
+                        getattr(a, "proposed_activity", None),
+                        getattr(a, "implementing_entity", None),
+                        getattr(a, "results_area", None),
+                        getattr(a, "category", None),
+                    ]
+                    combined = " ".join([str(f) for f in fields if f]) .lower()
+                    if q in combined:
+                        filtered.append(a)
+                activities = filtered
         except Exception as e:
             import traceback
             print(f"Error applying filters: {e}")
@@ -232,6 +252,7 @@ def index():
             entity_filter=entity_filter or "",
             category_filter=category_filter or "",
             results_filter=results_filter or "",
+            search_query=search_query or "",
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
