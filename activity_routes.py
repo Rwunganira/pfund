@@ -1023,14 +1023,38 @@ def upload_excel():
 @login_required
 def download_activities():
     """Download all (filtered) activities as a CSV file."""
-    status_filter = request.args.get("status", "")
-    entity_filter = request.args.get("implementing_entity", "")
+    # Support multiple filter values (from multi-select)
+    status_list = request.args.getlist("status")
+    entity_list = request.args.getlist("implementing_entity")
+    category_list = request.args.getlist("category")
+    results_list = request.args.getlist("results_area")
+    search_query = request.args.get("q", "") or ""
 
     query = Activity.query
-    if status_filter:
-        query = query.filter_by(status=status_filter)
-    if entity_filter:
-        query = query.filter_by(implementing_entity=entity_filter)
+    
+    # Apply filters
+    if status_list:
+        query = query.filter(Activity.status.in_(status_list))
+    if entity_list:
+        query = query.filter(Activity.implementing_entity.in_(entity_list))
+    if category_list:
+        query = query.filter(Activity.category.in_(category_list))
+    if results_list:
+        query = query.filter(Activity.results_area.in_(results_list))
+    
+    # Apply search query
+    if search_query:
+        search_term = f"%{search_query}%"
+        query = query.filter(
+            db.or_(
+                Activity.code.ilike(search_term),
+                Activity.initial_activity.ilike(search_term),
+                Activity.proposed_activity.ilike(search_term),
+                Activity.implementing_entity.ilike(search_term),
+                Activity.results_area.ilike(search_term),
+                Activity.category.ilike(search_term),
+            )
+        )
 
     activities = query.order_by(Activity.code).all()
 
@@ -1060,6 +1084,11 @@ def download_activities():
         ]
     )
     for a in activities:
+        # Auto-calculate progress from budget_used and budget_total
+        budget_total = a.budget_total or 0
+        budget_used = a.budget_used or 0
+        calculated_progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        
         writer.writerow(
             [
                 a.code or "",
@@ -1072,10 +1101,10 @@ def download_activities():
                 a.budget_year1 or 0,
                 a.budget_year2 or 0,
                 a.budget_year3 or 0,
-                a.budget_total or 0,
-                a.budget_used or 0,
+                budget_total,
+                budget_used,
                 a.status or "",
-                a.progress or 0,
+                calculated_progress,  # Use auto-calculated progress
                 (a.notes or "").replace("\n", " ").replace("\r", " "),
             ]
         )

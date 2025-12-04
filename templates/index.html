@@ -167,8 +167,10 @@
         </div>
 
         <button type="submit">Apply filters</button>
-        <a href="{{ url_for('activity.download_activities', status=status_filter, implementing_entity=entity_filter) }}"
-           class="secondary download-btn">Download CSV</a>
+        <a href="#" 
+           id="download-link"
+           class="secondary download-btn"
+           onclick="updateDownloadLink(); return false;">Download CSV</a>
     </form>
 
     {% if current_user.role == 'admin' %}
@@ -708,6 +710,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     initMultiSelect();
+    
+    // Update download link with current filter values
+    function updateDownloadLink() {
+        const form = document.querySelector('.filters form');
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        
+        // Add all filter parameters
+        formData.getAll('status').forEach(val => params.append('status', val));
+        formData.getAll('implementing_entity').forEach(val => params.append('implementing_entity', val));
+        formData.getAll('category').forEach(val => params.append('category', val));
+        formData.getAll('results_area').forEach(val => params.append('results_area', val));
+        const searchQuery = formData.get('q');
+        if (searchQuery) {
+            params.append('q', searchQuery);
+        }
+        
+        const downloadUrl = '{{ url_for("activity.download_activities") }}?' + params.toString();
+        window.location.href = downloadUrl;
+    }
+    
+    // Also update on page load if filters are present
+    const downloadLink = document.getElementById('download-link');
+    if (downloadLink) {
+        // Set initial href (will be updated by JavaScript on click)
+        downloadLink.href = '{{ url_for("activity.download_activities") }}';
+    }
 });
 </script>
 {% endblock %}
