@@ -217,15 +217,6 @@ def index():
         activity_urls = {}
         activities_with_urls = []
 
-    # Load challenges for the challenges table
-    try:
-        challenges = Challenge.query.order_by(Challenge.id.desc()).all()
-    except Exception as e:
-        import traceback
-        print(f"Error loading challenges: {e}")
-        print(traceback.format_exc())
-        challenges = []
-
     # Render template with all variables
     try:
         return render_template(
@@ -242,7 +233,6 @@ def index():
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
-            challenges=challenges or [],
         )
     except Exception as e:
         import traceback
