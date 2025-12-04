@@ -304,6 +304,11 @@ def new_activity():
             "notes": request.form.get("notes") or None,
         }
 
+        # Auto-calculate progress from budget_used and budget_total
+        budget_total = float(data["budget_total"] or 0)
+        budget_used = float(data["budget_used"] or 0)
+        progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        
         activity = Activity(
             code=data["code"],
             initial_activity=data["initial_activity"],
@@ -315,10 +320,10 @@ def new_activity():
             budget_year1=float(data["budget_year1"] or 0),
             budget_year2=float(data["budget_year2"] or 0),
             budget_year3=float(data["budget_year3"] or 0),
-            budget_total=float(data["budget_total"] or 0),
-            budget_used=float(data["budget_used"] or 0),
+            budget_total=budget_total,
+            budget_used=budget_used,
             status=data["status"],
-            progress=int(data["progress"] or 0),
+            progress=progress,
             notes=data["notes"],
         )
         db.session.add(activity)
@@ -370,7 +375,10 @@ def edit_activity(activity_id):
         activity.budget_total = float(data["budget_total"] or 0)
         activity.budget_used = float(data["budget_used"] or 0)
         activity.status = data["status"]
-        activity.progress = int(data["progress"] or 0)
+        # Auto-calculate progress from budget_used and budget_total
+        budget_total = activity.budget_total or 0
+        budget_used = activity.budget_used or 0
+        activity.progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
         activity.notes = data["notes"]
 
         db.session.commit()

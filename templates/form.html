@@ -108,9 +108,11 @@
             </div>
 
             <div class="field-group">
-                <label for="progress">Progress (%)</label>
-                <input id="progress" name="progress" type="number" min="0" max="100"
-                       value="{{ activity.progress if activity else 0 }}">
+                <label for="progress">Progress (%) <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Auto-calculated)</span></label>
+                <input id="progress" name="progress" type="number" min="0" max="100" readonly
+                       value="{{ activity.progress if activity else 0 }}"
+                       style="background-color: #f3f4f6; cursor: not-allowed;"
+                       title="Progress is automatically calculated from Budget Used / Total Budget">
             </div>
         </div>
 
@@ -135,6 +137,39 @@
         </div>
     </form>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const budgetTotalInput = document.getElementById('budget_total');
+    const budgetUsedInput = document.getElementById('budget_used');
+    const progressInput = document.getElementById('progress');
+    
+    function calculateProgress() {
+        const total = parseFloat(budgetTotalInput.value) || 0;
+        const used = parseFloat(budgetUsedInput.value) || 0;
+        
+        if (total > 0) {
+            const progress = Math.round((used / total) * 100);
+            progressInput.value = Math.min(100, Math.max(0, progress));
+        } else {
+            progressInput.value = 0;
+        }
+    }
+    
+    // Auto-calculate when budget fields change
+    if (budgetTotalInput && budgetUsedInput && progressInput) {
+        budgetTotalInput.addEventListener('input', calculateProgress);
+        budgetTotalInput.addEventListener('change', calculateProgress);
+        budgetUsedInput.addEventListener('input', calculateProgress);
+        budgetUsedInput.addEventListener('change', calculateProgress);
+        
+        // Calculate on page load
+        calculateProgress();
+    }
+});
+</script>
 {% endblock %}
 
 
