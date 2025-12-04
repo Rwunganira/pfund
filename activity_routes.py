@@ -62,7 +62,7 @@ def index():
         status_filter = ""
         entity_filter = ""
 
-    # Summary metrics computed in Python
+    # Summary metrics computed in Python (using stored progress field)
     try:
         total_activities = len(activities) if activities else 0
         total_budget = sum((a.budget_total or 0) for a in activities) if activities else 0
@@ -124,12 +124,26 @@ def index():
         entities = list(set([a.implementing_entity for a in activities if a.implementing_entity]))
         entities.sort()
 
-    # Compute summary safely
+    # Compute per-activity budget execution percentage and overall summary safely
     try:
+        # Attach a computed execution percentage to each activity
+        for a in activities or []:
+            try:
+                total = getattr(a, "budget_total", None) or 0
+                used = getattr(a, "budget_used", None) or 0
+                a.exec_pct = round((used / total) * 100) if total > 0 else 0
+            except Exception:
+                a.exec_pct = 0
+
         total_activities = len(activities) if activities else 0
-        total_budget = sum((getattr(a, 'budget_total', None) or 0) for a in activities) if activities else 0
-        total_used = sum((getattr(a, 'budget_used', None) or 0) for a in activities) if activities else 0
-        avg_progress = (sum((getattr(a, 'progress', None) or 0) for a in activities) / total_activities) if total_activities > 0 else 0
+        total_budget = sum((getattr(a, "budget_total", None) or 0) for a in activities) if activities else 0
+        total_used = sum((getattr(a, "budget_used", None) or 0) for a in activities) if activities else 0
+        # Average progress now reflects average budget execution percentage
+        avg_progress = (
+            sum((getattr(a, "exec_pct", 0) or 0) for a in activities) / total_activities
+            if total_activities > 0
+            else 0
+        )
         summary = {
             "total_activities": total_activities,
             "total_budget": total_budget,

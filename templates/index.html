@@ -174,11 +174,12 @@
                     </td>
 
                     <td>
+                        {% set exec_pct = a.exec_pct if a.exec_pct is defined else 0 %}
                         <div class="progress-container">
                             <div class="progress-bar">
-                                <div class="progress" style="width: {{ a.progress or 0 }}%"></div>
+                                <div class="progress" style="width: {{ exec_pct }}%"></div>
                             </div>
-                            <span class="progress-label">{{ a.progress or 0 }}%</span>
+                            <span class="progress-label">{{ exec_pct }}%</span>
                         </div>
                     </td>
 
@@ -339,7 +340,7 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
             budget_total: Number({{ a.budget_total|default('0')|tojson }}) || 0,
             budget_used: Number({{ a.budget_used|default('0')|tojson }}) || 0,
             status: {{ (a.status or 'Unknown')|tojson }},
-            progress: Number({{ a.progress|default('0')|tojson }}) || 0,
+            progress: Number({{ (a.exec_pct if a.exec_pct is defined else 0)|tojson }}) || 0,
                 edit_url: {{ (item.edit_url or '#')|tojson }}
             };
             // Store with both number and string keys
