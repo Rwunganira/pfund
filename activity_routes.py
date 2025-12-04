@@ -260,7 +260,6 @@ def index():
             category_filter=category_filter or "",
             results_filter=results_filter or "",
             search_query=search_query or "",
-            search_query=search_query or "",
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
