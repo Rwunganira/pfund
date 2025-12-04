@@ -62,6 +62,7 @@ class SubActivity(db.Model):
     title = db.Column(db.String, nullable=False)
     responsible = db.Column(db.String, nullable=True)
     timeline = db.Column(db.String, nullable=True)
+    status = db.Column(db.String, nullable=False, default="pending")
 
 
 class User(db.Model):

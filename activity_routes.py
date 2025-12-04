@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for,
 import tempfile
 
 import pandas as pd
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
@@ -663,10 +664,26 @@ def manage_subactivities(activity_id):
     """View and create sub-activities for a given activity."""
     activity = Activity.query.get_or_404(activity_id)
 
-    # Ensure the sub_activities table exists (in case migration hasn't been applied)
+    # Ensure the sub_activities table and status column exist (in case migrations haven't been applied)
     try:
         # Quick test query – if the table is missing, this will raise ProgrammingError
         _ = db.session.query(SubActivity).first()
+        # Also ensure the status column exists
+        inspector = inspect(db.engine)
+        columns = [col["name"] for col in inspector.get_columns("sub_activities")]
+        if "status" not in columns:
+            db.session.execute(
+                text(
+                    "ALTER TABLE sub_activities "
+                    "ADD COLUMN status VARCHAR(255) DEFAULT 'pending' NOT NULL"
+                )
+            )
+            db.session.execute(
+                text(
+                    "UPDATE sub_activities SET status = 'pending' WHERE status IS NULL"
+                )
+            )
+            db.session.commit()
     except ProgrammingError as e:
         # Always rollback the failed transaction first
         db.session.rollback()
@@ -676,21 +693,30 @@ def manage_subactivities(activity_id):
         else:
             # Re-raise unexpected errors
             raise
+    except Exception:
+        # On any other error while inspecting/altering, rollback and continue;
+        # the page will still work for rows without status.
+        db.session.rollback()
 
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         responsible = (request.form.get("responsible") or "").strip()
         timeline = (request.form.get("timeline") or "").strip()
+        status = (request.form.get("status") or "pending").strip().lower()
 
         if not title:
             flash("Sub-activity title is required.", "error")
             return redirect(url_for("activity.manage_subactivities", activity_id=activity_id))
+
+        if status not in ["pending", "in-progress", "completed", "canceled"]:
+            status = "pending"
 
         sub = SubActivity(
             activity_id=activity.id,
             title=title,
             responsible=responsible or None,
             timeline=timeline or None,
+            status=status,
         )
         db.session.add(sub)
         db.session.commit()
@@ -703,7 +729,70 @@ def manage_subactivities(activity_id):
         "subactivities.html",
         activity=activity,
         sub_activities=sub_activities,
+        admin_email=ADMIN_EMAIL,
     )
+
+
+@activity_bp.route("/subactivities/<int:sub_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_subactivity(sub_id):
+    """Edit a single sub-activity (admin only)."""
+    sub = SubActivity.query.get_or_404(sub_id)
+    activity = sub.activity
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        responsible = (request.form.get("responsible") or "").strip()
+        timeline = (request.form.get("timeline") or "").strip()
+        status = (request.form.get("status") or "pending").strip().lower()
+
+        if not title:
+            flash("Sub-activity title is required.", "error")
+            return redirect(url_for("activity.edit_subactivity", sub_id=sub_id))
+
+        if status not in ["pending", "in-progress", "completed", "canceled"]:
+            status = "pending"
+
+        sub.title = title
+        sub.responsible = responsible or None
+        sub.timeline = timeline or None
+        # Guard against older DBs without the column
+        try:
+            sub.status = status
+        except Exception:
+            pass
+
+        db.session.commit()
+        flash("Sub-activity updated.", "success")
+        return redirect(url_for("activity.manage_subactivities", activity_id=activity.id))
+
+    return render_template(
+        "subactivity_form.html",
+        subactivity=sub,
+        activity=activity,
+        is_edit=True,
+    )
+
+
+@activity_bp.route("/subactivities/<int:sub_id>/delete", methods=["POST"])
+@admin_required
+def delete_subactivity(sub_id):
+    """Delete a sub-activity. Only superadmin can delete."""
+    # Only the super admin (configured admin email) can delete.
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can delete sub-activities.", "error")
+        return redirect(url_for("activity.index"))
+
+    sub = SubActivity.query.get(sub_id)
+    if sub:
+        activity_id = sub.activity_id
+        db.session.delete(sub)
+        db.session.commit()
+        flash("Sub-activity deleted.", "info")
+        return redirect(url_for("activity.manage_subactivities", activity_id=activity_id))
+    else:
+        flash("Sub-activity not found.", "error")
+        return redirect(url_for("activity.index"))
 
 
 @activity_bp.route("/upload", methods=["POST"])

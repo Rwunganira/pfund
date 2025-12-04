@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="form-card">
+    <h1>{% if is_edit %}Edit sub-activity{% else %}Add new sub-activity{% endif %}</h1>
+    <p class="table-hint">
+        For activity: <strong>{{ activity.code or activity.proposed_activity or 'activity' }}</strong>
+    </p>
+
+    <form method="post" class="upload-form">
+        <div class="field-group">
+            <label for="title">Sub-activity</label>
+            <textarea id="title" name="title" rows="3" required
+                      placeholder="Describe the sub-activity">{% if is_edit %}{{ subactivity.title }}{% endif %}</textarea>
+        </div>
+        <div class="field-group">
+            <label for="responsible">Responsible</label>
+            <input id="responsible"
+                   name="responsible"
+                   type="text"
+                   placeholder="Person / team"
+                   value="{% if is_edit %}{{ subactivity.responsible or '' }}{% endif %}">
+        </div>
+        <div class="field-group">
+            <label for="timeline">Timeline</label>
+            <input id="timeline"
+                   name="timeline"
+                   type="text"
+                   placeholder="e.g. Q2 2026, by 31 July"
+                   value="{% if is_edit %}{{ subactivity.timeline or '' }}{% endif %}">
+        </div>
+        <div class="field-group">
+            <label for="status">Status</label>
+            {% set st = subactivity.status if is_edit else 'pending' %}
+            <select id="status" name="status" required>
+                <option value="pending" {% if st == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="in-progress" {% if st == 'in-progress' %}selected{% endif %}>In progress</option>
+                <option value="completed" {% if st == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="canceled" {% if st == 'canceled' %}selected{% endif %}>Canceled</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary">
+                {% if is_edit %}Update sub-activity{% else %}Add sub-activity{% endif %}
+            </button>
+            <a href="{{ url_for('activity.manage_subactivities', activity_id=activity.id) }}"
+               class="button secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</section>
+
+{% endblock %}
+
+
