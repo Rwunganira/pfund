@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for,
 import tempfile
 
 import pandas as pd
+from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
 from models import Activity, Challenge, SubActivity, db
@@ -661,6 +662,17 @@ def delete_all_activities():
 def manage_subactivities(activity_id):
     """View and create sub-activities for a given activity."""
     activity = Activity.query.get_or_404(activity_id)
+
+    # Ensure the sub_activities table exists (in case migration hasn't been applied)
+    try:
+        # Quick test query – if the table is missing, this will raise ProgrammingError
+        _ = db.session.query(SubActivity).first()
+    except ProgrammingError as e:
+        if "sub_activities" in str(e):
+            # Create any missing tables, including sub_activities
+            db.create_all()
+        else:
+            raise
 
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
