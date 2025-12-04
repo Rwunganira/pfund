@@ -207,6 +207,13 @@
                                       onsubmit="event.stopPropagation(); return confirm('Delete this activity?');">
                                     <button class="btn-delete" type="submit">Delete</button>
                                 </form>
+
+                                <a href="{{ url_for('activity.manage_subactivities', activity_id=a.id) }}"
+                                   class="btn-edit"
+                                   style="margin-left: 0.25rem;"
+                                   onclick="event.stopPropagation();">
+                                    Sub-activities
+                                </a>
                             {% endif %}
                         {% endif %}
                     </td>

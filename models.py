@@ -30,6 +30,14 @@ class Activity(db.Model):
     progress = db.Column(db.Integer, default=0)
     notes = db.Column(db.Text, nullable=True)
 
+    # One-to-many: an activity can have multiple sub-activities
+    sub_activities = db.relationship(
+        "SubActivity",
+        backref="activity",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
 
 class Challenge(db.Model):
     __tablename__ = "challenges"
@@ -40,6 +48,20 @@ class Challenge(db.Model):
     responsible = db.Column(db.String, nullable=True)
     timeline = db.Column(db.String, nullable=True)
     status = db.Column(db.String, nullable=False, default="pending")
+
+
+class SubActivity(db.Model):
+    __tablename__ = "sub_activities"
+
+    id = db.Column(db.Integer, primary_key=True)
+    activity_id = db.Column(
+        db.Integer,
+        db.ForeignKey("activities.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    title = db.Column(db.String, nullable=False)
+    responsible = db.Column(db.String, nullable=True)
+    timeline = db.Column(db.String, nullable=True)
 
 
 class User(db.Model):

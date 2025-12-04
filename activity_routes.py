@@ -6,7 +6,7 @@ import tempfile
 import pandas as pd
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
-from models import Activity, Challenge, db
+from models import Activity, Challenge, SubActivity, db
 
 
 activity_bp = Blueprint("activity", __name__)
@@ -654,6 +654,41 @@ def delete_all_activities():
     db.session.commit()
     flash("All activities have been deleted.", "info")
     return redirect(url_for("activity.index"))
+
+
+@activity_bp.route("/activity/<int:activity_id>/subactivities", methods=["GET", "POST"])
+@admin_required
+def manage_subactivities(activity_id):
+    """View and create sub-activities for a given activity."""
+    activity = Activity.query.get_or_404(activity_id)
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        responsible = (request.form.get("responsible") or "").strip()
+        timeline = (request.form.get("timeline") or "").strip()
+
+        if not title:
+            flash("Sub-activity title is required.", "error")
+            return redirect(url_for("activity.manage_subactivities", activity_id=activity_id))
+
+        sub = SubActivity(
+            activity_id=activity.id,
+            title=title,
+            responsible=responsible or None,
+            timeline=timeline or None,
+        )
+        db.session.add(sub)
+        db.session.commit()
+        flash("Sub-activity added.", "success")
+        return redirect(url_for("activity.manage_subactivities", activity_id=activity_id))
+
+    # For display, load all sub-activities for this activity
+    sub_activities = activity.sub_activities.order_by(SubActivity.id.asc()).all()
+    return render_template(
+        "subactivities.html",
+        activity=activity,
+        sub_activities=sub_activities,
+    )
 
 
 @activity_bp.route("/upload", methods=["POST"])

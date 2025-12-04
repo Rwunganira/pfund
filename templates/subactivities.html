@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="table-section">
+    <div class="table-header">
+        <div>
+            <h2>Sub-activities for {{ activity.code or activity.proposed_activity or 'activity' }}</h2>
+            <p class="table-hint">
+                Break down this activity into smaller sub-activities with a responsible person and timeline.
+            </p>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="compact-table">
+            <thead>
+            <tr>
+                <th style="width: 45%;">Sub-activity</th>
+                <th style="width: 25%;">Responsible</th>
+                <th style="width: 20%;">Timeline</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for sa in sub_activities %}
+                <tr>
+                    <td>{{ sa.title }}</td>
+                    <td>{{ sa.responsible or "-" }}</td>
+                    <td>{{ sa.timeline or "-" }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="3" class="empty">
+                        No sub-activities have been defined for this activity yet.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="post" class="upload-form" style="margin-top: 1.5rem;">
+        <h3>Add a new sub-activity</h3>
+        <div class="field-group">
+            <label for="title">Sub-activity</label>
+            <textarea id="title" name="title" rows="2" required
+                      placeholder="Describe the sub-activity"></textarea>
+        </div>
+        <div class="field-group">
+            <label for="responsible">Responsible</label>
+            <input id="responsible" name="responsible" type="text" placeholder="Person / team">
+        </div>
+        <div class="field-group">
+            <label for="timeline">Timeline</label>
+            <input id="timeline" name="timeline" type="text" placeholder="e.g. Q2 2026, by 31 July">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="primary">Add sub-activity</button>
+            <a href="{{ url_for('activity.index') }}" class="button secondary">Back to dashboard</a>
+        </div>
+    </form>
+</section>
+
+{% endblock %}
+
+
