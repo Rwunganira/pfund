@@ -666,9 +666,10 @@ def manage_subactivities(activity_id):
 
     # Ensure the sub_activities table and status column exist (in case migrations haven't been applied)
     try:
-        # Quick test query – if the table is missing, this will raise ProgrammingError
+        # Quick test query – if the table/column is missing, this will raise ProgrammingError
         _ = db.session.query(SubActivity).first()
-        # Also ensure the status column exists
+
+        # Also ensure the status column exists (idempotent check)
         inspector = inspect(db.engine)
         columns = [col["name"] for col in inspector.get_columns("sub_activities")]
         if "status" not in columns:
@@ -687,9 +688,24 @@ def manage_subactivities(activity_id):
     except ProgrammingError as e:
         # Always rollback the failed transaction first
         db.session.rollback()
-        if "sub_activities" in str(e):
-            # Create any missing tables, including sub_activities
+        msg = str(e)
+        # Table missing entirely
+        if 'relation "sub_activities" does not exist' in msg:
             db.create_all()
+        # Column missing on existing table
+        elif "column sub_activities.status does not exist" in msg:
+            db.session.execute(
+                text(
+                    "ALTER TABLE sub_activities "
+                    "ADD COLUMN status VARCHAR(255) DEFAULT 'pending' NOT NULL"
+                )
+            )
+            db.session.execute(
+                text(
+                    "UPDATE sub_activities SET status = 'pending' WHERE status IS NULL"
+                )
+            )
+            db.session.commit()
         else:
             # Re-raise unexpected errors
             raise
