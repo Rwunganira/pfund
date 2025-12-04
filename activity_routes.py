@@ -434,6 +434,147 @@ def challenges_page():
     return render_template("challenges.html", challenges=challenges, admin_email=ADMIN_EMAIL)
 
 
+@activity_bp.route("/challenges/download", methods=["GET"])
+@login_required
+def download_challenges():
+    """Download all challenges as a CSV file."""
+    # Build CSV in memory
+    import csv
+    import io
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "challenge",
+            "action",
+            "responsible",
+            "timeline",
+            "status",
+        ]
+    )
+
+    rows = Challenge.query.order_by(Challenge.id).all()
+    for c in rows:
+        writer.writerow(
+            [
+                c.challenge or "",
+                c.action or "",
+                c.responsible or "",
+                c.timeline or "",
+                c.status or "",
+            ]
+        )
+
+    from flask import Response
+
+    output.seek(0)
+    return Response(
+        output.read(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=challenges.csv",
+        },
+    )
+
+
+@activity_bp.route("/challenges/upload", methods=["POST"])
+@admin_required
+def upload_challenges():
+    """Upload an Excel file and bulk-insert/update challenges."""
+    file = request.files.get("file")
+    if not file or file.filename == "":
+        flash("No file selected for challenges upload.", "error")
+        return redirect(url_for("activity.challenges_page"))
+
+    if not (file.filename.lower().endswith(".xlsx") or file.filename.lower().endswith(".xls")):
+        flash("Please upload an Excel file (.xlsx or .xls) for challenges.", "error")
+        return redirect(url_for("activity.challenges_page"))
+
+    try:
+        # Save to a temporary file so pandas can read it
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            file.save(tmp.name)
+            import pandas as pd  # local import in case global changes
+
+            df = pd.read_excel(tmp.name, dtype=str)
+
+        # Normalise column names
+        columns = list(df.columns)
+        lower_map = {str(c).strip().lower(): c for c in columns}
+
+        def get_val(row, *names):
+            for n in names:
+                key = str(n).strip().lower()
+                col = lower_map.get(key)
+                if not col:
+                    # fallback: partial match
+                    for c in columns:
+                        if key in str(c).strip().lower():
+                            col = c
+                            break
+                if col and col in row:
+                    val = row[col]
+                    if isinstance(val, str):
+                        val = val.strip()
+                    if val not in (None, "", "nan"):
+                        return str(val)
+            return None
+
+        created = 0
+        updated = 0
+        for _, row in df.iterrows():
+            challenge_text = get_val(row, "challenge")
+            action_text = get_val(row, "action", "agreed action")
+            responsible = get_val(row, "responsible")
+            timeline = get_val(row, "timeline")
+            status = (get_val(row, "status") or "pending").strip().lower()
+
+            if not challenge_text or not action_text:
+                continue
+
+            if status not in ["pending", "completed", "canceled"]:
+                status = "pending"
+
+            # Use challenge + action as a simple uniqueness key for updating
+            existing = (
+                Challenge.query.filter_by(challenge=challenge_text, action=action_text).first()
+            )
+            if existing:
+                existing.responsible = responsible or None
+                existing.timeline = timeline or None
+                existing.status = status
+                updated += 1
+            else:
+                ch = Challenge(
+                    challenge=challenge_text,
+                    action=action_text,
+                    responsible=responsible or None,
+                    timeline=timeline or None,
+                    status=status,
+                )
+                db.session.add(ch)
+                created += 1
+
+        db.session.commit()
+        if created or updated:
+            flash(
+                f"Challenges import complete. Created {created}, updated {updated}.",
+                "success",
+            )
+        else:
+            flash("No valid challenge rows found in the uploaded file.", "info")
+    except Exception as exc:  # pylint: disable=broad-except
+        import traceback
+
+        print(f"Error reading challenges file: {exc}")
+        print(traceback.format_exc())
+        db.session.rollback()
+        flash(f"Error reading challenges file: {exc}", "error")
+
+    return redirect(url_for("activity.challenges_page"))
+
+
 @activity_bp.route("/challenges/<int:challenge_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_challenge(challenge_id):

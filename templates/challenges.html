@@ -3,12 +3,36 @@
 {% block content %}
 
 <section class="table-section">
-    <div class="table-header">
-        <h2>Implementation challenges and actions</h2>
-        <p class="table-hint">
-            Track key implementation bottlenecks, agreed actions, responsible leads and timelines.
-        </p>
-    </div>
+           <div class="table-header">
+               <div>
+                   <h2>Implementation challenges and actions</h2>
+                   <p class="table-hint">
+                       Track key implementation bottlenecks, agreed actions, responsible leads and timelines.
+                   </p>
+               </div>
+               <div class="table-actions">
+                   <a href="{{ url_for('activity.download_challenges') }}"
+                      class="button secondary"
+                      style="margin-right: 0.5rem;">
+                       Download CSV
+                   </a>
+                   {% if current_user.role == 'admin' %}
+                       <form method="post"
+                             action="{{ url_for('activity.upload_challenges') }}"
+                             enctype="multipart/form-data"
+                             class="upload-form"
+                             style="display: inline-flex; gap: 0.5rem; align-items: center;">
+                           <label for="challenges_file" style="margin: 0;">Upload Excel</label>
+                           <input type="file"
+                                  id="challenges_file"
+                                  name="file"
+                                  accept=".xlsx,.xls"
+                                  style="max-width: 220px;">
+                           <button type="submit" class="button small">Upload</button>
+                       </form>
+                   {% endif %}
+               </div>
+           </div>
 
     <div class="table-wrapper">
         <table class="compact-table">
