@@ -70,6 +70,24 @@ class User(db.Model):
             return None
         return User.query.get(user_id)
 
+    def generate_reset_token(self, expires_in: int = 3600) -> str:
+        """Return a signed password-reset token for this user."""
+        s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        return s.dumps({"reset": self.id}, salt="reset-password-salt")
+
+    @staticmethod
+    def verify_reset_token(token: str, max_age: int = 3600):
+        """Return the user for a valid reset token, or None if invalid/expired."""
+        s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        try:
+            data = s.loads(token, salt="reset-password-salt", max_age=max_age)
+        except Exception:
+            return None
+        user_id = data.get("reset")
+        if not user_id:
+            return None
+        return User.query.get(user_id)
+
 
 def init_db(app) -> None:
     """Initialize SQLAlchemy and configure DB.

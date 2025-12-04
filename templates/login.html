@@ -20,6 +20,10 @@
             Didn’t get the confirmation email?
             <a href="{{ url_for('auth.resend_confirmation') }}">Resend confirmation link</a>.
         </p>
+        <p style="margin-top:0.25rem; font-size:0.85rem;">
+            Forgot your password?
+            <a href="{{ url_for('auth.reset_request') }}">Reset it here</a>.
+        </p>
     </form>
 </section>
 {% endblock %}

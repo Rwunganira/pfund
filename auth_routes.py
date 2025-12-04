@@ -218,3 +218,77 @@ def confirm_email(token):
     return redirect(url_for("auth.login"))
 
 
+@auth_bp.route("/reset-password", methods=["GET", "POST"])
+def reset_request():
+    """Ask for an email and send a password-reset link."""
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip()
+        if not email:
+            flash("Email is required.", "error")
+            return redirect(url_for("auth.reset_request"))
+
+        user = User.query.filter_by(email=email).first()
+
+        # Always show the same message, whether or not the email exists
+        if user:
+            try:
+                token = user.generate_reset_token()
+                reset_url = url_for("auth.reset_with_token", token=token, _external=True)
+                send_email(
+                    email,
+                    "Reset your Project Activity Tracker password",
+                    f"Hello {user.username},\n\n"
+                    "We received a request to reset your password on the Project Activity Tracker.\n"
+                    "If you made this request, click the link below to choose a new password:\n\n"
+                    f"{reset_url}\n\n"
+                    "If you did not request a password reset, you can ignore this email.\n\n"
+                    "This link will expire in 1 hour.\n\n"
+                    "This is an automated message.",
+                )
+            except Exception:
+                # Log error but don't reveal to user
+                flash(
+                    "If that email is registered, a password reset link has been sent.",
+                    "info",
+                )
+            else:
+                flash(
+                    "If that email is registered, a password reset link has been sent.",
+                    "info",
+                )
+        else:
+            flash(
+                "If that email is registered, a password reset link has been sent.",
+                "info",
+            )
+
+        return redirect(url_for("auth.login"))
+
+    return render_template("reset_request.html")
+
+
+@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_with_token(token):
+    """Let the user set a new password using a valid reset token."""
+    user = User.verify_reset_token(token)
+    if not user:
+        flash("The password reset link is invalid or has expired.", "error")
+        return redirect(url_for("auth.reset_request"))
+
+    if request.method == "POST":
+        password = request.form.get("password") or ""
+        password_confirm = request.form.get("password_confirm") or ""
+
+        if not password:
+            flash("Password is required.", "error")
+        elif password != password_confirm:
+            flash("Passwords do not match.", "error")
+        else:
+            user.password_hash = generate_password_hash(password)
+            db.session.commit()
+            flash("Your password has been reset. You can now log in.", "success")
+            return redirect(url_for("auth.login"))
+
+    return render_template("reset_password.html")
+
+
