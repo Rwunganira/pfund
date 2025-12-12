@@ -246,7 +246,7 @@ def index():
 
     # Compute per-activity budget execution percentage and overall summary safely
     try:
-        # Attach a computed execution percentage to each activity
+        # Attach a computed execution percentage and total budget used to each activity
         for a in activities or []:
             try:
                 total = getattr(a, "budget_total", None) or 0
@@ -256,8 +256,11 @@ def index():
                 used_year3 = getattr(a, "budget_used_year3", None) or 0
                 used = used_year1 + used_year2 + used_year3
                 a.exec_pct = round((used / total) * 100) if total > 0 else 0
+                # Store total budget used (sum of all years) for display
+                a.total_budget_used = used
             except Exception:
                 a.exec_pct = 0
+                a.total_budget_used = 0
 
         total_activities = len(activities) if activities else 0
         total_budget = sum((getattr(a, "budget_total", None) or 0) for a in activities) if activities else 0

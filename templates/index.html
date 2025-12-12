@@ -298,7 +298,8 @@
                     </td>
 
                     <td class="num">{{ "%.0f"|format(a.budget_total or 0) }}</td>
-                    <td class="num budget-used">{{ "%.0f"|format(a.budget_used or 0) }}</td>
+                    {% set total_used = (a.total_budget_used if a.total_budget_used is defined else ((a.budget_used_year1 or 0) + (a.budget_used_year2 or 0) + (a.budget_used_year3 or 0))) %}
+                    <td class="num budget-used">{{ "%.0f"|format(total_used) }}</td>
 
                     <td class="actions">
                         <button
@@ -392,7 +393,11 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
             budget_year2: Number({{ a.budget_year2|default('0')|tojson }}) || 0,
             budget_year3: Number({{ a.budget_year3|default('0')|tojson }}) || 0,
             budget_total: Number({{ a.budget_total|default('0')|tojson }}) || 0,
-            budget_used: Number({{ a.budget_used|default('0')|tojson }}) || 0,
+            budget_used_year1: Number({{ (a.budget_used_year1 or 0)|tojson }}) || 0,
+            budget_used_year2: Number({{ (a.budget_used_year2 or 0)|tojson }}) || 0,
+            budget_used_year3: Number({{ (a.budget_used_year3 or 0)|tojson }}) || 0,
+            {% set js_total_used = (a.total_budget_used if a.total_budget_used is defined else ((a.budget_used_year1 or 0) + (a.budget_used_year2 or 0) + (a.budget_used_year3 or 0))) %}
+            budget_used: Number({{ js_total_used|tojson }}) || 0,
             status: {{ (a.status or 'Unknown')|tojson }},
             progress: Number({{ (a.exec_pct if a.exec_pct is defined else 0)|tojson }}) || 0,
                 edit_url: {{ (item.edit_url or '#')|tojson }}
