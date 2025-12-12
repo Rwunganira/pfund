@@ -32,6 +32,7 @@ def index():
             
             # One-time migration: Sync budget_used_year1 from budget_used for existing records
             # This handles records that existed before the new columns were added
+            # Note: We keep this migration for backward compatibility, but all calculations use year-specific fields
             needs_commit = False
             for a in activities:
                 if a and (not getattr(a, 'budget_used_year1', None) or getattr(a, 'budget_used_year1', None) == 0):
@@ -249,7 +250,7 @@ def index():
         for a in activities or []:
             try:
                 total = getattr(a, "budget_total", None) or 0
-                # Calculate total used from all years (budget_used is Year 1 only)
+                # Calculate total used from all years - use only year-specific fields
                 used_year1 = getattr(a, "budget_used_year1", None) or 0
                 used_year2 = getattr(a, "budget_used_year2", None) or 0
                 used_year3 = getattr(a, "budget_used_year3", None) or 0
@@ -260,7 +261,7 @@ def index():
 
         total_activities = len(activities) if activities else 0
         total_budget = sum((getattr(a, "budget_total", None) or 0) for a in activities) if activities else 0
-        # Calculate total_used from all years (budget_used is Year 1 only)
+        # Calculate total_used from all years - use only year-specific fields
         total_used = sum(
             (getattr(a, 'budget_used_year1', None) or 0) + 
             (getattr(a, 'budget_used_year2', None) or 0) + 
@@ -524,12 +525,10 @@ def new_activity():
             "notes": request.form.get("notes") or None,
         }
 
-        # Get budget used values per year
+        # Get budget used values per year - use only year-specific fields for all calculations
         budget_used_year1 = float(data["budget_used_year1"] or 0)
         budget_used_year2 = float(data["budget_used_year2"] or 0)
         budget_used_year3 = float(data["budget_used_year3"] or 0)
-        # budget_used field stores Year 1 only
-        budget_used = budget_used_year1
 
         # Auto-calculate progress from total budget used (all years) and budget_total
         budget_total = float(data["budget_total"] or 0)
@@ -548,7 +547,7 @@ def new_activity():
             budget_year2=float(data["budget_year2"] or 0),
             budget_year3=float(data["budget_year3"] or 0),
             budget_total=budget_total,
-            budget_used=budget_used,
+            budget_used=budget_used_year1,  # Keep for backward compatibility only
             budget_used_year1=budget_used_year1,
             budget_used_year2=budget_used_year2,
             budget_used_year3=budget_used_year3,
@@ -575,6 +574,7 @@ def edit_activity(activity_id):
     
     # Sync budget_used_year1 from budget_used if budget_used_year1 is 0 or None
     # This handles existing records that haven't been migrated yet
+    # Note: We keep this migration for backward compatibility, but all calculations use year-specific fields
     if activity and (not activity.budget_used_year1 or activity.budget_used_year1 == 0):
         if activity.budget_used and activity.budget_used > 0:
             activity.budget_used_year1 = activity.budget_used
@@ -601,12 +601,10 @@ def edit_activity(activity_id):
             "notes": request.form.get("notes") or None,
         }
 
-        # Get budget used values per year
+        # Get budget used values per year - use only year-specific fields for all calculations
         budget_used_year1 = float(data["budget_used_year1"] or 0)
         budget_used_year2 = float(data["budget_used_year2"] or 0)
         budget_used_year3 = float(data["budget_used_year3"] or 0)
-        # budget_used field stores Year 1 only
-        budget_used = budget_used_year1
 
         activity.code = data["code"]
         activity.initial_activity = data["initial_activity"]
@@ -619,7 +617,7 @@ def edit_activity(activity_id):
         activity.budget_year2 = float(data["budget_year2"] or 0)
         activity.budget_year3 = float(data["budget_year3"] or 0)
         activity.budget_total = float(data["budget_total"] or 0)
-        activity.budget_used = budget_used
+        activity.budget_used = budget_used_year1  # Keep for backward compatibility only
         activity.budget_used_year1 = budget_used_year1
         activity.budget_used_year2 = budget_used_year2
         activity.budget_used_year3 = budget_used_year3
@@ -1168,11 +1166,10 @@ def upload_excel():
             budget_used_from_file = get_num(row, "Budget used", "Budget Used")
             
             # For imported data, put all used budget in year 1 (since it's year 1)
+            # Use only year-specific fields for all calculations
             budget_used_year1 = budget_used_from_file
             budget_used_year2 = 0.0
             budget_used_year3 = 0.0
-            # budget_used field stores Year 1 only
-            budget_used = budget_used_year1
 
             # Default status and progress for imported rows
             status = "Planned"
@@ -1197,7 +1194,7 @@ def upload_excel():
                     budget_year2,
                     budget_year3,
                     budget_total,
-                    budget_used,
+                    budget_used_year1,  # Use year1 for backward compatibility
                     budget_used_year1,
                     budget_used_year2,
                     budget_used_year3,
@@ -1223,7 +1220,7 @@ def upload_excel():
                     budget_year2,
                     budget_year3,
                     budget_total,
-                    budget_used,
+                    budget_used,  # This is budget_used_year1 for backward compatibility
                     budget_used_year1,
                     budget_used_year2,
                     budget_used_year3,
@@ -1236,7 +1233,7 @@ def upload_excel():
                 if code:
                     existing = Activity.query.filter_by(code=code).first()
                 if existing:
-                    # Update existing record
+                    # Update existing record - use only year-specific fields for calculations
                     existing.initial_activity = initial_activity
                     existing.proposed_activity = proposed_activity
                     existing.implementing_entity = implementing_entity
@@ -1247,7 +1244,7 @@ def upload_excel():
                     existing.budget_year2 = budget_year2
                     existing.budget_year3 = budget_year3
                     existing.budget_total = budget_total
-                    existing.budget_used = budget_used
+                    existing.budget_used = budget_used_year1  # Keep for backward compatibility only
                     existing.budget_used_year1 = budget_used_year1
                     existing.budget_used_year2 = budget_used_year2
                     existing.budget_used_year3 = budget_used_year3
@@ -1268,7 +1265,7 @@ def upload_excel():
                         budget_year2=budget_year2,
                         budget_year3=budget_year3,
                         budget_total=budget_total,
-                        budget_used=budget_used,
+                        budget_used=budget_used_year1,  # Keep for backward compatibility only
                         budget_used_year1=budget_used_year1,
                         budget_used_year2=budget_used_year2,
                         budget_used_year3=budget_used_year3,
@@ -1347,7 +1344,7 @@ def download_activities():
             "budget_year2",
             "budget_year3",
             "budget_total",
-            "budget_used",
+            "budget_used",  # Keep for backward compatibility (stores Year 1 only)
             "budget_used_year1",
             "budget_used_year2",
             "budget_used_year3",
@@ -1358,6 +1355,7 @@ def download_activities():
     )
     for a in activities:
         # Auto-calculate progress from total budget used (all years) and budget_total
+        # Use only year-specific fields for all calculations
         budget_total = a.budget_total or 0
         budget_used_year1 = getattr(a, 'budget_used_year1', None) or 0
         budget_used_year2 = getattr(a, 'budget_used_year2', None) or 0
@@ -1378,12 +1376,12 @@ def download_activities():
                 a.budget_year2 or 0,
                 a.budget_year3 or 0,
                 budget_total,
-                a.budget_used or 0,  # budget_used stores Year 1 only
-                getattr(a, 'budget_used_year1', None) or 0,
-                getattr(a, 'budget_used_year2', None) or 0,
-                getattr(a, 'budget_used_year3', None) or 0,
+                budget_used_year1,  # Use year1 value for backward compatibility column
+                budget_used_year1,
+                budget_used_year2,
+                budget_used_year3,
                 a.status or "",
-                calculated_progress,  # Use auto-calculated progress
+                calculated_progress,  # Use auto-calculated progress based on all years
                 (a.notes or "").replace("\n", " ").replace("\r", " "),
             ]
         )
