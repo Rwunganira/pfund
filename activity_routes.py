@@ -204,19 +204,32 @@ def index():
 
     # Budget execution by year
     try:
+        import math
         budget_by_year = {
             "year1": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
             "year2": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
             "year3": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
         }
         
+        def safe_float(value, default=0.0):
+            """Safely convert value to float, handling None, NaN, and invalid values."""
+            if value is None:
+                return default
+            try:
+                val = float(value)
+                if math.isnan(val) or math.isinf(val):
+                    return default
+                return val
+            except (ValueError, TypeError):
+                return default
+        
         for a in activities:
             if a:
-                budget_year1 = getattr(a, 'budget_year1', None) or 0
-                budget_year2 = getattr(a, 'budget_year2', None) or 0
-                budget_year3 = getattr(a, 'budget_year3', None) or 0
-                budget_total = getattr(a, 'budget_total', None) or 0
-                budget_used = getattr(a, 'budget_used', None) or 0
+                budget_year1 = safe_float(getattr(a, 'budget_year1', None), 0.0)
+                budget_year2 = safe_float(getattr(a, 'budget_year2', None), 0.0)
+                budget_year3 = safe_float(getattr(a, 'budget_year3', None), 0.0)
+                budget_total = safe_float(getattr(a, 'budget_total', None), 0.0)
+                budget_used = safe_float(getattr(a, 'budget_used', None), 0.0)
                 
                 # Sum allocated budgets by year
                 budget_by_year["year1"]["allocated"] += budget_year1
@@ -233,20 +246,31 @@ def index():
                     if budget_year3 > 0:
                         budget_by_year["year3"]["used"] += (budget_year3 / budget_total) * budget_used
         
-        # Calculate execution percentages
+        # Calculate execution percentages and ensure no NaN values
         for year_data in budget_by_year.values():
-            if year_data["allocated"] > 0:
-                year_data["execution_pct"] = (year_data["used"] / year_data["allocated"]) * 100
+            allocated = safe_float(year_data["allocated"], 0.0)
+            used = safe_float(year_data["used"], 0.0)
+            
+            if allocated > 0:
+                execution_pct = (used / allocated) * 100
+                year_data["execution_pct"] = safe_float(execution_pct, 0.0)
             else:
                 year_data["execution_pct"] = 0.0
+            
+            # Ensure all values are valid numbers
+            year_data["allocated"] = safe_float(year_data["allocated"], 0.0)
+            year_data["used"] = safe_float(year_data["used"], 0.0)
         
         budget_execution_by_year = [
-            {"year": "Year 1", "allocated": budget_by_year["year1"]["allocated"], 
-             "used": budget_by_year["year1"]["used"], "execution_pct": budget_by_year["year1"]["execution_pct"]},
-            {"year": "Year 2", "allocated": budget_by_year["year2"]["allocated"], 
-             "used": budget_by_year["year2"]["used"], "execution_pct": budget_by_year["year2"]["execution_pct"]},
-            {"year": "Year 3", "allocated": budget_by_year["year3"]["allocated"], 
-             "used": budget_by_year["year3"]["used"], "execution_pct": budget_by_year["year3"]["execution_pct"]},
+            {"year": "Year 1", "allocated": safe_float(budget_by_year["year1"]["allocated"], 0.0), 
+             "used": safe_float(budget_by_year["year1"]["used"], 0.0), 
+             "execution_pct": safe_float(budget_by_year["year1"]["execution_pct"], 0.0)},
+            {"year": "Year 2", "allocated": safe_float(budget_by_year["year2"]["allocated"], 0.0), 
+             "used": safe_float(budget_by_year["year2"]["used"], 0.0), 
+             "execution_pct": safe_float(budget_by_year["year2"]["execution_pct"], 0.0)},
+            {"year": "Year 3", "allocated": safe_float(budget_by_year["year3"]["allocated"], 0.0), 
+             "used": safe_float(budget_by_year["year3"]["used"], 0.0), 
+             "execution_pct": safe_float(budget_by_year["year3"]["execution_pct"], 0.0)},
         ]
     except Exception as e:
         import traceback
