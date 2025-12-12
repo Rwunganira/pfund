@@ -362,11 +362,11 @@ def index():
         print(traceback.format_exc())
         status_rows = []
 
-    # Budget execution by year - use ALL activities (not filtered) for accurate totals
+    # Budget execution by year - use filtered activities so filters affect the calculation
     try:
         import math
-        # Get all activities for budget execution by year calculation (not filtered)
-        all_activities = Activity.query.order_by(Activity.code).all()
+        # Use the filtered activities list (same as what's displayed in the table)
+        # This ensures budget execution by year reflects the current filters
         
         budget_by_year = {
             "year1": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
@@ -392,7 +392,7 @@ def index():
             except (ValueError, TypeError):
                 return default
         
-        for a in all_activities:
+        for a in activities:
             if a:
                 budget_year1 = safe_float(getattr(a, 'budget_year1', None), 0.0)
                 budget_year2 = safe_float(getattr(a, 'budget_year2', None), 0.0)
