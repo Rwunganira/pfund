@@ -1480,22 +1480,32 @@ def usage_statistics():
     ).limit(50).all()
     
     # Daily activity count
-    # Get raw data and format dates in Python for database compatibility
+    # Use database-specific date extraction for compatibility
+    # Detect database type and use appropriate date function
+    db_url = str(db.engine.url)
+    if 'postgresql' in db_url:
+        # PostgreSQL: use DATE() function and CAST to text for consistent formatting
+        from sqlalchemy import cast, String
+        date_expr = func.to_char(func.date(UserActivity.timestamp), 'YYYY-MM-DD')
+    else:
+        # SQLite: use strftime
+        date_expr = func.strftime('%Y-%m-%d', UserActivity.timestamp)
+    
     daily_stats_raw = db.session.query(
-        UserActivity.timestamp,
+        date_expr.label("date"),
         func.count(UserActivity.id).label("count")
     ).filter(
         UserActivity.timestamp >= start_date
     ).group_by(
-        func.date(UserActivity.timestamp)
+        date_expr
     ).order_by(
-        func.date(UserActivity.timestamp).desc()
+        date_expr.desc()
     ).all()
     
-    # Format dates as strings
+    # All dates should now be strings
     daily_stats = [
-        (timestamp.date().strftime('%Y-%m-%d') if timestamp else 'N/A', count)
-        for timestamp, count in daily_stats_raw
+        (date_val if date_val else 'N/A', count)
+        for date_val, count in daily_stats_raw
     ]
     
     return render_template(
