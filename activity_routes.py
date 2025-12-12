@@ -9,6 +9,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
 from models import Activity, Challenge, SubActivity, db
+from usage_tracking import log_user_activity
 
 
 activity_bp = Blueprint("activity", __name__)
@@ -24,6 +25,9 @@ def test():
 @login_required
 def index():
     """Simplified index route with maximum error handling."""
+    # Log user activity
+    log_user_activity("view_activities")
+    
     # Start with absolute minimal setup
     try:
         # Try to get activities - if this fails, use empty list
@@ -575,6 +579,7 @@ def new_activity():
         )
         db.session.add(activity)
         db.session.commit()
+        log_user_activity("create_activity", resource_type="activity", resource_id=activity.id)
         flash("Activity created successfully", "success")
         return redirect(url_for("activity.index"))
 
@@ -647,6 +652,7 @@ def edit_activity(activity_id):
         activity.notes = data["notes"]
 
         db.session.commit()
+        log_user_activity("edit_activity", resource_type="activity", resource_id=activity_id)
         flash("Activity updated successfully", "success")
 
         # If we came from a filtered view, go back there
@@ -938,6 +944,7 @@ def delete_activity(activity_id):
     if activity:
         db.session.delete(activity)
         db.session.commit()
+        log_user_activity("delete_activity", resource_type="activity", resource_id=activity_id)
         flash("Activity deleted", "info")
     else:
         flash("Activity not found.", "error")
@@ -1313,6 +1320,7 @@ def upload_excel():
 @login_required
 def download_activities():
     """Download all (filtered) activities as a CSV file."""
+    log_user_activity("download_csv", resource_type="activities")
     # Support multiple filter values (from multi-select)
     status_list = request.args.getlist("status")
     entity_list = request.args.getlist("implementing_entity")
@@ -1418,6 +1426,87 @@ def download_activities():
         headers={
             "Content-Disposition": "attachment; filename=activities.csv",
         },
+    )
+
+
+@activity_bp.route("/admin/usage", methods=["GET"])
+@admin_required
+def usage_statistics():
+    """Display user activity and usage statistics (admin only)."""
+    from models import UserActivity, User
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+    
+    # Get date range filter
+    try:
+        days = int(request.args.get("days", "30"))
+    except (ValueError, TypeError):
+        days = 30
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Get all activities in the date range
+    activities = UserActivity.query.filter(
+        UserActivity.timestamp >= start_date
+    ).order_by(UserActivity.timestamp.desc()).all()
+    
+    # Statistics by action
+    action_stats = db.session.query(
+        UserActivity.action,
+        func.count(UserActivity.id).label("count")
+    ).filter(
+        UserActivity.timestamp >= start_date
+    ).group_by(UserActivity.action).all()
+    
+    # Statistics by user
+    user_stats = db.session.query(
+        User.username,
+        User.email,
+        func.count(UserActivity.id).label("activity_count")
+    ).join(
+        UserActivity, User.id == UserActivity.user_id
+    ).filter(
+        UserActivity.timestamp >= start_date
+    ).group_by(User.id, User.username, User.email).order_by(
+        func.count(UserActivity.id).desc()
+    ).all()
+    
+    # Recent activities (last 50)
+    recent_activities = UserActivity.query.join(
+        User, UserActivity.user_id == User.id
+    ).filter(
+        UserActivity.timestamp >= start_date
+    ).order_by(
+        UserActivity.timestamp.desc()
+    ).limit(50).all()
+    
+    # Daily activity count
+    # Get raw data and format dates in Python for database compatibility
+    daily_stats_raw = db.session.query(
+        UserActivity.timestamp,
+        func.count(UserActivity.id).label("count")
+    ).filter(
+        UserActivity.timestamp >= start_date
+    ).group_by(
+        func.date(UserActivity.timestamp)
+    ).order_by(
+        func.date(UserActivity.timestamp).desc()
+    ).all()
+    
+    # Format dates as strings
+    daily_stats = [
+        (timestamp.date().strftime('%Y-%m-%d') if timestamp else 'N/A', count)
+        for timestamp, count in daily_stats_raw
+    ]
+    
+    return render_template(
+        "usage_statistics.html",
+        activities=activities,
+        action_stats=action_stats,
+        user_stats=user_stats,
+        recent_activities=recent_activities,
+        daily_stats=daily_stats,
+        days=days,
+        total_activities=len(activities)
     )
 
 

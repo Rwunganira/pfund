@@ -1,6 +1,17 @@
 .flaskenv
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 project_activities.db
+venv/
+env/
+ENV/
+.venv
+*.log
+.DS_Store
+*.sqlite
+*.db-journal
 
 

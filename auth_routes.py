@@ -14,6 +14,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from email_utils import send_email
 from models import User, db
+from usage_tracking import log_user_activity
 
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "samuel.rwunganira@gmail.com")
@@ -121,6 +122,7 @@ def login():
             session["username"] = user.username
             session["email"] = user.email
             session["role"] = user.role
+            log_user_activity("login", details=f"User {user.username} logged in")
             flash("Logged in successfully.", "success")
             next_url = request.args.get("next") or url_for("activity.index")
             return redirect(next_url)
@@ -132,6 +134,9 @@ def login():
 
 @auth_bp.route("/logout")
 def logout():
+    user_id = session.get("user_id")
+    if user_id:
+        log_user_activity("logout", details=f"User logged out")
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("auth.login"))

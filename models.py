@@ -115,6 +115,27 @@ class User(db.Model):
         return User.query.get(user_id)
 
 
+class UserActivity(db.Model):
+    """Track user actions and usage in the system."""
+    __tablename__ = "user_activities"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    action = db.Column(db.String, nullable=False)  # e.g., "login", "view_activities", "create_activity", "edit_activity", "delete_activity", "download_csv"
+    resource_type = db.Column(db.String, nullable=True)  # e.g., "activity", "challenge", "user"
+    resource_id = db.Column(db.Integer, nullable=True)  # ID of the resource if applicable
+    details = db.Column(db.Text, nullable=True)  # Additional details about the action
+    ip_address = db.Column(db.String, nullable=True)  # User's IP address
+    user_agent = db.Column(db.String, nullable=True)  # Browser/client info
+    timestamp = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), index=True)
+
+    # Relationship to User
+    user = db.relationship("User", backref="activities")
+
+    def __repr__(self):
+        return f"<UserActivity {self.id}: {self.user_id} - {self.action}>"
+
+
 def init_db(app) -> None:
     """Initialize SQLAlchemy and configure DB.
 

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    <div>
+        <div class="hero-header">
+            <div>
+                <h1>User Usage Statistics</h1>
+                <p>Track user activity and system usage over time.</p>
+            </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div style="margin-bottom: 2rem;">
+            <form method="get" style="display: flex; gap: 1rem; align-items: center;">
+                <label for="days">Show activities from last:</label>
+                <select name="days" id="days" onchange="this.form.submit()">
+                    <option value="7" {% if days == 7 %}selected{% endif %}>7 days</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>30 days</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>90 days</option>
+                    <option value="365" {% if days == 365 %}selected{% endif %}>1 year</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="cards">
+            <div class="card card-total">
+                <div class="card-label">Total Activities</div>
+                <div class="card-value">{{ total_activities or 0 }}</div>
+            </div>
+            <div class="card card-budget">
+                <div class="card-label">Unique Users</div>
+                <div class="card-value">{{ user_stats|length or 0 }}</div>
+            </div>
+            <div class="card card-used">
+                <div class="card-label">Action Types</div>
+                <div class="card-value">{{ action_stats|length or 0 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics by Action Type -->
+    <div class="status-summary">
+        <h2>Activity by Action Type</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Count</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for action, count in action_stats %}
+                {% set percentage = (count / total_activities * 100) if total_activities > 0 else 0 %}
+                <tr class="status-row">
+                    <td><strong>{{ action }}</strong></td>
+                    <td class="num">{{ count }}</td>
+                    <td class="num">{{ "%.1f"|format(percentage) }}%</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="3" class="empty">No activity data available.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Statistics by User -->
+    <div class="status-summary">
+        <h2>Activity by User</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Activity Count</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for username, email, count in user_stats %}
+                {% set percentage = (count / total_activities * 100) if total_activities > 0 else 0 %}
+                <tr class="status-row">
+                    <td><strong>{{ username }}</strong></td>
+                    <td>{{ email }}</td>
+                    <td class="num">{{ count }}</td>
+                    <td class="num">{{ "%.1f"|format(percentage) }}%</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="empty">No user activity data available.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Daily Activity -->
+    <div class="status-summary">
+        <h2>Daily Activity Count</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Activity Count</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for date, count in daily_stats %}
+                <tr class="status-row">
+                    <td><strong>{{ date if date else 'N/A' }}</strong></td>
+                    <td class="num">{{ count }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="2" class="empty">No daily activity data available.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="status-summary">
+        <h2>Recent Activities (Last 50)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Resource</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for activity in recent_activities %}
+                <tr class="status-row">
+                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') if activity.timestamp else 'N/A' }}</td>
+                    <td><strong>{{ activity.user.username if activity.user else 'Unknown' }}</strong></td>
+                    <td>{{ activity.action }}</td>
+                    <td>
+                        {% if activity.resource_type and activity.resource_id %}
+                            {{ activity.resource_type }} #{{ activity.resource_id }}
+                        {% elif activity.resource_type %}
+                            {{ activity.resource_type }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ activity.ip_address or '-' }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="empty">No recent activities available.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
