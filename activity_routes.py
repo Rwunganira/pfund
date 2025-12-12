@@ -215,6 +215,12 @@ def index():
             """Safely convert value to float, handling None, NaN, and invalid values."""
             if value is None:
                 return default
+            # Check if value is already NaN (can happen when reading from database)
+            try:
+                if isinstance(value, float) and math.isnan(value):
+                    return default
+            except (TypeError, ValueError):
+                pass
             try:
                 val = float(value)
                 if math.isnan(val) or math.isinf(val):
@@ -228,28 +234,30 @@ def index():
                 budget_year1 = safe_float(getattr(a, 'budget_year1', None), 0.0)
                 budget_year2 = safe_float(getattr(a, 'budget_year2', None), 0.0)
                 budget_year3 = safe_float(getattr(a, 'budget_year3', None), 0.0)
-                budget_total = safe_float(getattr(a, 'budget_total', None), 0.0)
-                budget_used = safe_float(getattr(a, 'budget_used', None), 0.0)
+                
+                # Get actual used budgets per year (new fields)
+                budget_used_year1 = safe_float(getattr(a, 'budget_used_year1', None), 0.0)
+                budget_used_year2 = safe_float(getattr(a, 'budget_used_year2', None), 0.0)
+                budget_used_year3 = safe_float(getattr(a, 'budget_used_year3', None), 0.0)
                 
                 # Sum allocated budgets by year
                 budget_by_year["year1"]["allocated"] += budget_year1
                 budget_by_year["year2"]["allocated"] += budget_year2
                 budget_by_year["year3"]["allocated"] += budget_year3
                 
-                # Calculate used budget proportionally by year
-                # If total budget is 0, skip proportional allocation
-                if budget_total > 0:
-                    if budget_year1 > 0:
-                        budget_by_year["year1"]["used"] += (budget_year1 / budget_total) * budget_used
-                    if budget_year2 > 0:
-                        budget_by_year["year2"]["used"] += (budget_year2 / budget_total) * budget_used
-                    if budget_year3 > 0:
-                        budget_by_year["year3"]["used"] += (budget_year3 / budget_total) * budget_used
+                # Sum actual used budgets by year
+                budget_by_year["year1"]["used"] += budget_used_year1
+                budget_by_year["year2"]["used"] += budget_used_year2
+                budget_by_year["year3"]["used"] += budget_used_year3
         
         # Calculate execution percentages and ensure no NaN values
         for year_data in budget_by_year.values():
             allocated = safe_float(year_data["allocated"], 0.0)
             used = safe_float(year_data["used"], 0.0)
+            
+            # Ensure allocated and used are valid before calculation
+            allocated = max(0.0, allocated)  # Ensure non-negative
+            used = max(0.0, used)  # Ensure non-negative
             
             if allocated > 0:
                 execution_pct = (used / allocated) * 100
@@ -257,20 +265,44 @@ def index():
             else:
                 year_data["execution_pct"] = 0.0
             
-            # Ensure all values are valid numbers
-            year_data["allocated"] = safe_float(year_data["allocated"], 0.0)
-            year_data["used"] = safe_float(year_data["used"], 0.0)
+            # Final validation - ensure all values are valid numbers and not NaN
+            year_data["allocated"] = safe_float(allocated, 0.0)
+            year_data["used"] = safe_float(used, 0.0)
+            year_data["execution_pct"] = safe_float(year_data["execution_pct"], 0.0)
+            
+            # Double-check: if any value is still NaN, force to 0
+            if math.isnan(year_data["allocated"]):
+                year_data["allocated"] = 0.0
+            if math.isnan(year_data["used"]):
+                year_data["used"] = 0.0
+            if math.isnan(year_data["execution_pct"]):
+                year_data["execution_pct"] = 0.0
+        
+        # Calculate cumulative values
+        year1_allocated = safe_float(budget_by_year["year1"]["allocated"], 0.0)
+        year1_used = safe_float(budget_by_year["year1"]["used"], 0.0)
+        
+        year2_allocated = year1_allocated + safe_float(budget_by_year["year2"]["allocated"], 0.0)
+        year2_used = year1_used + safe_float(budget_by_year["year2"]["used"], 0.0)
+        
+        year3_allocated = year2_allocated + safe_float(budget_by_year["year3"]["allocated"], 0.0)
+        year3_used = year2_used + safe_float(budget_by_year["year3"]["used"], 0.0)
+        
+        # Calculate cumulative execution percentages
+        year1_exec_pct = (year1_used / year1_allocated * 100) if year1_allocated > 0 else 0.0
+        year2_exec_pct = (year2_used / year2_allocated * 100) if year2_allocated > 0 else 0.0
+        year3_exec_pct = (year3_used / year3_allocated * 100) if year3_allocated > 0 else 0.0
         
         budget_execution_by_year = [
-            {"year": "Year 1", "allocated": safe_float(budget_by_year["year1"]["allocated"], 0.0), 
-             "used": safe_float(budget_by_year["year1"]["used"], 0.0), 
-             "execution_pct": safe_float(budget_by_year["year1"]["execution_pct"], 0.0)},
-            {"year": "Year 2", "allocated": safe_float(budget_by_year["year2"]["allocated"], 0.0), 
-             "used": safe_float(budget_by_year["year2"]["used"], 0.0), 
-             "execution_pct": safe_float(budget_by_year["year2"]["execution_pct"], 0.0)},
-            {"year": "Year 3", "allocated": safe_float(budget_by_year["year3"]["allocated"], 0.0), 
-             "used": safe_float(budget_by_year["year3"]["used"], 0.0), 
-             "execution_pct": safe_float(budget_by_year["year3"]["execution_pct"], 0.0)},
+            {"year": "Year 1", "allocated": safe_float(year1_allocated, 0.0), 
+             "used": safe_float(year1_used, 0.0), 
+             "execution_pct": safe_float(year1_exec_pct, 0.0)},
+            {"year": "Year 2 (Cumulative)", "allocated": safe_float(year2_allocated, 0.0), 
+             "used": safe_float(year2_used, 0.0), 
+             "execution_pct": safe_float(year2_exec_pct, 0.0)},
+            {"year": "Year 3 (Cumulative)", "allocated": safe_float(year3_allocated, 0.0), 
+             "used": safe_float(year3_used, 0.0), 
+             "execution_pct": safe_float(year3_exec_pct, 0.0)},
         ]
     except Exception as e:
         import traceback
@@ -375,15 +407,22 @@ def new_activity():
             "budget_total": request.form.get("budget_total") or 0,
             "budget_year2": request.form.get("budget_year2") or 0,
             "budget_year3": request.form.get("budget_year3") or 0,
-            "budget_used": request.form.get("budget_used") or 0,
+            "budget_used_year1": request.form.get("budget_used_year1") or 0,
+            "budget_used_year2": request.form.get("budget_used_year2") or 0,
+            "budget_used_year3": request.form.get("budget_used_year3") or 0,
             "status": request.form.get("status") or "Planned",
             "progress": request.form.get("progress") or 0,
             "notes": request.form.get("notes") or None,
         }
 
+        # Calculate total budget used from year-specific values
+        budget_used_year1 = float(data["budget_used_year1"] or 0)
+        budget_used_year2 = float(data["budget_used_year2"] or 0)
+        budget_used_year3 = float(data["budget_used_year3"] or 0)
+        budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+
         # Auto-calculate progress from budget_used and budget_total
         budget_total = float(data["budget_total"] or 0)
-        budget_used = float(data["budget_used"] or 0)
         progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
         
         activity = Activity(
@@ -399,6 +438,9 @@ def new_activity():
             budget_year3=float(data["budget_year3"] or 0),
             budget_total=budget_total,
             budget_used=budget_used,
+            budget_used_year1=budget_used_year1,
+            budget_used_year2=budget_used_year2,
+            budget_used_year3=budget_used_year3,
             status=data["status"],
             progress=progress,
             notes=data["notes"],
@@ -433,11 +475,19 @@ def edit_activity(activity_id):
             "budget_total": request.form.get("budget_total") or 0,
             "budget_year2": request.form.get("budget_year2") or 0,
             "budget_year3": request.form.get("budget_year3") or 0,
-            "budget_used": request.form.get("budget_used") or 0,
+            "budget_used_year1": request.form.get("budget_used_year1") or 0,
+            "budget_used_year2": request.form.get("budget_used_year2") or 0,
+            "budget_used_year3": request.form.get("budget_used_year3") or 0,
             "status": request.form.get("status") or "Planned",
             "progress": request.form.get("progress") or 0,
             "notes": request.form.get("notes") or None,
         }
+
+        # Calculate total budget used from year-specific values
+        budget_used_year1 = float(data["budget_used_year1"] or 0)
+        budget_used_year2 = float(data["budget_used_year2"] or 0)
+        budget_used_year3 = float(data["budget_used_year3"] or 0)
+        budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
 
         activity.code = data["code"]
         activity.initial_activity = data["initial_activity"]
@@ -450,11 +500,13 @@ def edit_activity(activity_id):
         activity.budget_year2 = float(data["budget_year2"] or 0)
         activity.budget_year3 = float(data["budget_year3"] or 0)
         activity.budget_total = float(data["budget_total"] or 0)
-        activity.budget_used = float(data["budget_used"] or 0)
+        activity.budget_used = budget_used
+        activity.budget_used_year1 = budget_used_year1
+        activity.budget_used_year2 = budget_used_year2
+        activity.budget_used_year3 = budget_used_year3
         activity.status = data["status"]
         # Auto-calculate progress from budget_used and budget_total
         budget_total = activity.budget_total or 0
-        budget_used = activity.budget_used or 0
         activity.progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
         activity.notes = data["notes"]
 
@@ -994,6 +1046,11 @@ def upload_excel():
             budget_year3 = get_num(row, "Sum of adjusted_bdg_year3", "Budget Y3")
             budget_total = get_num(row, "Sum of TOTAL", "Total Budget")
             budget_used = get_num(row, "Budget used", "Budget Used")
+            
+            # For imported data, put all used budget in year 1 (since it's year 1)
+            budget_used_year1 = budget_used
+            budget_used_year2 = 0.0
+            budget_used_year3 = 0.0
 
             # Default status and progress for imported rows
             status = "Planned"
@@ -1017,6 +1074,9 @@ def upload_excel():
                     budget_year3,
                     budget_total,
                     budget_used,
+                    budget_used_year1,
+                    budget_used_year2,
+                    budget_used_year3,
                     status,
                     progress,
                     notes,
@@ -1040,6 +1100,9 @@ def upload_excel():
                     budget_year3,
                     budget_total,
                     budget_used,
+                    budget_used_year1,
+                    budget_used_year2,
+                    budget_used_year3,
                     status,
                     progress,
                     notes,
@@ -1061,6 +1124,9 @@ def upload_excel():
                     existing.budget_year3 = budget_year3
                     existing.budget_total = budget_total
                     existing.budget_used = budget_used
+                    existing.budget_used_year1 = budget_used_year1
+                    existing.budget_used_year2 = budget_used_year2
+                    existing.budget_used_year3 = budget_used_year3
                     existing.status = status
                     existing.progress = progress
                     existing.notes = notes
@@ -1079,6 +1145,9 @@ def upload_excel():
                         budget_year3=budget_year3,
                         budget_total=budget_total,
                         budget_used=budget_used,
+                        budget_used_year1=budget_used_year1,
+                        budget_used_year2=budget_used_year2,
+                        budget_used_year3=budget_used_year3,
                         status=status,
                         progress=progress,
                         notes=notes,
@@ -1155,6 +1224,9 @@ def download_activities():
             "budget_year3",
             "budget_total",
             "budget_used",
+            "budget_used_year1",
+            "budget_used_year2",
+            "budget_used_year3",
             "status",
             "progress",
             "notes",
@@ -1180,6 +1252,9 @@ def download_activities():
                 a.budget_year3 or 0,
                 budget_total,
                 budget_used,
+                getattr(a, 'budget_used_year1', None) or 0,
+                getattr(a, 'budget_used_year2', None) or 0,
+                getattr(a, 'budget_used_year3', None) or 0,
                 a.status or "",
                 calculated_progress,  # Use auto-calculated progress
                 (a.notes or "").replace("\n", " ").replace("\r", " "),

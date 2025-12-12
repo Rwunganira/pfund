@@ -25,7 +25,10 @@ class Activity(db.Model):
     budget_year2 = db.Column(db.Float, default=0)
     budget_year3 = db.Column(db.Float, default=0)
     budget_total = db.Column(db.Float, default=0)
-    budget_used = db.Column(db.Float, default=0)
+    budget_used = db.Column(db.Float, default=0)  # Calculated: sum of budget_used_year1, year2, year3
+    budget_used_year1 = db.Column(db.Float, default=0)
+    budget_used_year2 = db.Column(db.Float, default=0)
+    budget_used_year3 = db.Column(db.Float, default=0)
     status = db.Column(db.String, default="Planned")
     progress = db.Column(db.Integer, default=0)
     notes = db.Column(db.Text, nullable=True)
