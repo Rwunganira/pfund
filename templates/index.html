@@ -64,6 +64,41 @@
             </tbody>
         </table>
     </div>
+
+    <div class="status-summary">
+        <h2>Budget Execution by Year</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Budget Allocated</th>
+                    <th>Budget Used</th>
+                    <th>Execution %</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for year_data in budget_execution_by_year %}
+                <tr class="status-row">
+                    <td><strong>{{ year_data.year }}</strong></td>
+                    <td class="num">{{ "%.0f"|format(year_data.allocated or 0) }}</td>
+                    <td class="num">{{ "%.0f"|format(year_data.used or 0) }}</td>
+                    <td class="num">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ year_data.execution_pct or 0 }}%"></div>
+                            </div>
+                            <span class="progress-label">{{ "%.1f"|format(year_data.execution_pct or 0) }}%</span>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="4" class="empty">No budget data available.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 
 <section class="filters">

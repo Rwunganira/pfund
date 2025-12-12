@@ -202,6 +202,58 @@ def index():
         print(traceback.format_exc())
         status_rows = []
 
+    # Budget execution by year
+    try:
+        budget_by_year = {
+            "year1": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
+            "year2": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
+            "year3": {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0},
+        }
+        
+        for a in activities:
+            if a:
+                budget_year1 = getattr(a, 'budget_year1', None) or 0
+                budget_year2 = getattr(a, 'budget_year2', None) or 0
+                budget_year3 = getattr(a, 'budget_year3', None) or 0
+                budget_total = getattr(a, 'budget_total', None) or 0
+                budget_used = getattr(a, 'budget_used', None) or 0
+                
+                # Sum allocated budgets by year
+                budget_by_year["year1"]["allocated"] += budget_year1
+                budget_by_year["year2"]["allocated"] += budget_year2
+                budget_by_year["year3"]["allocated"] += budget_year3
+                
+                # Calculate used budget proportionally by year
+                # If total budget is 0, skip proportional allocation
+                if budget_total > 0:
+                    if budget_year1 > 0:
+                        budget_by_year["year1"]["used"] += (budget_year1 / budget_total) * budget_used
+                    if budget_year2 > 0:
+                        budget_by_year["year2"]["used"] += (budget_year2 / budget_total) * budget_used
+                    if budget_year3 > 0:
+                        budget_by_year["year3"]["used"] += (budget_year3 / budget_total) * budget_used
+        
+        # Calculate execution percentages
+        for year_data in budget_by_year.values():
+            if year_data["allocated"] > 0:
+                year_data["execution_pct"] = (year_data["used"] / year_data["allocated"]) * 100
+            else:
+                year_data["execution_pct"] = 0.0
+        
+        budget_execution_by_year = [
+            {"year": "Year 1", "allocated": budget_by_year["year1"]["allocated"], 
+             "used": budget_by_year["year1"]["used"], "execution_pct": budget_by_year["year1"]["execution_pct"]},
+            {"year": "Year 2", "allocated": budget_by_year["year2"]["allocated"], 
+             "used": budget_by_year["year2"]["used"], "execution_pct": budget_by_year["year2"]["execution_pct"]},
+            {"year": "Year 3", "allocated": budget_by_year["year3"]["allocated"], 
+             "used": budget_by_year["year3"]["used"], "execution_pct": budget_by_year["year3"]["execution_pct"]},
+        ]
+    except Exception as e:
+        import traceback
+        print(f"Error computing budget execution by year: {e}")
+        print(traceback.format_exc())
+        budget_execution_by_year = []
+
     # Entities for filter
     try:
         entities = sorted(list(set([getattr(a, 'implementing_entity', None) for a in activities if getattr(a, 'implementing_entity', None)])))
@@ -255,6 +307,7 @@ def index():
             activity_urls=activity_urls or {},
             summary=summary,
             status_rows=status_rows or [],
+            budget_execution_by_year=budget_execution_by_year or [],
             status_filter=status_filter or "",
             entity_filter=entity_filter or "",
             category_filter=category_filter or "",
