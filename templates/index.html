@@ -197,6 +197,45 @@
             </div>
         </div>
 
+        <div class="field-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="budget_year1_min">Budget Year 1 (Min)</label>
+                <input type="number" id="budget_year1_min" name="budget_year1_min" step="0.01" min="0"
+                       value="{{ budget_year1_min or '' }}" placeholder="Min">
+            </div>
+            <div style="flex: 1;">
+                <label for="budget_year1_max">Budget Year 1 (Max)</label>
+                <input type="number" id="budget_year1_max" name="budget_year1_max" step="0.01" min="0"
+                       value="{{ budget_year1_max or '' }}" placeholder="Max">
+            </div>
+        </div>
+
+        <div class="field-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="budget_year2_min">Budget Year 2 (Min)</label>
+                <input type="number" id="budget_year2_min" name="budget_year2_min" step="0.01" min="0"
+                       value="{{ budget_year2_min or '' }}" placeholder="Min">
+            </div>
+            <div style="flex: 1;">
+                <label for="budget_year2_max">Budget Year 2 (Max)</label>
+                <input type="number" id="budget_year2_max" name="budget_year2_max" step="0.01" min="0"
+                       value="{{ budget_year2_max or '' }}" placeholder="Max">
+            </div>
+        </div>
+
+        <div class="field-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="budget_year3_min">Budget Year 3 (Min)</label>
+                <input type="number" id="budget_year3_min" name="budget_year3_min" step="0.01" min="0"
+                       value="{{ budget_year3_min or '' }}" placeholder="Min">
+            </div>
+            <div style="flex: 1;">
+                <label for="budget_year3_max">Budget Year 3 (Max)</label>
+                <input type="number" id="budget_year3_max" name="budget_year3_max" step="0.01" min="0"
+                       value="{{ budget_year3_max or '' }}" placeholder="Max">
+            </div>
+        </div>
+
         <button type="submit">Apply filters</button>
         <a href="#" 
            id="download-link"
@@ -768,6 +807,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchQuery = formData.get('q');
         if (searchQuery) {
             params.append('q', searchQuery);
+        }
+        
+        // Add budget year filters
+        const budgetYear1Min = formData.get('budget_year1_min');
+        if (budgetYear1Min) {
+            params.append('budget_year1_min', budgetYear1Min);
+        }
+        const budgetYear1Max = formData.get('budget_year1_max');
+        if (budgetYear1Max) {
+            params.append('budget_year1_max', budgetYear1Max);
+        }
+        const budgetYear2Min = formData.get('budget_year2_min');
+        if (budgetYear2Min) {
+            params.append('budget_year2_min', budgetYear2Min);
+        }
+        const budgetYear2Max = formData.get('budget_year2_max');
+        if (budgetYear2Max) {
+            params.append('budget_year2_max', budgetYear2Max);
+        }
+        const budgetYear3Min = formData.get('budget_year3_min');
+        if (budgetYear3Min) {
+            params.append('budget_year3_min', budgetYear3Min);
+        }
+        const budgetYear3Max = formData.get('budget_year3_max');
+        if (budgetYear3Max) {
+            params.append('budget_year3_max', budgetYear3Max);
         }
         
         const downloadUrl = '{{ url_for("activity.download_activities") }}?' + params.toString();
