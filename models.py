@@ -25,7 +25,7 @@ class Activity(db.Model):
     budget_year2 = db.Column(db.Float, default=0)
     budget_year3 = db.Column(db.Float, default=0)
     budget_total = db.Column(db.Float, default=0)
-    budget_used = db.Column(db.Float, default=0)  # Calculated: sum of budget_used_year1, year2, year3
+    budget_used = db.Column(db.Float, default=0)  # Budget used for Year 1 only (same as budget_used_year1)
     budget_used_year1 = db.Column(db.Float, default=0)
     budget_used_year2 = db.Column(db.Float, default=0)
     budget_used_year3 = db.Column(db.Float, default=0)

@@ -95,7 +95,13 @@ def index():
     try:
         total_activities = len(activities) if activities else 0
         total_budget = sum((a.budget_total or 0) for a in activities) if activities else 0
-        total_used = sum((a.budget_used or 0) for a in activities) if activities else 0
+        # Calculate total_used from all years (budget_used is Year 1 only)
+        total_used = sum(
+            (getattr(a, 'budget_used_year1', None) or 0) + 
+            (getattr(a, 'budget_used_year2', None) or 0) + 
+            (getattr(a, 'budget_used_year3', None) or 0)
+            for a in activities
+        ) if activities else 0
         avg_progress = (
             sum((a.progress or 0) for a in activities) / total_activities
             if total_activities > 0
@@ -159,14 +165,24 @@ def index():
         for a in activities or []:
             try:
                 total = getattr(a, "budget_total", None) or 0
-                used = getattr(a, "budget_used", None) or 0
+                # Calculate total used from all years (budget_used is Year 1 only)
+                used_year1 = getattr(a, "budget_used_year1", None) or 0
+                used_year2 = getattr(a, "budget_used_year2", None) or 0
+                used_year3 = getattr(a, "budget_used_year3", None) or 0
+                used = used_year1 + used_year2 + used_year3
                 a.exec_pct = round((used / total) * 100) if total > 0 else 0
             except Exception:
                 a.exec_pct = 0
 
         total_activities = len(activities) if activities else 0
         total_budget = sum((getattr(a, "budget_total", None) or 0) for a in activities) if activities else 0
-        total_used = sum((getattr(a, "budget_used", None) or 0) for a in activities) if activities else 0
+        # Calculate total_used from all years (budget_used is Year 1 only)
+        total_used = sum(
+            (getattr(a, 'budget_used_year1', None) or 0) + 
+            (getattr(a, 'budget_used_year2', None) or 0) + 
+            (getattr(a, 'budget_used_year3', None) or 0)
+            for a in activities
+        ) if activities else 0
         # Average progress now reflects average budget execution percentage
         avg_progress = (
             sum((getattr(a, "exec_pct", 0) or 0) for a in activities) / total_activities
@@ -415,15 +431,17 @@ def new_activity():
             "notes": request.form.get("notes") or None,
         }
 
-        # Calculate total budget used from year-specific values
+        # Get budget used values per year
         budget_used_year1 = float(data["budget_used_year1"] or 0)
         budget_used_year2 = float(data["budget_used_year2"] or 0)
         budget_used_year3 = float(data["budget_used_year3"] or 0)
-        budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+        # budget_used field stores Year 1 only
+        budget_used = budget_used_year1
 
-        # Auto-calculate progress from budget_used and budget_total
+        # Auto-calculate progress from total budget used (all years) and budget_total
         budget_total = float(data["budget_total"] or 0)
-        progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+        progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
         
         activity = Activity(
             code=data["code"],
@@ -483,11 +501,12 @@ def edit_activity(activity_id):
             "notes": request.form.get("notes") or None,
         }
 
-        # Calculate total budget used from year-specific values
+        # Get budget used values per year
         budget_used_year1 = float(data["budget_used_year1"] or 0)
         budget_used_year2 = float(data["budget_used_year2"] or 0)
         budget_used_year3 = float(data["budget_used_year3"] or 0)
-        budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+        # budget_used field stores Year 1 only
+        budget_used = budget_used_year1
 
         activity.code = data["code"]
         activity.initial_activity = data["initial_activity"]
@@ -505,9 +524,10 @@ def edit_activity(activity_id):
         activity.budget_used_year2 = budget_used_year2
         activity.budget_used_year3 = budget_used_year3
         activity.status = data["status"]
-        # Auto-calculate progress from budget_used and budget_total
+        # Auto-calculate progress from total budget used (all years) and budget_total
         budget_total = activity.budget_total or 0
-        activity.progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+        activity.progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
         activity.notes = data["notes"]
 
         db.session.commit()
@@ -1045,16 +1065,20 @@ def upload_excel():
             budget_year2 = get_num(row, "Sum of adjusted_bdg_year2", "Budget Y2")
             budget_year3 = get_num(row, "Sum of adjusted_bdg_year3", "Budget Y3")
             budget_total = get_num(row, "Sum of TOTAL", "Total Budget")
-            budget_used = get_num(row, "Budget used", "Budget Used")
+            budget_used_from_file = get_num(row, "Budget used", "Budget Used")
             
             # For imported data, put all used budget in year 1 (since it's year 1)
-            budget_used_year1 = budget_used
+            budget_used_year1 = budget_used_from_file
             budget_used_year2 = 0.0
             budget_used_year3 = 0.0
+            # budget_used field stores Year 1 only
+            budget_used = budget_used_year1
 
             # Default status and progress for imported rows
             status = "Planned"
-            progress = 0
+            # Calculate progress from total budget used (all years) and budget_total
+            total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+            progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
 
             # Skip completely empty rows
             if not any([code, initial_activity, proposed_activity]):
@@ -1233,10 +1257,13 @@ def download_activities():
         ]
     )
     for a in activities:
-        # Auto-calculate progress from budget_used and budget_total
+        # Auto-calculate progress from total budget used (all years) and budget_total
         budget_total = a.budget_total or 0
-        budget_used = a.budget_used or 0
-        calculated_progress = int(round((budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        budget_used_year1 = getattr(a, 'budget_used_year1', None) or 0
+        budget_used_year2 = getattr(a, 'budget_used_year2', None) or 0
+        budget_used_year3 = getattr(a, 'budget_used_year3', None) or 0
+        total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+        calculated_progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
         
         writer.writerow(
             [
@@ -1251,7 +1278,7 @@ def download_activities():
                 a.budget_year2 or 0,
                 a.budget_year3 or 0,
                 budget_total,
-                budget_used,
+                a.budget_used or 0,  # budget_used stores Year 1 only
                 getattr(a, 'budget_used_year1', None) or 0,
                 getattr(a, 'budget_used_year2', None) or 0,
                 getattr(a, 'budget_used_year3', None) or 0,

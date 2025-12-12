@@ -110,11 +110,11 @@
             </div>
 
             <div class="field-group">
-                <label for="budget_used">Total Budget Used <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Auto-calculated)</span></label>
+                <label for="budget_used">Budget Used (Year 1) <span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Auto-calculated)</span></label>
                 <input id="budget_used" name="budget_used" type="number" step="0.01" readonly
                        value="{{ activity.budget_used if activity else '' }}"
                        style="background-color: #f3f4f6; cursor: not-allowed;"
-                       title="Automatically calculated from Year 1 + Year 2 + Year 3">
+                       title="Same as Budget Used Year 1">
             </div>
 
             <div class="field-group">
@@ -174,8 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const year2 = parseFloat(budgetUsedYear2Input.value) || 0;
         const year3 = parseFloat(budgetUsedYear3Input.value) || 0;
         const totalUsed = year1 + year2 + year3;
+        // budget_used field stores Year 1 only
         if (budgetUsedInput) {
-            budgetUsedInput.value = totalUsed.toFixed(2);
+            budgetUsedInput.value = year1.toFixed(2);
         }
         return totalUsed;
     }
