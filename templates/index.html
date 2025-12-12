@@ -13,7 +13,6 @@
 
         {# Use pre-calculated execution percentages from summary #}
         {% set exec_pct = summary.exec_pct_total | default(0) %}
-        {% set exec_pct_year1 = summary.exec_pct_year1 | default(0) %}
 
         <div class="cards">
             <div class="card card-total">
@@ -31,21 +30,6 @@
             <div class="card card-progress">
                 <div class="card-label">% budget execution (Total)</div>
                 <div class="card-value">{{ "%.1f"|format(exec_pct or 0) }}%</div>
-            </div>
-        </div>
-        
-        <div class="cards" style="margin-top: 1rem;">
-            <div class="card card-budget">
-                <div class="card-label">Year 1 Budget Allocated</div>
-                <div class="card-value">{{ "%.0f"|format(summary.total_budget_year1 or 0) }}</div>
-            </div>
-            <div class="card card-used">
-                <div class="card-label">Year 1 Budget Used</div>
-                <div class="card-value">{{ "%.0f"|format(summary.total_used_year1 or 0) }}</div>
-            </div>
-            <div class="card card-progress">
-                <div class="card-label">% Year 1 Execution</div>
-                <div class="card-value">{{ "%.1f"|format(exec_pct_year1 or 0) }}%</div>
             </div>
         </div>
     </div>
