@@ -395,37 +395,47 @@ def index():
             if math.isnan(year_data["execution_pct"]):
                 year_data["execution_pct"] = 0.0
         
-        # Calculate cumulative values
+        # Calculate execution percentages for each year (non-cumulative)
         year1_allocated = safe_float(budget_by_year["year1"]["allocated"], 0.0)
         year1_used = safe_float(budget_by_year["year1"]["used"], 0.0)
-        
-        year2_allocated = year1_allocated + safe_float(budget_by_year["year2"]["allocated"], 0.0)
-        year2_used = year1_used + safe_float(budget_by_year["year2"]["used"], 0.0)
-        
-        year3_allocated = year2_allocated + safe_float(budget_by_year["year3"]["allocated"], 0.0)
-        year3_used = year2_used + safe_float(budget_by_year["year3"]["used"], 0.0)
-        
-        # Calculate cumulative execution percentages
         year1_exec_pct = (year1_used / year1_allocated * 100) if year1_allocated > 0 else 0.0
+        
+        year2_allocated = safe_float(budget_by_year["year2"]["allocated"], 0.0)
+        year2_used = safe_float(budget_by_year["year2"]["used"], 0.0)
         year2_exec_pct = (year2_used / year2_allocated * 100) if year2_allocated > 0 else 0.0
+        
+        year3_allocated = safe_float(budget_by_year["year3"]["allocated"], 0.0)
+        year3_used = safe_float(budget_by_year["year3"]["used"], 0.0)
         year3_exec_pct = (year3_used / year3_allocated * 100) if year3_allocated > 0 else 0.0
+        
+        # Calculate totals across all years
+        total_allocated = year1_allocated + year2_allocated + year3_allocated
+        total_used = year1_used + year2_used + year3_used
+        total_exec_pct = (total_used / total_allocated * 100) if total_allocated > 0 else 0.0
         
         budget_execution_by_year = [
             {"year": "Year 1", "allocated": safe_float(year1_allocated, 0.0), 
              "used": safe_float(year1_used, 0.0), 
              "execution_pct": safe_float(year1_exec_pct, 0.0)},
-            {"year": "Year 2 (Cumulative)", "allocated": safe_float(year2_allocated, 0.0), 
+            {"year": "Year 2", "allocated": safe_float(year2_allocated, 0.0), 
              "used": safe_float(year2_used, 0.0), 
              "execution_pct": safe_float(year2_exec_pct, 0.0)},
-            {"year": "Year 3 (Cumulative)", "allocated": safe_float(year3_allocated, 0.0), 
+            {"year": "Year 3", "allocated": safe_float(year3_allocated, 0.0), 
              "used": safe_float(year3_used, 0.0), 
              "execution_pct": safe_float(year3_exec_pct, 0.0)},
         ]
+        
+        budget_execution_total = {
+            "allocated": safe_float(total_allocated, 0.0),
+            "used": safe_float(total_used, 0.0),
+            "execution_pct": safe_float(total_exec_pct, 0.0)
+        }
     except Exception as e:
         import traceback
         print(f"Error computing budget execution by year: {e}")
         print(traceback.format_exc())
         budget_execution_by_year = []
+        budget_execution_total = {"allocated": 0.0, "used": 0.0, "execution_pct": 0.0}
 
     # Entities for filter
     try:
@@ -481,6 +491,7 @@ def index():
             summary=summary,
             status_rows=status_rows or [],
             budget_execution_by_year=budget_execution_by_year or [],
+            budget_execution_total=budget_execution_total,
             status_filter=status_filter or "",
             entity_filter=entity_filter or "",
             category_filter=category_filter or "",

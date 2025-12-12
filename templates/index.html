@@ -92,6 +92,24 @@
                     <td colspan="4" class="empty">No budget data available.</td>
                 </tr>
             {% endfor %}
+            {% if budget_execution_total %}
+                {% set total_allocated = budget_execution_total.allocated | default(0) %}
+                {% set total_used = budget_execution_total.used | default(0) %}
+                {% set total_exec_pct = budget_execution_total.execution_pct | default(0) %}
+                <tr class="status-row" style="background-color: #f3f4f6; font-weight: bold; border-top: 2px solid #d1d5db;">
+                    <td><strong>Total</strong></td>
+                    <td class="num">{{ "%.0f"|format(total_allocated) }}</td>
+                    <td class="num">{{ "%.0f"|format(total_used) }}</td>
+                    <td class="num">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ total_exec_pct | default(0) }}%"></div>
+                            </div>
+                            <span class="progress-label">{{ "%.1f"|format(total_exec_pct) }}%</span>
+                        </div>
+                    </td>
+                </tr>
+            {% endif %}
             </tbody>
         </table>
     </div>
