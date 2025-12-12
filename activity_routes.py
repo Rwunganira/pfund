@@ -1165,17 +1165,22 @@ def upload_excel():
                             continue
                 return 0.0
 
-            budget_year1 = get_num(row, "Sum of adjusted_bdg_year1", "Budget Y1")
-            budget_year2 = get_num(row, "Sum of adjusted_bdg_year2", "Budget Y2")
-            budget_year3 = get_num(row, "Sum of adjusted_bdg_year3", "Budget Y3")
-            budget_total = get_num(row, "Sum of TOTAL", "Total Budget")
-            budget_used_from_file = get_num(row, "Budget used", "Budget Used")
+            budget_year1 = get_num(row, "Sum of adjusted_bdg_year1", "Budget Y1", "budget_year1")
+            budget_year2 = get_num(row, "Sum of adjusted_bdg_year2", "Budget Y2", "budget_year2")
+            budget_year3 = get_num(row, "Sum of adjusted_bdg_year3", "Budget Y3", "budget_year3")
+            budget_total = get_num(row, "Sum of TOTAL", "Total Budget", "budget_total")
             
-            # For imported data, put all used budget in year 1 (since it's year 1)
-            # Use only year-specific fields for all calculations
-            budget_used_year1 = budget_used_from_file
-            budget_used_year2 = 0.0
-            budget_used_year3 = 0.0
+            # Try to read year-specific budget used columns first
+            budget_used_year1 = get_num(row, "Budget Used Year 1", "budget_used_year1", "Budget used Year 1")
+            budget_used_year2 = get_num(row, "Budget Used Year 2", "budget_used_year2", "Budget used Year 2")
+            budget_used_year3 = get_num(row, "Budget Used Year 3", "budget_used_year3", "Budget used Year 3")
+            
+            # If year-specific columns are not found, fall back to "Budget used" for year 1 (backward compatibility)
+            if budget_used_year1 == 0.0 and budget_used_year2 == 0.0 and budget_used_year3 == 0.0:
+                budget_used_from_file = get_num(row, "Budget used", "Budget Used", "budget_used")
+                budget_used_year1 = budget_used_from_file
+                budget_used_year2 = 0.0
+                budget_used_year3 = 0.0
 
             # Default status and progress for imported rows
             status = "Planned"

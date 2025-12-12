@@ -209,6 +209,9 @@
             <div class="field-group">
                 <label for="file">Upload Excel to populate activities</label>
                 <input type="file" id="file" name="file" accept=".xlsx,.xls">
+                <small style="display: block; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                    Expected columns: Budget Used Year 1, Budget Used Year 2, Budget Used Year 3 (or "Budget Used" for backward compatibility)
+                </small>
             </div>
             <button type="submit">Upload</button>
         </form>
@@ -515,12 +518,20 @@ function openDetailsModal(activityId) {
                         <span class="num">${(Number(data.budget_total) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item budget-used">
-                        <label>Budget Used:</label>
-                        <span class="num">${(Number(data.budget_used) || 0).toLocaleString()}</span>
+                        <label>Budget Used Year 1:</label>
+                        <span class="num">${(Number(data.budget_used_year1) || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item budget-used">
+                        <label>Budget Used Year 2:</label>
+                        <span class="num">${(Number(data.budget_used_year2) || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="budget-item budget-used">
+                        <label>Budget Used Year 3:</label>
+                        <span class="num">${(Number(data.budget_used_year3) || 0).toLocaleString()}</span>
                     </div>
                     <div class="budget-item budget-remaining">
                         <label>Remaining:</label>
-                        <span class="num">${((Number(data.budget_total) || 0) - (Number(data.budget_used) || 0)).toLocaleString()}</span>
+                        <span class="num">${((Number(data.budget_total) || 0) - ((Number(data.budget_used_year1) || 0) + (Number(data.budget_used_year2) || 0) + (Number(data.budget_used_year3) || 0))).toLocaleString()}</span>
                     </div>
                 </div>
             </div>
