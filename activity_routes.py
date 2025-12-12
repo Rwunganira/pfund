@@ -29,6 +29,25 @@ def index():
         # Try to get activities - if this fails, use empty list
         try:
             activities = Activity.query.order_by(Activity.code).all()
+            
+            # One-time migration: Sync budget_used_year1 from budget_used for existing records
+            # This handles records that existed before the new columns were added
+            needs_commit = False
+            for a in activities:
+                if a and (not getattr(a, 'budget_used_year1', None) or getattr(a, 'budget_used_year1', None) == 0):
+                    budget_used = getattr(a, 'budget_used', None) or 0
+                    if budget_used and budget_used > 0:
+                        a.budget_used_year1 = budget_used
+                        needs_commit = True
+            
+            if needs_commit:
+                try:
+                    db.session.commit()
+                    print("Migrated budget_used to budget_used_year1 for existing records")
+                except Exception as e:
+                    print(f"Error migrating budget data: {e}")
+                    db.session.rollback()
+                    
         except Exception as db_error:
             import traceback
             print(f"Database error: {db_error}")
@@ -91,33 +110,98 @@ def index():
         status_filter = ""
         entity_filter = ""
 
-    # Summary metrics computed in Python (using stored progress field)
+    # Summary metrics computed in Python
     try:
+        import math
+        
+        def safe_float(value, default=0.0):
+            """Safely convert value to float, handling None, NaN, and invalid values."""
+            if value is None:
+                return default
+            try:
+                if isinstance(value, float) and math.isnan(value):
+                    return default
+            except (TypeError, ValueError):
+                pass
+            try:
+                val = float(value)
+                if math.isnan(val) or math.isinf(val):
+                    return default
+                return val
+            except (ValueError, TypeError):
+                return default
+        
         total_activities = len(activities) if activities else 0
-        total_budget = sum((a.budget_total or 0) for a in activities) if activities else 0
-        # Calculate total_used from all years (budget_used is Year 1 only)
-        total_used = sum(
-            (getattr(a, 'budget_used_year1', None) or 0) + 
-            (getattr(a, 'budget_used_year2', None) or 0) + 
-            (getattr(a, 'budget_used_year3', None) or 0)
-            for a in activities
-        ) if activities else 0
+        
+        # Calculate budgets by year
+        total_budget_year1 = 0.0
+        total_budget_year2 = 0.0
+        total_budget_year3 = 0.0
+        total_budget = 0.0
+        
+        total_used_year1 = 0.0
+        total_used_year2 = 0.0
+        total_used_year3 = 0.0
+        total_used = 0.0
+        
+        for a in activities:
+            if a:
+                # Allocated budgets
+                budget_year1 = safe_float(getattr(a, 'budget_year1', None), 0.0)
+                budget_year2 = safe_float(getattr(a, 'budget_year2', None), 0.0)
+                budget_year3 = safe_float(getattr(a, 'budget_year3', None), 0.0)
+                budget_total = safe_float(getattr(a, 'budget_total', None), 0.0)
+                
+                total_budget_year1 += budget_year1
+                total_budget_year2 += budget_year2
+                total_budget_year3 += budget_year3
+                total_budget += budget_total
+                
+                # Used budgets
+                used_year1 = safe_float(getattr(a, 'budget_used_year1', None), 0.0)
+                used_year2 = safe_float(getattr(a, 'budget_used_year2', None), 0.0)
+                used_year3 = safe_float(getattr(a, 'budget_used_year3', None), 0.0)
+                
+                total_used_year1 += used_year1
+                total_used_year2 += used_year2
+                total_used_year3 += used_year3
+                total_used += (used_year1 + used_year2 + used_year3)
+        
+        # Calculate execution percentages
+        exec_pct_year1 = (total_used_year1 / total_budget_year1 * 100) if total_budget_year1 > 0 else 0.0
+        exec_pct_total = (total_used / total_budget * 100) if total_budget > 0 else 0.0
+        
+        # Calculate average progress
         avg_progress = (
             sum((a.progress or 0) for a in activities) / total_activities
             if total_activities > 0
             else 0
         )
+        
         summary = {
             "total_activities": total_activities,
-            "total_budget": total_budget,
-            "total_used": total_used,
+            "total_budget": safe_float(total_budget, 0.0),
+            "total_used": safe_float(total_used, 0.0),
+            "total_budget_year1": safe_float(total_budget_year1, 0.0),
+            "total_used_year1": safe_float(total_used_year1, 0.0),
+            "exec_pct_year1": safe_float(exec_pct_year1, 0.0),
+            "exec_pct_total": safe_float(exec_pct_total, 0.0),
             "avg_progress": avg_progress,
         }
     except Exception as e:
         import traceback
         print(f"Error computing summary: {e}")
         print(traceback.format_exc())
-        summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
+        summary = {
+            "total_activities": 0, 
+            "total_budget": 0, 
+            "total_used": 0, 
+            "total_budget_year1": 0,
+            "total_used_year1": 0,
+            "exec_pct_year1": 0.0,
+            "exec_pct_total": 0.0,
+            "avg_progress": 0
+        }
 
     # Breakdown by status
     try:
@@ -199,7 +283,16 @@ def index():
         import traceback
         print(f"Error computing summary: {e}")
         print(traceback.format_exc())
-        summary = {"total_activities": 0, "total_budget": 0, "total_used": 0, "avg_progress": 0}
+        summary = {
+            "total_activities": 0, 
+            "total_budget": 0, 
+            "total_used": 0, 
+            "total_budget_year1": 0,
+            "total_used_year1": 0,
+            "exec_pct_year1": 0.0,
+            "exec_pct_total": 0.0,
+            "avg_progress": 0
+        }
 
     # Status breakdown
     try:
@@ -479,6 +572,13 @@ def edit_activity(activity_id):
     if not activity:
         flash("Activity not found", "error")
         return redirect(url_for("activity.index"))
+    
+    # Sync budget_used_year1 from budget_used if budget_used_year1 is 0 or None
+    # This handles existing records that haven't been migrated yet
+    if activity and (not activity.budget_used_year1 or activity.budget_used_year1 == 0):
+        if activity.budget_used and activity.budget_used > 0:
+            activity.budget_used_year1 = activity.budget_used
+            db.session.commit()
 
     if request.method == "POST":
         data = {
