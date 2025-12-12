@@ -63,14 +63,6 @@ def index():
         results_list = request.args.getlist("results_area")
         search_query = request.args.get("q", "") or ""
         
-        # Budget year filters (range filters)
-        budget_year1_min = request.args.get("budget_year1_min", "")
-        budget_year1_max = request.args.get("budget_year1_max", "")
-        budget_year2_min = request.args.get("budget_year2_min", "")
-        budget_year2_max = request.args.get("budget_year2_max", "")
-        budget_year3_min = request.args.get("budget_year3_min", "")
-        budget_year3_max = request.args.get("budget_year3_max", "")
-        
         # For backward compatibility and display, also keep string versions (comma-separated)
         status_filter = ",".join(status_list) if status_list else ""
         entity_filter = ",".join(entity_list) if entity_list else ""
@@ -87,44 +79,6 @@ def index():
                 activities = [a for a in activities if getattr(a, "category", None) in category_list]
             if results_list:
                 activities = [a for a in activities if getattr(a, "results_area", None) in results_list]
-            
-            # Apply budget year range filters
-            if budget_year1_min:
-                try:
-                    min_val = float(budget_year1_min)
-                    activities = [a for a in activities if (getattr(a, "budget_year1", None) or 0) >= min_val]
-                except (ValueError, TypeError):
-                    pass
-            if budget_year1_max:
-                try:
-                    max_val = float(budget_year1_max)
-                    activities = [a for a in activities if (getattr(a, "budget_year1", None) or 0) <= max_val]
-                except (ValueError, TypeError):
-                    pass
-            if budget_year2_min:
-                try:
-                    min_val = float(budget_year2_min)
-                    activities = [a for a in activities if (getattr(a, "budget_year2", None) or 0) >= min_val]
-                except (ValueError, TypeError):
-                    pass
-            if budget_year2_max:
-                try:
-                    max_val = float(budget_year2_max)
-                    activities = [a for a in activities if (getattr(a, "budget_year2", None) or 0) <= max_val]
-                except (ValueError, TypeError):
-                    pass
-            if budget_year3_min:
-                try:
-                    min_val = float(budget_year3_min)
-                    activities = [a for a in activities if (getattr(a, "budget_year3", None) or 0) >= min_val]
-                except (ValueError, TypeError):
-                    pass
-            if budget_year3_max:
-                try:
-                    max_val = float(budget_year3_max)
-                    activities = [a for a in activities if (getattr(a, "budget_year3", None) or 0) <= max_val]
-                except (ValueError, TypeError):
-                    pass
             
             if search_query:
                 q = search_query.lower()
@@ -535,12 +489,6 @@ def index():
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
-            budget_year1_min=budget_year1_min or "",
-            budget_year1_max=budget_year1_max or "",
-            budget_year2_min=budget_year2_min or "",
-            budget_year2_max=budget_year2_max or "",
-            budget_year3_min=budget_year3_min or "",
-            budget_year3_max=budget_year3_max or "",
         )
     except Exception as e:
         import traceback
@@ -1360,14 +1308,6 @@ def download_activities():
     category_list = request.args.getlist("category")
     results_list = request.args.getlist("results_area")
     search_query = request.args.get("q", "") or ""
-    
-    # Budget year filters
-    budget_year1_min = request.args.get("budget_year1_min", "")
-    budget_year1_max = request.args.get("budget_year1_max", "")
-    budget_year2_min = request.args.get("budget_year2_min", "")
-    budget_year2_max = request.args.get("budget_year2_max", "")
-    budget_year3_min = request.args.get("budget_year3_min", "")
-    budget_year3_max = request.args.get("budget_year3_max", "")
 
     query = Activity.query
     
@@ -1380,44 +1320,6 @@ def download_activities():
         query = query.filter(Activity.category.in_(category_list))
     if results_list:
         query = query.filter(Activity.results_area.in_(results_list))
-    
-    # Apply budget year range filters
-    if budget_year1_min:
-        try:
-            min_val = float(budget_year1_min)
-            query = query.filter(Activity.budget_year1 >= min_val)
-        except (ValueError, TypeError):
-            pass
-    if budget_year1_max:
-        try:
-            max_val = float(budget_year1_max)
-            query = query.filter(Activity.budget_year1 <= max_val)
-        except (ValueError, TypeError):
-            pass
-    if budget_year2_min:
-        try:
-            min_val = float(budget_year2_min)
-            query = query.filter(Activity.budget_year2 >= min_val)
-        except (ValueError, TypeError):
-            pass
-    if budget_year2_max:
-        try:
-            max_val = float(budget_year2_max)
-            query = query.filter(Activity.budget_year2 <= max_val)
-        except (ValueError, TypeError):
-            pass
-    if budget_year3_min:
-        try:
-            min_val = float(budget_year3_min)
-            query = query.filter(Activity.budget_year3 >= min_val)
-        except (ValueError, TypeError):
-            pass
-    if budget_year3_max:
-        try:
-            max_val = float(budget_year3_max)
-            query = query.filter(Activity.budget_year3 <= max_val)
-        except (ValueError, TypeError):
-            pass
     
     # Apply search query
     if search_query:
