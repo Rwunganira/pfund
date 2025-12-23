@@ -1743,6 +1743,8 @@ def indicators_progress_chart():
                 'text': 'Progress Status by Year',
                 'x': 0.5,
                 'xanchor': 'center',
+                'y': 0.95,
+                'yanchor': 'top',
                 'font': {'size': 14, 'family': 'Arial'}
             },
             xaxis_title="Year",
@@ -1758,13 +1760,13 @@ def indicators_progress_chart():
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=1.02,
+                y=1.08,
                 xanchor="right",
                 x=1,
                 font=dict(size=10)
             ),
             height=250,
-            margin=dict(l=35, r=35, t=50, b=35),
+            margin=dict(l=35, r=35, t=70, b=35),
             plot_bgcolor='white',
             paper_bgcolor='white'
         )
