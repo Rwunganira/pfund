@@ -85,7 +85,7 @@
   td.num{ text-align: center; }
 </style>
 
-<section class="indicators-page">
+<section class="indicators-page" style="position: relative;">
     <div>
         <div class="hero-header">
             <div>
@@ -95,8 +95,8 @@
         </div>
 
         {% if progress_summary %}
-        <div style="margin-bottom: 1rem; text-align: center;">
-            <div style="display: inline-block; padding: 0.5rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+        <div style="position: absolute; top: 1rem; right: 1rem; z-index: 10; width: 400px; max-width: 50%;">
+            <div style="padding: 0.25rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 {% set chart_url = url_for('activity.indicators_progress_chart') %}
                 {% set first_param = true %}
                 {% if entity_filter %}
@@ -118,9 +118,29 @@
                         {% set chart_url = chart_url + '&indicator_type=' + type_filter %}
                     {% endif %}
                 {% endif %}
-                <img src="{{ chart_url }}" 
-                     alt="Progress Chart" 
-                     style="max-width: 100%; height: auto; display: block;">
+                <!-- Plotly chart (current implementation) -->
+                <div id="progress-chart" style="width: 100%; height: 250px;"></div>
+                <script>
+                    fetch('{{ chart_url }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            Plotly.newPlot('progress-chart', data.data, data.layout, {displayModeBar: false, responsive: true});
+                        })
+                        .catch(error => {
+                            console.error('Error loading chart:', error);
+                            document.getElementById('progress-chart').innerHTML = 
+                                '<p style="text-align: center; color: #6b7280; padding: 2rem;">Chart loading error. Ensure Streamlit is running for alternative view.</p>';
+                        });
+                </script>
+                
+                <!-- Alternative: Uncomment to use Streamlit iframe directly -->
+                <!--
+                <iframe 
+                    src="http://localhost:8501" 
+                    style="width: 100%; height: 400px; border: none; display: block;"
+                    title="Indicator Progress Chart">
+                </iframe>
+                -->
             </div>
         </div>
         {% endif %}

@@ -9,6 +9,8 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.io as pio
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import ProgrammingError
 
@@ -1643,7 +1645,7 @@ def indicators_progress():
 @activity_bp.route("/indicators/progress/chart", methods=["GET"])
 @login_required
 def indicators_progress_chart():
-    """Generate and return a stacked bar chart for indicator progress by year."""
+    """Generate and return a stacked bar chart for indicator progress by year using Plotly."""
     # Filter by implementing entity (from Activity)
     entity_list = request.args.getlist("implementing_entity")
     # Filter by indicator type (Quantitative / Qualitative)
@@ -1681,56 +1683,88 @@ def indicators_progress_chart():
     behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
     not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
     
-    # Prepare data for stacked bar chart
+    # Create stacked bar chart with Plotly
+    fig = go.Figure()
+    
     years = ['Year 1', 'Year 2', 'Year 3']
-    on_track = [on_track_y1, on_track_y2, on_track_y3]
-    at_risk = [at_risk_y1, at_risk_y2, at_risk_y3]
-    behind = [behind_y1, behind_y2, behind_y3]
-    not_started = [not_started_y1, not_started_y2, not_started_y3]
+    colors = {
+        'Not Started': '#6b7280',
+        'Behind': '#ef4444',
+        'At Risk': '#f59e0b',
+        'On Track': '#10b981'
+    }
     
-    # Create the stacked bar chart
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # Add stacked bars
+    fig.add_trace(go.Bar(
+        name='Not Started',
+        x=years,
+        y=[not_started_y1, not_started_y2, not_started_y3],
+        marker_color=colors['Not Started'],
+        text=[not_started_y1, not_started_y2, not_started_y3],
+        textposition='inside',
+        textfont=dict(color='white', size=8, family='Arial Black')
+    ))
     
-    # Stack the bars (bottom to top: Not Started, Behind, At Risk, On Track)
-    ax.bar(years, not_started, label='Not Started', color='#6b7280')
-    bottom_behind = not_started
-    ax.bar(years, behind, label='Behind', color='#ef4444', bottom=bottom_behind)
-    bottom_at_risk = [not_started[i] + behind[i] for i in range(3)]
-    ax.bar(years, at_risk, label='At Risk', color='#f59e0b', bottom=bottom_at_risk)
-    bottom_on_track = [bottom_at_risk[i] + at_risk[i] for i in range(3)]
-    ax.bar(years, on_track, label='On Track', color='#10b981', bottom=bottom_on_track)
+    fig.add_trace(go.Bar(
+        name='Behind',
+        x=years,
+        y=[behind_y1, behind_y2, behind_y3],
+        marker_color=colors['Behind'],
+        text=[behind_y1, behind_y2, behind_y3],
+        textposition='inside',
+        textfont=dict(color='white', size=8, family='Arial Black')
+    ))
     
-    # Add value labels on each segment
-    def add_value_labels(bars, values, bottom_values):
-        for i, (bar, val, bottom) in enumerate(zip(bars, values, bottom_values)):
-            if val > 0:
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., bottom + height/2,
-                       f'{int(val)}', ha='center', va='center', 
-                       color='white', fontweight='bold', fontsize=9)
+    fig.add_trace(go.Bar(
+        name='At Risk',
+        x=years,
+        y=[at_risk_y1, at_risk_y2, at_risk_y3],
+        marker_color=colors['At Risk'],
+        text=[at_risk_y1, at_risk_y2, at_risk_y3],
+        textposition='inside',
+        textfont=dict(color='white', size=8, family='Arial Black')
+    ))
     
-    # Get bar containers and add labels
-    bars = ax.containers
-    if len(bars) >= 4:
-        add_value_labels(bars[0], not_started, [0, 0, 0])
-        add_value_labels(bars[1], behind, bottom_behind)
-        add_value_labels(bars[2], at_risk, bottom_at_risk)
-        add_value_labels(bars[3], on_track, bottom_on_track)
+    fig.add_trace(go.Bar(
+        name='On Track',
+        x=years,
+        y=[on_track_y1, on_track_y2, on_track_y3],
+        marker_color=colors['On Track'],
+        text=[on_track_y1, on_track_y2, on_track_y3],
+        textposition='inside',
+        textfont=dict(color='white', size=8, family='Arial Black')
+    ))
     
-    ax.set_ylabel('Number of Indicators', fontsize=10)
-    ax.set_title('Indicator Progress Status by Year', fontsize=12, fontweight='bold', pad=15)
-    ax.legend(loc='upper right', fontsize=9)
-    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    # Update layout - smaller size for top corner
+    fig.update_layout(
+        barmode='stack',
+        title={
+            'text': 'Progress Status by Year',
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 10, 'family': 'Arial'}
+        },
+        xaxis_title="Year",
+        yaxis_title="Number of Indicators",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(size=7)
+        ),
+        height=250,
+        margin=dict(l=35, r=35, t=50, b=35),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        xaxis=dict(tickfont=dict(size=8)),
+        yaxis=dict(tickfont=dict(size=8))
+    )
     
-    plt.tight_layout()
-    
-    # Save to bytes
-    img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
-    img_buffer.seek(0)
-    plt.close()
-    
-    return Response(img_buffer.getvalue(), mimetype='image/png')
+    # Convert to JSON for embedding
+    graph_json = pio.to_json(fig)
+    return Response(graph_json, mimetype='application/json')
 
 
 @activity_bp.route("/indicators", methods=["GET"])
