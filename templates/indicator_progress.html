@@ -122,27 +122,8 @@
                 <!-- Plotly chart (current implementation) -->
                 <div id="progress-chart" style="width: 100%; height: 250px;"></div>
                 <script>
-                    // Wait for Plotly to be available
-                    if (typeof Plotly === 'undefined') {
-                        console.error('Plotly.js not loaded. Loading from CDN...');
-                        var script = document.createElement('script');
-                        script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
-                        script.onload = function() {
-                            loadChart();
-                        };
-                        script.onerror = function() {
-                            document.getElementById('progress-chart').innerHTML = 
-                                '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
-                                '<p>Chart temporarily unavailable.</p>' +
-                                '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: Failed to load Plotly.js library</p>' +
-                                '</div>';
-                        };
-                        document.head.appendChild(script);
-                    } else {
-                        loadChart();
-                    }
-                    
-                    function loadChart() {
+                    // Make loadChart globally accessible
+                    window.loadChart = function() {
                         // Build chart URL dynamically from current form filter values
                         var chartUrl = '{{ url_for("activity.indicators_progress_chart") }}';
                         var params = [];
@@ -199,6 +180,26 @@
                                     '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: ' + error.message + '</p>' +
                                     '</div>';
                             });
+                    };
+                    
+                    // Wait for Plotly to be available and load chart on page load
+                    if (typeof Plotly === 'undefined') {
+                        console.error('Plotly.js not loaded. Loading from CDN...');
+                        var script = document.createElement('script');
+                        script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+                        script.onload = function() {
+                            window.loadChart();
+                        };
+                        script.onerror = function() {
+                            document.getElementById('progress-chart').innerHTML = 
+                                '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
+                                '<p>Chart temporarily unavailable.</p>' +
+                                '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: Failed to load Plotly.js library</p>' +
+                                '</div>';
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        window.loadChart();
                     }
                 </script>
                 
@@ -269,20 +270,13 @@
                 if (filterForm) {
                     filterForm.addEventListener('change', function(e) {
                         if (e.target.matches('input[name="implementing_entity"], select[name="indicator_type"]')) {
-                            if (typeof loadChart === 'function') {
-                                loadChart();
+                            console.log('Filter changed:', e.target.name, e.target.value);
+                            if (typeof window.loadChart === 'function') {
+                                window.loadChart();
+                            } else {
+                                console.error('loadChart function not available');
                             }
                         }
-                    });
-                    
-                    // Also reload when form is submitted
-                    filterForm.addEventListener('submit', function() {
-                        // Chart will reload after page reloads, but also trigger immediately
-                        setTimeout(function() {
-                            if (typeof loadChart === 'function') {
-                                loadChart();
-                            }
-                        }, 100);
                     });
                 }
             });
@@ -499,3 +493,4 @@
     </section>
 </section>
 {% endblock %}
+
