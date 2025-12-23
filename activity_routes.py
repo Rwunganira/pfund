@@ -1743,7 +1743,7 @@ def indicators_progress_chart():
                 'text': 'Progress Status by Year',
                 'x': 0.5,
                 'xanchor': 'center',
-                'y': 0.95,
+                'y': 1.0,
                 'yanchor': 'top',
                 'font': {'size': 14, 'family': 'Arial'}
             },
