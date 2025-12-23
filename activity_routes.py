@@ -1468,12 +1468,20 @@ def indicators_list():
         for ind in indicators
         if str(ind.naphs).strip().lower() in ("true", "yes", "1")
     )
+    submitted_count = sum(
+        1
+        for ind in indicators
+        if (ind.submitted or "").strip() == "Reported"
+    )
+    submitted_pct = (submitted_count / total * 100) if total > 0 else 0.0
 
     indicator_summary = {
         "total": total,
         "quantitative": quantitative,
         "qualitative": qualitative,
         "naphs_yes": naphs_yes,
+        "submitted_count": submitted_count,
+        "submitted_pct": round(submitted_pct, 1),
     }
 
     # Distinct implementing entities for filter dropdown
