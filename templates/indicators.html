@@ -62,16 +62,27 @@
             {% endif %}
         </div>
 
+        <!-- Implementing Entity Filter -->
+        <form method="get" class="indicator-filters" style="margin-bottom: 1rem; display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+            <div class="field-group" style="max-width:260px;">
+                <label for="implementing_entity">Implementing Entity</label>
+                <select id="implementing_entity" name="implementing_entity" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    {% for e in entities or [] %}
+                        <option value="{{ e }}" {% if entity_filter and e in entity_filter.split(',') %}selected{% endif %}>{{ e }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
         <div class="table-wrapper">
             <table class="compact-table">
                 <thead>
                     <tr>
-                        <th>Activity Code</th>
-                        <th>Fundholder implementing entity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Type</th>
-                        <th>Baseline Proposal Year</th>
-                        <th>Target Y3</th>
+                        <th class="col-small">Baseline</th>
+                        <th class="col-small">Target Y3</th>
                         <th>Submitted</th>
                         {% if current_user.role == 'admin' %}
                         <th>Actions</th>
@@ -81,22 +92,14 @@
                 <tbody>
                 {% for ind in indicators %}
                     <tr>
-                        <td><strong>{{ ind.activity_code or (ind.activity.code if ind.activity else '-') }}</strong></td>
-                        <td>
-                            {% if ind.activity %}
-                                {{ ind.activity.implementing_entity or '-' }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
                         <td>
                             <span class="truncate-text" title="{{ ind.new_proposed_indicator }}">
                                 {{ ind.new_proposed_indicator or '-' }}
                             </span>
                         </td>
                         <td>{{ ind.indicator_type or '-' }}</td>
-                        <td class="num">{{ ind.baseline_proposal_year or '-' }}</td>
-                        <td class="num">{{ ind.target_year3 or '-' }}</td>
+                        <td class="num col-small">{{ ind.baseline_proposal_year or '-' }}</td>
+                        <td class="num col-small">{{ ind.target_year3 or '-' }}</td>
                         <td>{{ ind.submitted or '-' }}</td>
                         {% if current_user.role == 'admin' %}
                         <td class="actions">
@@ -114,7 +117,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="9" class="empty">No indicators yet.</td>
+                        <td colspan="7" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>

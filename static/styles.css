@@ -1178,6 +1178,14 @@ tbody tr:hover {
     }
 }
 
+/* Narrow numeric columns for indicators baseline/targets */
+.indicators-section .compact-table th.col-small,
+.indicators-section .compact-table td.col-small {
+    width: 80px;
+    max-width: 80px;
+    text-align: right;
+}
+
     /* Progress container */
     .progress-container {
         flex-direction: column;

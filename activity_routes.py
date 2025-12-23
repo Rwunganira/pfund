@@ -1433,14 +1433,17 @@ def download_activities():
 @login_required
 def indicators_list():
     """View all indicators linked to activities."""
+    # Filter by implementing entity (from Activity)
+    entity_list = request.args.getlist("implementing_entity")
+
+    # Base query
+    query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
+    if entity_list:
+        query = query.filter(Activity.implementing_entity.in_(entity_list))
+
     # Simple read-only view of all indicators with their activities
     try:
-        indicators = (
-            db.session.query(Indicator)
-            .join(Activity, Indicator.activity_id == Activity.id)
-            .order_by(Activity.code, Indicator.id)
-            .all()
-        )
+        indicators = query.order_by(Activity.code, Indicator.id).all()
     except Exception as e:
         import traceback
 
@@ -1469,10 +1472,28 @@ def indicators_list():
         "naphs_yes": naphs_yes,
     }
 
+    # Distinct implementing entities for filter dropdown
+    try:
+        entities = [
+            row[0]
+            for row in db.session.query(Activity.implementing_entity)
+            .filter(
+                Activity.implementing_entity.isnot(None),
+                Activity.implementing_entity != "",
+            )
+            .distinct()
+            .order_by(Activity.implementing_entity)
+            .all()
+        ]
+    except Exception:
+        entities = []
+
     return render_template(
         "indicators.html",
         indicators=indicators,
         indicator_summary=indicator_summary,
+        entities=entities,
+        entity_filter=",".join(entity_list) if entity_list else "",
     )
 
 
