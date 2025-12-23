@@ -151,13 +151,6 @@
                       rows="2">{{ indicator.comments if indicator else '' }}</textarea>
         </div>
 
-        <div class="field-group">
-            <label for="comment_addressed">Comment addressed</label>
-            <textarea id="comment_addressed"
-                      name="comment_addressed"
-                      rows="2">{{ indicator.comment_addressed if indicator else '' }}</textarea>
-        </div>
-
         <div class="form-actions">
             <button type="submit" class="primary">
                 {{ "Save changes" if indicator else "Create indicator" }}

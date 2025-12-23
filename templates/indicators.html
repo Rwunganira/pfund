@@ -32,6 +32,10 @@
                 <div class="card-label">% Submitted to Pandemic Fund</div>
                 <div class="card-value">{{ indicator_summary.submitted_pct or 0 }}%</div>
             </div>
+            <div class="card">
+                <div class="card-label">% Portal Edited</div>
+                <div class="card-value">{{ indicator_summary.portal_edited_pct or 0 }}%</div>
+            </div>
         </div>
         {% endif %}
     </div>

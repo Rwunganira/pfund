@@ -1474,6 +1474,12 @@ def indicators_list():
         if (ind.submitted or "").strip() == "Reported"
     )
     submitted_pct = (submitted_count / total * 100) if total > 0 else 0.0
+    portal_edited_count = sum(
+        1
+        for ind in indicators
+        if ind.portal_edited is True or str(ind.portal_edited).strip().lower() in ("true", "yes", "1")
+    )
+    portal_edited_pct = (portal_edited_count / total * 100) if total > 0 else 0.0
 
     indicator_summary = {
         "total": total,
@@ -1482,6 +1488,8 @@ def indicators_list():
         "naphs_yes": naphs_yes,
         "submitted_count": submitted_count,
         "submitted_pct": round(submitted_pct, 1),
+        "portal_edited_count": portal_edited_count,
+        "portal_edited_pct": round(portal_edited_pct, 1),
     }
 
     # Distinct implementing entities for filter dropdown
