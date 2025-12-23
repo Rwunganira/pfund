@@ -1542,12 +1542,26 @@ def indicators_progress():
         print(traceback.format_exc())
         indicators = []
 
-    # Progress-specific summary stats
+    # Progress-specific summary stats - per year
     total = len(indicators)
-    on_track = sum(1 for ind in indicators if ind.status_year1 == "On Track")
-    at_risk = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
-    behind = sum(1 for ind in indicators if ind.status_year1 == "Behind")
-    not_started = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+    
+    # Year 1 summaries
+    on_track_y1 = sum(1 for ind in indicators if ind.status_year1 == "On Track")
+    at_risk_y1 = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
+    behind_y1 = sum(1 for ind in indicators if ind.status_year1 == "Behind")
+    not_started_y1 = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+    
+    # Year 2 summaries
+    on_track_y2 = sum(1 for ind in indicators if ind.status_year2 == "On Track")
+    at_risk_y2 = sum(1 for ind in indicators if ind.status_year2 == "At Risk")
+    behind_y2 = sum(1 for ind in indicators if ind.status_year2 == "Behind")
+    not_started_y2 = sum(1 for ind in indicators if not ind.status_year2 or ind.status_year2 == "Not Started")
+    
+    # Year 3 summaries
+    on_track_y3 = sum(1 for ind in indicators if ind.status_year3 == "On Track")
+    at_risk_y3 = sum(1 for ind in indicators if ind.status_year3 == "At Risk")
+    behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
+    not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
     
     # Calculate average progress for indicators with progress data
     progress_values = [ind.progress_year1 for ind in indicators if ind.progress_year1 is not None]
@@ -1566,10 +1580,27 @@ def indicators_progress():
 
     progress_summary = {
         "total": total,
-        "on_track": on_track,
-        "at_risk": at_risk,
-        "behind": behind,
-        "not_started": not_started,
+        # Overall (Year 1 for backward compatibility)
+        "on_track": on_track_y1,
+        "at_risk": at_risk_y1,
+        "behind": behind_y1,
+        "not_started": not_started_y1,
+        # Year 1
+        "on_track_y1": on_track_y1,
+        "at_risk_y1": at_risk_y1,
+        "behind_y1": behind_y1,
+        "not_started_y1": not_started_y1,
+        # Year 2
+        "on_track_y2": on_track_y2,
+        "at_risk_y2": at_risk_y2,
+        "behind_y2": behind_y2,
+        "not_started_y2": not_started_y2,
+        # Year 3
+        "on_track_y3": on_track_y3,
+        "at_risk_y3": at_risk_y3,
+        "behind_y3": behind_y3,
+        "not_started_y3": not_started_y3,
+        # Average progress
         "avg_progress_y1": round(avg_progress_y1, 1),
         "avg_progress_y2": round(avg_progress_y2, 1),
         "avg_progress_y3": round(avg_progress_y3, 1),
