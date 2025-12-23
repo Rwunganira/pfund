@@ -1703,7 +1703,7 @@ def indicators_progress_chart():
             marker_color=colors['Not Started'],
             text=[not_started_y1, not_started_y2, not_started_y3],
             textposition='inside',
-            textfont=dict(color='white', size=8, family='Arial Black')
+            textfont=dict(color='white', size=11, family='Arial Black')
         ))
         
         fig.add_trace(go.Bar(
@@ -1713,7 +1713,7 @@ def indicators_progress_chart():
             marker_color=colors['Behind'],
             text=[behind_y1, behind_y2, behind_y3],
             textposition='inside',
-            textfont=dict(color='white', size=8, family='Arial Black')
+            textfont=dict(color='white', size=11, family='Arial Black')
         ))
         
         fig.add_trace(go.Bar(
@@ -1723,7 +1723,7 @@ def indicators_progress_chart():
             marker_color=colors['At Risk'],
             text=[at_risk_y1, at_risk_y2, at_risk_y3],
             textposition='inside',
-            textfont=dict(color='white', size=8, family='Arial Black')
+            textfont=dict(color='white', size=11, family='Arial Black')
         ))
         
         fig.add_trace(go.Bar(
@@ -1733,7 +1733,7 @@ def indicators_progress_chart():
             marker_color=colors['On Track'],
             text=[on_track_y1, on_track_y2, on_track_y3],
             textposition='inside',
-            textfont=dict(color='white', size=8, family='Arial Black')
+            textfont=dict(color='white', size=11, family='Arial Black')
         ))
         
         # Update layout - smaller size for top corner
@@ -1743,24 +1743,30 @@ def indicators_progress_chart():
                 'text': 'Progress Status by Year',
                 'x': 0.5,
                 'xanchor': 'center',
-                'font': {'size': 10, 'family': 'Arial'}
+                'font': {'size': 14, 'family': 'Arial'}
             },
             xaxis_title="Year",
             yaxis_title="Number of Indicators",
+            xaxis=dict(
+                titlefont=dict(size=12),
+                tickfont=dict(size=11)
+            ),
+            yaxis=dict(
+                titlefont=dict(size=12),
+                tickfont=dict(size=11)
+            ),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
                 y=1.02,
                 xanchor="right",
                 x=1,
-                font=dict(size=7)
+                font=dict(size=10)
             ),
             height=250,
             margin=dict(l=35, r=35, t=50, b=35),
             plot_bgcolor='white',
-            paper_bgcolor='white',
-            xaxis=dict(tickfont=dict(size=8)),
-            yaxis=dict(tickfont=dict(size=8))
+            paper_bgcolor='white'
         )
         
         # Convert to JSON for embedding
