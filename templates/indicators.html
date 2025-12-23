@@ -102,15 +102,9 @@
                 <thead>
                     <tr>
                         <th>Details</th>
-                        <th class="col-small">Code</th>
                         <th>Activity</th>
                         <th>New Proposed Indicator</th>
-                        <th>Indicator Type</th>
-                        <th class="col-small">Baseline</th>
-                        <th class="col-small">Target Y1</th>
-                        <th class="col-small">Target Y2</th>
-                        <th class="col-small">Target Y3</th>
-                        <th>Submitted</th>
+                        <th>Indicator Definition</th>
                         {% if current_user.role == 'admin' %}
                         <th>Actions</th>
                         {% endif %}
@@ -126,9 +120,6 @@
                                 View
                             </button>
                         </td>
-                        <td class="num col-small">
-                            {{ ind.activity_code or (ind.activity.code if ind.activity else '-') }}
-                        </td>
                         <td>
                             <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
                                 {{ ind.activity.proposed_activity if ind.activity else '-' }}
@@ -139,28 +130,11 @@
                                 {{ ind.new_proposed_indicator or '-' }}
                             </span>
                         </td>
-                        <td>{{ ind.indicator_type or '-' }}</td>
-                        <td class="num col-small">
-                            <span class="truncate-text" title="{{ ind.baseline_proposal_year or '' }}">
-                                {{ ind.baseline_proposal_year or '-' }}
+                        <td>
+                            <span class="truncate-text" title="{{ ind.indicator_definition }}">
+                                {{ ind.indicator_definition or '-' }}
                             </span>
                         </td>
-                        <td class="num col-small">
-                            <span class="truncate-text" title="{{ ind.target_year1 or '' }}">
-                                {{ ind.target_year1 or '-' }}
-                            </span>
-                        </td>
-                        <td class="num col-small">
-                            <span class="truncate-text" title="{{ ind.target_year2 or '' }}">
-                                {{ ind.target_year2 or '-' }}
-                            </span>
-                        </td>
-                        <td class="num col-small">
-                            <span class="truncate-text" title="{{ ind.target_year3 or '' }}">
-                                {{ ind.target_year3 or '-' }}
-                            </span>
-                        </td>
-                        <td>{{ ind.submitted or '-' }}</td>
                         {% if current_user.role == 'admin' %}
                         <td class="actions">
                             <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit">
@@ -177,7 +151,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="12" class="empty">No indicators yet.</td>
+                        <td colspan="6" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
