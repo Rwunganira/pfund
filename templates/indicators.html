@@ -101,6 +101,7 @@
             <table class="compact-table">
                 <thead>
                     <tr>
+                        <th>Details</th>
                         <th>Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Type</th>
@@ -117,6 +118,13 @@
                 <tbody>
                 {% for ind in indicators %}
                     <tr>
+                        <td>
+                            <button type="button"
+                                    class="btn-view-details"
+                                    onclick="openIndicatorDetailsModal({{ ind.id }})">
+                                View
+                            </button>
+                        </td>
                         <td>
                             <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
                                 {{ ind.activity.proposed_activity if ind.activity else '-' }}
@@ -165,7 +173,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="10" class="empty">No indicators yet.</td>
+                        <td colspan="11" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
