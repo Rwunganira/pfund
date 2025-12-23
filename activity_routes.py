@@ -19,7 +19,7 @@ activity_bp = Blueprint("activity", __name__)
 def calculate_indicator_progress(indicator_type, actual, target, baseline):
     """Calculate progress percentage for an indicator.
     
-    For quantitative indicators: progress = ((actual - baseline) / (target - baseline)) * 100
+    For quantitative indicators: progress = (actual / target) * 100
     For qualitative indicators: returns None (manual status selection)
     
     Returns:
@@ -34,15 +34,12 @@ def calculate_indicator_progress(indicator_type, actual, target, baseline):
     try:
         actual_num = float(str(actual).strip())
         target_num = float(str(target).strip())
-        baseline_num = float(str(baseline).strip()) if baseline else 0.0
         
-        if target_num == baseline_num:
-            # Target equals baseline, check if actual equals target
-            if actual_num >= target_num:
-                return 100.0
-            return 0.0
+        if target_num == 0:
+            # If target is 0, return 100 if actual is also 0, otherwise None
+            return 100.0 if actual_num == 0 else None
         
-        progress = ((actual_num - baseline_num) / (target_num - baseline_num)) * 100
+        progress = (actual_num / target_num) * 100
         return min(100.0, max(0.0, progress))  # Clamp between 0-100
     except (ValueError, TypeError):
         return None
