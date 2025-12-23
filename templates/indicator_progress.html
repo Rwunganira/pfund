@@ -190,17 +190,6 @@
                 </select>
             </div>
 
-            <div class="field-group" style="max-width:200px;">
-                <label for="status_filter">Progress Status</label>
-                <select id="status_filter" name="status">
-                    <option value="">All</option>
-                    <option value="On Track" {% if status_filter == 'On Track' %}selected{% endif %}>On Track</option>
-                    <option value="At Risk" {% if status_filter == 'At Risk' %}selected{% endif %}>At Risk</option>
-                    <option value="Behind" {% if status_filter == 'Behind' %}selected{% endif %}>Behind</option>
-                    <option value="Not Started" {% if status_filter == 'Not Started' %}selected{% endif %}>Not Started</option>
-                </select>
-            </div>
-
             <button type="submit" class="secondary">Apply filters</button>
         </form>
 
@@ -214,13 +203,15 @@
                         <th class="col-tiny">T1</th>
                         <th class="col-tiny">A1</th>
                         <th class="col-tiny">P1</th>
+                        <th class="col-tiny">S1</th>
                         <th class="col-tiny">T2</th>
                         <th class="col-tiny">A2</th>
                         <th class="col-tiny">P2</th>
+                        <th class="col-tiny">S2</th>
                         <th class="col-tiny">T3</th>
                         <th class="col-tiny">A3</th>
                         <th class="col-tiny">P3</th>
-                        <th class="col-status">Status</th>
+                        <th class="col-tiny">S3</th>
                         {% if current_user.role == 'admin' %}
                         <th class="col-actions">Actions</th>
                         {% endif %}
@@ -277,6 +268,22 @@
                             {% endif %}
                         </td>
 
+                        <td class="col-tiny" style="text-align: center;">
+                            {% if ind.status_year1 %}
+                                {% if ind.status_year1 == 'On Track' %}
+                                    <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">🟢</span>
+                                {% elif ind.status_year1 == 'At Risk' %}
+                                    <span style="color: #f59e0b; font-weight: 600; font-size: 0.9rem;">🟡</span>
+                                {% elif ind.status_year1 == 'Behind' %}
+                                    <span style="color: #ef4444; font-weight: 600; font-size: 0.9rem;">🔴</span>
+                                {% else %}
+                                    <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
+                            {% endif %}
+                        </td>
+
                         <td class="num col-tiny">
                             {% set v = ind.target_year2 or '-' %}
                             <span class="cell-clip" title="{{ v }}">{{ v }}</span>
@@ -307,6 +314,22 @@
                                 </div>
                             {% else %}
                                 <span style="font-size: 0.65rem;">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="col-tiny" style="text-align: center;">
+                            {% if ind.status_year2 %}
+                                {% if ind.status_year2 == 'On Track' %}
+                                    <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">🟢</span>
+                                {% elif ind.status_year2 == 'At Risk' %}
+                                    <span style="color: #f59e0b; font-weight: 600; font-size: 0.9rem;">🟡</span>
+                                {% elif ind.status_year2 == 'Behind' %}
+                                    <span style="color: #ef4444; font-weight: 600; font-size: 0.9rem;">🔴</span>
+                                {% else %}
+                                    <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
                             {% endif %}
                         </td>
 
@@ -343,13 +366,13 @@
                             {% endif %}
                         </td>
 
-                        <td class="col-status">
-                            {% if ind.status_year1 %}
-                                {% if ind.status_year1 == 'On Track' %}
+                        <td class="col-tiny" style="text-align: center;">
+                            {% if ind.status_year3 %}
+                                {% if ind.status_year3 == 'On Track' %}
                                     <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">🟢</span>
-                                {% elif ind.status_year1 == 'At Risk' %}
+                                {% elif ind.status_year3 == 'At Risk' %}
                                     <span style="color: #f59e0b; font-weight: 600; font-size: 0.9rem;">🟡</span>
-                                {% elif ind.status_year1 == 'Behind' %}
+                                {% elif ind.status_year3 == 'Behind' %}
                                     <span style="color: #ef4444; font-weight: 600; font-size: 0.9rem;">🔴</span>
                                 {% else %}
                                     <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
@@ -361,7 +384,8 @@
 
                         {% if current_user.role == 'admin' %}
                         <td class="col-actions">
-                            <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit" style="font-size: 0.7rem; padding: 0.15rem 0.3rem;">
+                            {% set progress_url = url_for('activity.indicators_progress') %}
+                            <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id, next=progress_url) }}" class="btn-edit" style="font-size: 0.7rem; padding: 0.15rem 0.3rem;">
                                 Edit
                             </a>
                         </td>
@@ -369,7 +393,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="{{ 14 if current_user.role == 'admin' else 13 }}" class="empty">
+                        <td colspan="{{ 17 if current_user.role == 'admin' else 16 }}" class="empty">
                             No indicators found.
                         </td>
                     </tr>
