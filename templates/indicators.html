@@ -79,6 +79,7 @@
             <table class="compact-table">
                 <thead>
                     <tr>
+                        <th>Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Type</th>
                         <th class="col-small">Baseline</th>
@@ -92,6 +93,11 @@
                 <tbody>
                 {% for ind in indicators %}
                     <tr>
+                        <td>
+                            <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
+                                {{ ind.activity.proposed_activity if ind.activity else '-' }}
+                            </span>
+                        </td>
                         <td>
                             <span class="truncate-text" title="{{ ind.new_proposed_indicator }}">
                                 {{ ind.new_proposed_indicator or '-' }}
@@ -117,7 +123,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="7" class="empty">No indicators yet.</td>
+                        <td colspan="8" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
