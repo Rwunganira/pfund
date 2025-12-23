@@ -1186,9 +1186,15 @@ tbody tr:hover {
     text-align: right;
 }
 
-/* In indicators table, allow a bit more text before truncating */
-.indicators-section .truncate-text {
-    max-width: 220px;
+/* In indicators table, allow full text display with wrapping */
+.indicators-section .compact-table td {
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: none;
+}
+
+.indicators-section .compact-table td:not(.col-small):not(.actions) {
+    min-width: 200px;
 }
 
     /* Progress container */

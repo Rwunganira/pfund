@@ -121,19 +121,13 @@
                             </button>
                         </td>
                         <td>
-                            <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
-                                {{ ind.activity.proposed_activity if ind.activity else '-' }}
-                            </span>
+                            {{ ind.activity.proposed_activity if ind.activity else '-' }}
                         </td>
                         <td>
-                            <span class="truncate-text" title="{{ ind.new_proposed_indicator }}">
-                                {{ ind.new_proposed_indicator or '-' }}
-                            </span>
+                            {{ ind.new_proposed_indicator or '-' }}
                         </td>
                         <td>
-                            <span class="truncate-text" title="{{ ind.indicator_definition }}">
-                                {{ ind.indicator_definition or '-' }}
-                            </span>
+                            {{ ind.indicator_definition or '-' }}
                         </td>
                         {% if current_user.role == 'admin' %}
                         <td class="actions">
