@@ -84,6 +84,7 @@
   /* Numbers centered */
   td.num{ text-align: center; }
 </style>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 <section class="indicators-page" style="position: relative;">
     <div>
@@ -121,37 +122,61 @@
                 <!-- Plotly chart (current implementation) -->
                 <div id="progress-chart" style="width: 100%; height: 250px;"></div>
                 <script>
-                    fetch('{{ chart_url }}', {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data && data.data && data.layout) {
-                                Plotly.newPlot('progress-chart', data.data, data.layout, {
-                                    displayModeBar: false, 
-                                    responsive: true
-                                });
-                            } else {
-                                throw new Error('Invalid chart data format');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error loading chart:', error);
+                    // Wait for Plotly to be available
+                    if (typeof Plotly === 'undefined') {
+                        console.error('Plotly.js not loaded. Loading from CDN...');
+                        var script = document.createElement('script');
+                        script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+                        script.onload = function() {
+                            loadChart();
+                        };
+                        script.onerror = function() {
                             document.getElementById('progress-chart').innerHTML = 
                                 '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
                                 '<p>Chart temporarily unavailable.</p>' +
-                                '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: ' + error.message + '</p>' +
+                                '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: Failed to load Plotly.js library</p>' +
                                 '</div>';
-                        });
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        loadChart();
+                    }
+                    
+                    function loadChart() {
+                        fetch('{{ chart_url }}', {
+                            method: 'GET',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data && data.data && data.layout) {
+                                    Plotly.newPlot('progress-chart', data.data, data.layout, {
+                                        displayModeBar: false, 
+                                        responsive: true
+                                    });
+                                } else if (data && data.error) {
+                                    throw new Error(data.error);
+                                } else {
+                                    throw new Error('Invalid chart data format');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error loading chart:', error);
+                                document.getElementById('progress-chart').innerHTML = 
+                                    '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
+                                    '<p>Chart temporarily unavailable.</p>' +
+                                    '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: ' + error.message + '</p>' +
+                                    '</div>';
+                            });
+                    }
                 </script>
                 
                 <!-- Alternative: Uncomment to use Streamlit iframe directly -->
