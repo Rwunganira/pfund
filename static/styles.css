@@ -420,6 +420,12 @@ tbody tr:hover {
     gap: 1rem;
 }
 
+/* Indicators page layout - single column full width inside container */
+.indicators-page {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
 .hero-header {
     display: flex;
     justify-content: space-between;
