@@ -21,8 +21,15 @@ def upgrade():
     # Note: Foreign key operations removed - the foreign key already exists from add_indicators_table migration
     # Alembic incorrectly detected it as changed, but no action is needed.
     
-    with op.batch_alter_table('sub_activities', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('status', sa.String(), nullable=False, server_default='pending'))
+    # Check if status column already exists before adding it
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = [col['name'] for col in inspector.get_columns('sub_activities')]
+    
+    if 'status' not in columns:
+        with op.batch_alter_table('sub_activities', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('status', sa.String(), nullable=False, server_default='pending'))
 
     # ### end Alembic commands ###
 
