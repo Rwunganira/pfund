@@ -9,6 +9,27 @@
                 <p>View indicators linked to activities across the portfolio.</p>
             </div>
         </div>
+
+        {% if indicator_summary %}
+        <div class="cards">
+            <div class="card card-total">
+                <div class="card-label">Total indicators</div>
+                <div class="card-value">{{ indicator_summary.total or 0 }}</div>
+            </div>
+            <div class="card card-budget">
+                <div class="card-label">Quantitative</div>
+                <div class="card-value">{{ indicator_summary.quantitative or 0 }}</div>
+            </div>
+            <div class="card card-used">
+                <div class="card-label">Qualitative</div>
+                <div class="card-value">{{ indicator_summary.qualitative or 0 }}</div>
+            </div>
+            <div class="card">
+                <div class="card-label">NAPHS-related</div>
+                <div class="card-value">{{ indicator_summary.naphs_yes or 0 }}</div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <section class="table-section indicators-section" style="margin-top: 1.5rem;">
@@ -47,13 +68,9 @@
                     <tr>
                         <th>Activity Code</th>
                         <th>Fundholder implementing entity</th>
-                        <th>Key Project Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Type</th>
-                        <th>NAPHS</th>
                         <th>Baseline Proposal Year</th>
-                        <th>Target Y1</th>
-                        <th>Target Y2</th>
                         <th>Target Y3</th>
                         <th>Submitted</th>
                         {% if current_user.role == 'admin' %}
@@ -73,20 +90,12 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
-                                {{ ind.activity.proposed_activity if ind.activity else '-' }}
-                            </span>
-                        </td>
-                        <td>
                             <span class="truncate-text" title="{{ ind.new_proposed_indicator }}">
                                 {{ ind.new_proposed_indicator or '-' }}
                             </span>
                         </td>
                         <td>{{ ind.indicator_type or '-' }}</td>
-                        <td>{{ ind.naphs or '-' }}</td>
                         <td class="num">{{ ind.baseline_proposal_year or '-' }}</td>
-                        <td class="num">{{ ind.target_year1 or '-' }}</td>
-                        <td class="num">{{ ind.target_year2 or '-' }}</td>
                         <td class="num">{{ ind.target_year3 or '-' }}</td>
                         <td>{{ ind.submitted or '-' }}</td>
                         {% if current_user.role == 'admin' %}
@@ -105,14 +114,181 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="12" class="empty">No indicators yet.</td>
+                        <td colspan="9" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
     </section>
+
+    <!-- Details Modal -->
+    <div id="indicatorDetailsModal" class="modal">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h2>Indicator Details</h2>
+                <button class="modal-close" onclick="closeIndicatorDetailsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body" id="indicatorModalBody"></div>
+
+            <div class="modal-footer">
+                <button onclick="closeIndicatorDetailsModal()" class="btn-secondary">Close</button>
+            </div>
+
+        </div>
+    </div>
 </section>
 {% endblock %}
 
+{% block scripts %}
+<script>
+// Preload indicator data for modal
+var indicatorData = {};
+{% for ind in indicators %}
+    {% if ind and ind.id %}
+    indicatorData[{{ ind.id }}] = {
+        id: {{ ind.id }},
+        code: {{ (ind.activity_code or (ind.activity.code if ind.activity else ''))|tojson }},
+        implementing_entity: {{ (ind.activity.implementing_entity if ind.activity else '')|tojson }},
+        key_project_activity: {{ (ind.activity.proposed_activity if ind.activity else '')|tojson }},
+        new_proposed_indicator: {{ (ind.new_proposed_indicator or '')|tojson }},
+        indicator_type: {{ (ind.indicator_type or '')|tojson }},
+        naphs: {{ (ind.naphs|string)|tojson }},
+        indicator_definition: {{ (ind.indicator_definition or '')|tojson }},
+        data_source: {{ (ind.data_source or '')|tojson }},
+        baseline_proposal_year: {{ (ind.baseline_proposal_year or '')|tojson }},
+        target_year1: {{ (ind.target_year1 or '')|tojson }},
+        target_year2: {{ (ind.target_year2 or '')|tojson }},
+        target_year3: {{ (ind.target_year3 or '')|tojson }},
+        submitted: {{ (ind.submitted or '')|tojson }},
+        comments: {{ (ind.comments or '')|tojson }},
+        portal_edited: {{ (ind.portal_edited|string)|tojson }},
+        comment_addressed: {{ (ind.comment_addressed|string)|tojson }}
+    };
+    {% endif %}
+{% endfor %}
 
+function openIndicatorDetailsModal(id) {
+    var data = indicatorData[id];
+    if (!data) {
+        alert('Indicator details not available.');
+        return;
+    }
+
+    var modal = document.getElementById('indicatorDetailsModal');
+    var body = document.getElementById('indicatorModalBody');
+    if (!modal || !body) return;
+
+    function yesNo(val) {
+        if (!val) return '-';
+        var v = String(val).toLowerCase();
+        if (['true','yes','1'].includes(v)) return 'Yes';
+        if (['false','no','0'].includes(v)) return 'No';
+        return val;
+    }
+
+    body.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h3>Link to Activity</h3>
+                <div class="detail-item">
+                    <label>Activity Code:</label>
+                    <span>${data.code || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Implementing Entity:</label>
+                    <span>${data.implementing_entity || '-'}</span>
+                </div>
+                <div class="detail-item full-width">
+                    <label>Key Project Activity:</label>
+                    <div class="detail-text">${data.key_project_activity || '<em>Not specified</em>'}</div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Indicator</h3>
+                <div class="detail-item full-width">
+                    <label>New Proposed Indicator:</label>
+                    <div class="detail-text">${data.new_proposed_indicator || '<em>Not specified</em>'}</div>
+                </div>
+                <div class="detail-item">
+                    <label>Type:</label>
+                    <span>${data.indicator_type || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>NAPHS:</label>
+                    <span>${yesNo(data.naphs)}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Targets</h3>
+                <div class="budget-grid">
+                    <div class="budget-item">
+                        <label>Baseline proposal year:</label>
+                        <span class="num">${data.baseline_proposal_year || '-'}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Target Year 1:</label>
+                        <span class="num">${data.target_year1 || '-'}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Target Year 2:</label>
+                        <span class="num">${data.target_year2 || '-'}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Target Year 3:</label>
+                        <span class="num">${data.target_year3 || '-'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section full-width">
+                <h3>Definition & Data</h3>
+                <div class="detail-item full-width">
+                    <label>Indicator definition:</label>
+                    <div class="detail-text">${data.indicator_definition || '<em>Not provided</em>'}</div>
+                </div>
+                <div class="detail-item">
+                    <label>Data source:</label>
+                    <span>${data.data_source || '-'}</span>
+                </div>
+            </div>
+
+            <div class="detail-section full-width">
+                <h3>Status & Comments</h3>
+                <div class="detail-item">
+                    <label>Submitted:</label>
+                    <span>${data.submitted || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Portal edited:</label>
+                    <span>${yesNo(data.portal_edited)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Comment addressed:</label>
+                    <span>${yesNo(data.comment_addressed)}</span>
+                </div>
+                <div class="detail-item full-width">
+                    <label>Comments:</label>
+                    <div class="detail-text">${data.comments ? data.comments.replace(/\\n/g, '<br>') : '<em class="muted">No comments</em>'}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeIndicatorDetailsModal() {
+    var modal = document.getElementById('indicatorDetailsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+</script>
+{% endblock %}

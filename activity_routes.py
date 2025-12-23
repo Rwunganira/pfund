@@ -1448,7 +1448,32 @@ def indicators_list():
         print(traceback.format_exc())
         indicators = []
 
-    return render_template("indicators.html", indicators=indicators)
+    # Summary stats for header cards
+    total = len(indicators)
+    quantitative = sum(
+        1 for ind in indicators if (ind.indicator_type or "").strip() == "Quantitative"
+    )
+    qualitative = sum(
+        1 for ind in indicators if (ind.indicator_type or "").strip() == "Qualitative"
+    )
+    naphs_yes = sum(
+        1
+        for ind in indicators
+        if str(ind.naphs).strip().lower() in ("true", "yes", "1")
+    )
+
+    indicator_summary = {
+        "total": total,
+        "quantitative": quantitative,
+        "qualitative": qualitative,
+        "naphs_yes": naphs_yes,
+    }
+
+    return render_template(
+        "indicators.html",
+        indicators=indicators,
+        indicator_summary=indicator_summary,
+    )
 
 
 @activity_bp.route("/indicators/new", methods=["GET", "POST"])
