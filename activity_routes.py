@@ -48,12 +48,49 @@ def calculate_indicator_progress(indicator_type, actual, target, baseline):
         return None
 
 
-def get_progress_status(progress_pct, indicator_type):
-    """Determine status based on progress percentage.
+def status_for_qualitative(stage):
+    """Map qualitative stage to dashboard status.
+    
+    Args:
+        stage: Qualitative stage string (e.g., "Not Started", "In Progress", "Completed", "Delayed")
+    
+    Returns:
+        str: "Not Started", "On Track", "At Risk", or "Behind"
+    """
+    if not stage:
+        return "Not Started"
+    
+    s = str(stage).strip().lower()
+    
+    if s in ("not started", "pending", "not started"):
+        return "Not Started"
+    if s in ("in progress", "ongoing", "started"):
+        return "At Risk"  # Default to At Risk for in-progress items
+    if s in ("completed", "done", "achieved", "finished"):
+        return "On Track"
+    if s in ("delayed", "blocked", "stalled", "behind"):
+        return "Behind"
+    
+    # Default fallback
+    return "Not Started"
+
+
+def get_progress_status(progress_pct, indicator_type, qualitative_stage=None):
+    """Determine status based on progress percentage or qualitative stage.
+    
+    Args:
+        progress_pct: Progress percentage (0-100) for quantitative indicators
+        indicator_type: "Quantitative" or "Qualitative"
+        qualitative_stage: Stage string for qualitative indicators (optional)
     
     Returns:
         str: "On Track" (>=80%), "At Risk" (50-79%), "Behind" (<50%), or "Not Started" (None)
     """
+    # For qualitative indicators, use the stage mapping
+    if indicator_type == "Qualitative":
+        return status_for_qualitative(qualitative_stage)
+    
+    # For quantitative indicators, use progress percentage
     if progress_pct is None:
         return "Not Started"
     
@@ -1879,15 +1916,20 @@ def edit_indicator(indicator_id):
         actual_y2 = request.form.get("actual_year2") or None
         actual_y3 = request.form.get("actual_year3") or None
         
-        # Calculate progress percentages
+        # Get qualitative stages (for qualitative indicators)
+        qualitative_stage_y1 = request.form.get("qualitative_stage_year1") or None
+        qualitative_stage_y2 = request.form.get("qualitative_stage_year2") or None
+        qualitative_stage_y3 = request.form.get("qualitative_stage_year3") or None
+        
+        # Calculate progress percentages (only for quantitative)
         progress_y1 = calculate_indicator_progress(indicator_type, actual_y1, t1, baseline)
         progress_y2 = calculate_indicator_progress(indicator_type, actual_y2, t2, baseline)
         progress_y3 = calculate_indicator_progress(indicator_type, actual_y3, t3, baseline)
         
-        # Determine status
-        status_y1 = get_progress_status(progress_y1, indicator_type)
-        status_y2 = get_progress_status(progress_y2, indicator_type)
-        status_y3 = get_progress_status(progress_y3, indicator_type)
+        # Determine status (use qualitative stage for qualitative indicators)
+        status_y1 = get_progress_status(progress_y1, indicator_type, qualitative_stage_y1)
+        status_y2 = get_progress_status(progress_y2, indicator_type, qualitative_stage_y2)
+        status_y3 = get_progress_status(progress_y3, indicator_type, qualitative_stage_y3)
         
         ind.activity_id = activity.id
         ind.activity_code = activity.code
@@ -1910,7 +1952,10 @@ def edit_indicator(indicator_id):
         ind.status_year1 = status_y1
         ind.status_year2 = status_y2
         ind.status_year3 = status_y3
-        if actual_y1 or actual_y2 or actual_y3:
+        ind.qualitative_stage_year1 = qualitative_stage_y1
+        ind.qualitative_stage_year2 = qualitative_stage_y2
+        ind.qualitative_stage_year3 = qualitative_stage_y3
+        if actual_y1 or actual_y2 or actual_y3 or qualitative_stage_y1 or qualitative_stage_y2 or qualitative_stage_y3:
             ind.last_progress_update = datetime.utcnow()
         ind.submitted = request.form.get("submitted") or "Reported"
         ind.comments = request.form.get("comments") or None
@@ -1919,6 +1964,11 @@ def edit_indicator(indicator_id):
 
         db.session.commit()
         flash("Indicator updated successfully.", "success")
+        
+        # If we came from a filtered view (e.g., progress page), go back there
+        next_url = request.args.get("next")
+        if next_url:
+            return redirect(next_url)
         return redirect(url_for("activity.indicators_list"))
 
     # GET

@@ -36,24 +36,6 @@
                 <div class="card-label">% Portal Edited</div>
                 <div class="card-value">{{ indicator_summary.portal_edited_pct or 0 }}%</div>
             </div>
-            <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                <div class="card-label" style="color: rgba(255,255,255,0.9);">On Track</div>
-                <div class="card-value" style="color: white;">{{ indicator_summary.on_track or 0 }}</div>
-            </div>
-            <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-                <div class="card-label" style="color: rgba(255,255,255,0.9);">At Risk</div>
-                <div class="card-value" style="color: white;">{{ indicator_summary.at_risk or 0 }}</div>
-            </div>
-            <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
-                <div class="card-label" style="color: rgba(255,255,255,0.9);">Behind</div>
-                <div class="card-value" style="color: white;">{{ indicator_summary.behind or 0 }}</div>
-            </div>
-            {% if indicator_summary.avg_progress %}
-            <div class="card">
-                <div class="card-label">Avg Progress (Y1)</div>
-                <div class="card-value">{{ indicator_summary.avg_progress }}%</div>
-            </div>
-            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -135,13 +117,10 @@
                 <thead>
                     <tr>
                         <th>Details</th>
-                        <th>Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Definition</th>
-                        <th class="col-small">Target Y1</th>
-                        <th class="col-small">Actual Y1</th>
-                        <th class="col-small">Progress Y1</th>
-                        <th class="col-small">Status</th>
+                        <th>Comments</th>
+                        <th>Comment Addressed</th>
                         {% if current_user.role == 'admin' %}
                         <th>Actions</th>
                         {% endif %}
@@ -158,45 +137,25 @@
                             </button>
                         </td>
                         <td>
-                            {{ ind.activity.proposed_activity if ind.activity else '-' }}
-                        </td>
-                        <td>
                             {{ ind.new_proposed_indicator or '-' }}
                         </td>
                         <td>
                             {{ ind.indicator_definition or '-' }}
                         </td>
-                        <td class="num col-small">
-                            {{ ind.target_year1 or '-' }}
+                        <td>
+                            {{ ind.comments or '-' }}
                         </td>
-                        <td class="num col-small">
-                            {{ ind.actual_year1 or '-' }}
-                        </td>
-                        <td class="num col-small">
-                            {% if ind.progress_year1 is not none %}
-                                <div class="progress-container" style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div class="progress-bar" style="flex: 1; min-width: 60px;">
-                                        <div class="progress" style="width: {{ ind.progress_year1 }}%"></div>
-                                    </div>
-                                    <span class="progress-label" style="font-size: 0.85rem; white-space: nowrap;">{{ "%.0f"|format(ind.progress_year1) }}%</span>
-                                </div>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="col-small">
-                            {% if ind.status_year1 %}
-                                {% if ind.status_year1 == 'On Track' %}
-                                    <span style="color: #10b981; font-weight: 600;">🟢 On Track</span>
-                                {% elif ind.status_year1 == 'At Risk' %}
-                                    <span style="color: #f59e0b; font-weight: 600;">🟡 At Risk</span>
-                                {% elif ind.status_year1 == 'Behind' %}
-                                    <span style="color: #ef4444; font-weight: 600;">🔴 Behind</span>
+                        <td>
+                            {% if ind.comment_addressed %}
+                                {% if ind.comment_addressed in [True, 'true', 'True', 'yes', 'Yes', '1'] %}
+                                    Yes
+                                {% elif ind.comment_addressed in [False, 'false', 'False', 'no', 'No', '0'] %}
+                                    No
                                 {% else %}
-                                    <span style="color: #6b7280;">⚪ {{ ind.status_year1 }}</span>
+                                    {{ ind.comment_addressed }}
                                 {% endif %}
                             {% else %}
-                                <span style="color: #6b7280;">⚪ Not Started</span>
+                                -
                             {% endif %}
                         </td>
                         {% if current_user.role == 'admin' %}
@@ -215,7 +174,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="empty">No indicators yet.</td>
+                        <td colspan="{{ 6 if current_user.role == 'admin' else 5 }}" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>

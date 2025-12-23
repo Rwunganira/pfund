@@ -1193,8 +1193,57 @@ tbody tr:hover {
     max-width: none;
 }
 
-.indicators-section .compact-table td:not(.col-small):not(.actions) {
+.indicators-section .compact-table td:not(.col-small):not(.actions):not(.col-tiny):not(.col-status):not(.col-actions) {
     min-width: 200px;
+}
+
+/* Progress table - extra compact columns */
+.indicators-section .compact-table th.col-tiny,
+.indicators-section .compact-table td.col-tiny {
+    width: 35px;
+    max-width: 35px;
+    text-align: center;
+    padding: 0.3rem 0.1rem;
+    font-size: 0.75rem;
+}
+
+
+.indicators-section .compact-table th.col-status,
+.indicators-section .compact-table td.col-status {
+    width: 30px;
+    max-width: 30px;
+    text-align: center;
+    padding: 0.3rem 0.1rem;
+}
+
+.indicators-section .compact-table th.col-actions,
+.indicators-section .compact-table td.col-actions {
+    width: 50px;
+    max-width: 50px;
+    padding: 0.3rem 0.1rem;
+}
+
+/* Progress table - remove min-width constraint to fit on screen */
+.indicators-section .compact-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+/* Ensure indicator column in progress table matches indicators page */
+.indicators-section .compact-table td:first-child {
+    min-width: 200px;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Smaller progress bars in progress table */
+.indicators-section .compact-table .progress-bar {
+    height: 8px;
+    min-height: 8px;
+}
+
+.indicators-section .compact-table .progress {
+    height: 8px;
 }
 
     /* Progress container */

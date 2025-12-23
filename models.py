@@ -190,6 +190,11 @@ class Indicator(db.Model):
     status_year2 = db.Column(db.String, nullable=True)
     status_year3 = db.Column(db.String, nullable=True)
 
+    # Qualitative stage fields (for qualitative indicators only)
+    qualitative_stage_year1 = db.Column(db.String, nullable=True)
+    qualitative_stage_year2 = db.Column(db.String, nullable=True)
+    qualitative_stage_year3 = db.Column(db.String, nullable=True)
+
     # Last updated timestamp
     last_progress_update = db.Column(db.DateTime, nullable=True)
 

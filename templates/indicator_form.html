@@ -115,6 +115,17 @@
                        value="{{ indicator.actual_year1 if indicator else '' }}">
             </div>
 
+            <div class="field-group" id="qualitative_stage_y1_group" style="display: none;">
+                <label for="qualitative_stage_year1">Qualitative Stage Year 1</label>
+                <select id="qualitative_stage_year1" name="qualitative_stage_year1">
+                    <option value="">-- Select stage --</option>
+                    <option value="Not Started" {% if indicator and indicator.qualitative_stage_year1 == 'Not Started' %}selected{% endif %}>Not Started</option>
+                    <option value="In Progress" {% if indicator and indicator.qualitative_stage_year1 == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if indicator and indicator.qualitative_stage_year1 == 'Completed' %}selected{% endif %}>Completed</option>
+                    <option value="Delayed" {% if indicator and indicator.qualitative_stage_year1 == 'Delayed' %}selected{% endif %}>Delayed</option>
+                </select>
+            </div>
+
             <div class="field-group">
                 <label for="actual_year2">Actual Year 2</label>
                 <input id="actual_year2"
@@ -124,6 +135,17 @@
                        value="{{ indicator.actual_year2 if indicator else '' }}">
             </div>
 
+            <div class="field-group" id="qualitative_stage_y2_group" style="display: none;">
+                <label for="qualitative_stage_year2">Qualitative Stage Year 2</label>
+                <select id="qualitative_stage_year2" name="qualitative_stage_year2">
+                    <option value="">-- Select stage --</option>
+                    <option value="Not Started" {% if indicator and indicator.qualitative_stage_year2 == 'Not Started' %}selected{% endif %}>Not Started</option>
+                    <option value="In Progress" {% if indicator and indicator.qualitative_stage_year2 == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if indicator and indicator.qualitative_stage_year2 == 'Completed' %}selected{% endif %}>Completed</option>
+                    <option value="Delayed" {% if indicator and indicator.qualitative_stage_year2 == 'Delayed' %}selected{% endif %}>Delayed</option>
+                </select>
+            </div>
+
             <div class="field-group">
                 <label for="actual_year3">Actual Year 3</label>
                 <input id="actual_year3"
@@ -131,6 +153,17 @@
                        type="text"
                        placeholder="Enter actual achievement for Year 3"
                        value="{{ indicator.actual_year3 if indicator else '' }}">
+            </div>
+
+            <div class="field-group" id="qualitative_stage_y3_group" style="display: none;">
+                <label for="qualitative_stage_year3">Qualitative Stage Year 3</label>
+                <select id="qualitative_stage_year3" name="qualitative_stage_year3">
+                    <option value="">-- Select stage --</option>
+                    <option value="Not Started" {% if indicator and indicator.qualitative_stage_year3 == 'Not Started' %}selected{% endif %}>Not Started</option>
+                    <option value="In Progress" {% if indicator and indicator.qualitative_stage_year3 == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if indicator and indicator.qualitative_stage_year3 == 'Completed' %}selected{% endif %}>Completed</option>
+                    <option value="Delayed" {% if indicator and indicator.qualitative_stage_year3 == 'Delayed' %}selected{% endif %}>Delayed</option>
+                </select>
             </div>
 
             {% if indicator and (indicator.progress_year1 is not none or indicator.progress_year2 is not none or indicator.progress_year3 is not none) %}
@@ -160,7 +193,7 @@
                     {% endif %}
                 </div>
             </div>
-            {% endif}
+            {% endif %}
 
             <div class="field-group">
                 <label for="submitted">Submitted</label>
@@ -233,6 +266,37 @@
         </div>
     </form>
 </section>
+
+<script>
+// Show/hide qualitative stage fields based on indicator type
+function toggleQualitativeFields() {
+    var indicatorType = document.getElementById('indicator_type').value;
+    var isQualitative = indicatorType === 'Qualitative';
+    
+    // Show/hide qualitative stage fields
+    document.getElementById('qualitative_stage_y1_group').style.display = isQualitative ? 'block' : 'none';
+    document.getElementById('qualitative_stage_y2_group').style.display = isQualitative ? 'block' : 'none';
+    document.getElementById('qualitative_stage_y3_group').style.display = isQualitative ? 'block' : 'none';
+    
+    // Show/hide actual value inputs (opposite of qualitative stages)
+    var actualInputs = ['actual_year1', 'actual_year2', 'actual_year3'];
+    actualInputs.forEach(function(id) {
+        var input = document.getElementById(id);
+        if (input) {
+            input.closest('.field-group').style.display = isQualitative ? 'none' : 'block';
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    var indicatorTypeSelect = document.getElementById('indicator_type');
+    if (indicatorTypeSelect) {
+        indicatorTypeSelect.addEventListener('change', toggleQualitativeFields);
+        toggleQualitativeFields(); // Initial call
+    }
+});
+</script>
 {% endblock %}
 
 

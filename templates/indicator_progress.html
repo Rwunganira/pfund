@@ -1,6 +1,90 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  /* Allow table to fit + scroll only if absolutely needed */
+  .table-wrapper{
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Force predictable column widths */
+  table.compact-table{
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  /* Make each row ~3x taller */
+  table.compact-table th,
+  table.compact-table td{
+    padding: 0.90rem 0.40rem;   /* 3x vertical padding */
+    font-size: 0.78rem;
+    line-height: 1.20;
+    vertical-align: top;
+  }
+
+  /* Keep header readable */
+  table.compact-table th{
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+    padding: 0.45rem 0.40rem; /* keep header compact */
+  }
+
+  /* Column widths */
+  table.compact-table .col-tiny{ width: 58px; }
+  table.compact-table .col-status{ width: 56px; text-align:center; }
+  table.compact-table .col-actions{ width: 68px; text-align:center; }
+  table.compact-table .col-indicator{ width: 320px; }
+
+  /* Indicator: show up to 3 lines */
+  td.indicator-cell{
+    font-size: 0.70rem;
+    line-height: 1.18;
+  }
+  td.indicator-cell .ind-name{
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3; /* 3 lines */
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Show ellipsis in small cells but full text on hover via title */
+  .cell-clip{
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Compact progress cell: bar + percent on one line */
+  .progress-mini{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .progress-mini .progress-bar{
+    width: 26px;
+    height: 6px;
+    margin: 0;
+  }
+  .progress-mini .pct{
+    font-size: 0.65rem;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* Numbers centered */
+  td.num{ text-align: center; }
+</style>
+
 <section class="indicators-page">
     <div>
         <div class="hero-header">
@@ -124,97 +208,160 @@
             <table class="compact-table">
                 <thead>
                     <tr>
-                        <th>Indicator</th>
-                        <th>Type</th>
-                        <th class="col-small">Baseline</th>
-                        <th class="col-small">Target Y1</th>
-                        <th class="col-small">Actual Y1</th>
-                        <th class="col-small">Progress Y1</th>
-                        <th class="col-small">Target Y2</th>
-                        <th class="col-small">Actual Y2</th>
-                        <th class="col-small">Progress Y2</th>
-                        <th class="col-small">Target Y3</th>
-                        <th class="col-small">Actual Y3</th>
-                        <th class="col-small">Progress Y3</th>
-                        <th>Status</th>
+                        <th class="col-indicator">Indicator</th>
+                        <th class="col-tiny">Type</th>
+                        <th class="col-tiny">Base</th>
+                        <th class="col-tiny">T1</th>
+                        <th class="col-tiny">A1</th>
+                        <th class="col-tiny">P1</th>
+                        <th class="col-tiny">T2</th>
+                        <th class="col-tiny">A2</th>
+                        <th class="col-tiny">P2</th>
+                        <th class="col-tiny">T3</th>
+                        <th class="col-tiny">A3</th>
+                        <th class="col-tiny">P3</th>
+                        <th class="col-status">Status</th>
                         {% if current_user.role == 'admin' %}
-                        <th>Actions</th>
+                        <th class="col-actions">Actions</th>
                         {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                 {% for ind in indicators %}
                     <tr>
-                        <td>
-                            <strong>{{ ind.new_proposed_indicator or '-' }}</strong>
-                            {% if ind.activity %}
-                            <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">
-                                {{ ind.activity.proposed_activity or '' }}
-                            </div>
-                            {% endif %}
+                        <td class="indicator-cell col-indicator">
+                            {% set ind_name = ind.new_proposed_indicator or '-' %}
+                            <span class="ind-name" title="{{ ind_name }}">{{ ind_name }}</span>
                         </td>
-                        <td>{{ ind.indicator_type or '-' }}</td>
-                        <td class="num col-small">{{ ind.baseline_proposal_year or '-' }}</td>
-                        <td class="num col-small">{{ ind.target_year1 or '-' }}</td>
-                        <td class="num col-small">{{ ind.actual_year1 or '-' }}</td>
-                        <td class="num col-small">
-                            {% if ind.progress_year1 is not none %}
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div class="progress-bar" style="flex: 1; min-width: 50px;">
+
+                        <td class="col-tiny" style="font-size: 0.75rem;">
+                            {% set v = (ind.indicator_type or '-') %}
+                            <span class="cell-clip" title="{{ v }}">{{ v[:3] }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% set v = ind.baseline_proposal_year or '-' %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% set v = ind.target_year1 or '-' %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% set v = ind.qualitative_stage_year1 or '-' %}
+                            {% else %}
+                                {% set v = ind.actual_year1 or '-' %}
+                            {% endif %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% if ind.qualitative_stage_year1 %}
+                                    <span style="font-size: 0.65rem;" title="{{ ind.qualitative_stage_year1 }}">{{ ind.qualitative_stage_year1[:3] }}</span>
+                                {% else %}
+                                    <span style="font-size: 0.65rem;">-</span>
+                                {% endif %}
+                            {% elif ind.progress_year1 is not none %}
+                                <div class="progress-mini">
+                                    <div class="progress-bar">
                                         <div class="progress" style="width: {{ ind.progress_year1 }}%"></div>
                                     </div>
-                                    <span style="font-size: 0.85rem; white-space: nowrap;">{{ "%.0f"|format(ind.progress_year1) }}%</span>
+                                    <span class="pct">{{ "%.0f"|format(ind.progress_year1) }}%</span>
                                 </div>
                             {% else %}
-                                -
+                                <span style="font-size: 0.65rem;">-</span>
                             {% endif %}
                         </td>
-                        <td class="num col-small">{{ ind.target_year2 or '-' }}</td>
-                        <td class="num col-small">{{ ind.actual_year2 or '-' }}</td>
-                        <td class="num col-small">
-                            {% if ind.progress_year2 is not none %}
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div class="progress-bar" style="flex: 1; min-width: 50px;">
+
+                        <td class="num col-tiny">
+                            {% set v = ind.target_year2 or '-' %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% set v = ind.qualitative_stage_year2 or '-' %}
+                            {% else %}
+                                {% set v = ind.actual_year2 or '-' %}
+                            {% endif %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% if ind.qualitative_stage_year2 %}
+                                    <span style="font-size: 0.65rem;" title="{{ ind.qualitative_stage_year2 }}">{{ ind.qualitative_stage_year2[:3] }}</span>
+                                {% else %}
+                                    <span style="font-size: 0.65rem;">-</span>
+                                {% endif %}
+                            {% elif ind.progress_year2 is not none %}
+                                <div class="progress-mini">
+                                    <div class="progress-bar">
                                         <div class="progress" style="width: {{ ind.progress_year2 }}%"></div>
                                     </div>
-                                    <span style="font-size: 0.85rem; white-space: nowrap;">{{ "%.0f"|format(ind.progress_year2) }}%</span>
+                                    <span class="pct">{{ "%.0f"|format(ind.progress_year2) }}%</span>
                                 </div>
                             {% else %}
-                                -
+                                <span style="font-size: 0.65rem;">-</span>
                             {% endif %}
                         </td>
-                        <td class="num col-small">{{ ind.target_year3 or '-' }}</td>
-                        <td class="num col-small">{{ ind.actual_year3 or '-' }}</td>
-                        <td class="num col-small">
-                            {% if ind.progress_year3 is not none %}
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <div class="progress-bar" style="flex: 1; min-width: 50px;">
+
+                        <td class="num col-tiny">
+                            {% set v = ind.target_year3 or '-' %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% set v = ind.qualitative_stage_year3 or '-' %}
+                            {% else %}
+                                {% set v = ind.actual_year3 or '-' %}
+                            {% endif %}
+                            <span class="cell-clip" title="{{ v }}">{{ v }}</span>
+                        </td>
+
+                        <td class="num col-tiny">
+                            {% if (ind.indicator_type or '') == 'Qualitative' %}
+                                {% if ind.qualitative_stage_year3 %}
+                                    <span style="font-size: 0.65rem;" title="{{ ind.qualitative_stage_year3 }}">{{ ind.qualitative_stage_year3[:3] }}</span>
+                                {% else %}
+                                    <span style="font-size: 0.65rem;">-</span>
+                                {% endif %}
+                            {% elif ind.progress_year3 is not none %}
+                                <div class="progress-mini">
+                                    <div class="progress-bar">
                                         <div class="progress" style="width: {{ ind.progress_year3 }}%"></div>
                                     </div>
-                                    <span style="font-size: 0.85rem; white-space: nowrap;">{{ "%.0f"|format(ind.progress_year3) }}%</span>
+                                    <span class="pct">{{ "%.0f"|format(ind.progress_year3) }}%</span>
                                 </div>
                             {% else %}
-                                -
+                                <span style="font-size: 0.65rem;">-</span>
                             {% endif %}
                         </td>
-                        <td>
+
+                        <td class="col-status">
                             {% if ind.status_year1 %}
                                 {% if ind.status_year1 == 'On Track' %}
-                                    <span style="color: #10b981; font-weight: 600;">🟢 On Track</span>
+                                    <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">🟢</span>
                                 {% elif ind.status_year1 == 'At Risk' %}
-                                    <span style="color: #f59e0b; font-weight: 600;">🟡 At Risk</span>
+                                    <span style="color: #f59e0b; font-weight: 600; font-size: 0.9rem;">🟡</span>
                                 {% elif ind.status_year1 == 'Behind' %}
-                                    <span style="color: #ef4444; font-weight: 600;">🔴 Behind</span>
+                                    <span style="color: #ef4444; font-weight: 600; font-size: 0.9rem;">🔴</span>
                                 {% else %}
-                                    <span style="color: #6b7280;">⚪ {{ ind.status_year1 }}</span>
+                                    <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
                                 {% endif %}
                             {% else %}
-                                <span style="color: #6b7280;">⚪ Not Started</span>
+                                <span style="color: #6b7280; font-size: 0.9rem;">⚪</span>
                             {% endif %}
                         </td>
+
                         {% if current_user.role == 'admin' %}
-                        <td class="actions">
-                            <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit">
+                        <td class="col-actions">
+                            <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit" style="font-size: 0.7rem; padding: 0.15rem 0.3rem;">
                                 Edit
                             </a>
                         </td>
@@ -222,7 +369,9 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="13" class="empty">No indicators found.</td>
+                        <td colspan="{{ 14 if current_user.role == 'admin' else 13 }}" class="empty">
+                            No indicators found.
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -231,4 +380,3 @@
     </section>
 </section>
 {% endblock %}
-
