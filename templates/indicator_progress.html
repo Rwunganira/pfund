@@ -143,7 +143,30 @@
                     }
                     
                     function loadChart() {
-                        fetch('{{ chart_url }}', {
+                        // Build chart URL dynamically from current form filter values
+                        var chartUrl = '{{ url_for("activity.indicators_progress_chart") }}';
+                        var params = [];
+                        
+                        // Get selected entities from checkboxes
+                        var entityCheckboxes = document.querySelectorAll('input[name="implementing_entity"]:checked');
+                        entityCheckboxes.forEach(function(cb) {
+                            params.push('implementing_entity=' + encodeURIComponent(cb.value));
+                        });
+                        
+                        // Get indicator type from select dropdown
+                        var typeSelect = document.getElementById('indicator_type_filter');
+                        if (typeSelect && typeSelect.value) {
+                            params.push('indicator_type=' + encodeURIComponent(typeSelect.value));
+                        }
+                        
+                        // Build final URL
+                        if (params.length > 0) {
+                            chartUrl += '?' + params.join('&');
+                        }
+                        
+                        console.log('Loading chart with filters:', chartUrl);
+                        
+                        fetch(chartUrl, {
                             method: 'GET',
                             credentials: 'same-origin',
                             headers: {
@@ -237,6 +260,33 @@
 
             <button type="submit" class="secondary">Apply filters</button>
         </form>
+        
+        <script>
+            // Reload chart when filters change (real-time updates)
+            document.addEventListener('DOMContentLoaded', function() {
+                // Reload chart when checkboxes or select change
+                var filterForm = document.querySelector('.indicator-filters');
+                if (filterForm) {
+                    filterForm.addEventListener('change', function(e) {
+                        if (e.target.matches('input[name="implementing_entity"], select[name="indicator_type"]')) {
+                            if (typeof loadChart === 'function') {
+                                loadChart();
+                            }
+                        }
+                    });
+                    
+                    // Also reload when form is submitted
+                    filterForm.addEventListener('submit', function() {
+                        // Chart will reload after page reloads, but also trigger immediately
+                        setTimeout(function() {
+                            if (typeof loadChart === 'function') {
+                                loadChart();
+                            }
+                        }, 100);
+                    });
+                }
+            });
+        </script>
 
         <div class="table-wrapper">
             <table class="compact-table">
