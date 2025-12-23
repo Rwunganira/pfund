@@ -1,10 +1,14 @@
 from collections import defaultdict
 from datetime import datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for, session
+from flask import Blueprint, flash, redirect, render_template, request, url_for, session, Response
 import tempfile
+import io
 
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import ProgrammingError
 
@@ -1634,6 +1638,99 @@ def indicators_progress():
         type_filter=type_filter,
         status_filter=status_filter,
     )
+
+
+@activity_bp.route("/indicators/progress/chart", methods=["GET"])
+@login_required
+def indicators_progress_chart():
+    """Generate and return a stacked bar chart for indicator progress by year."""
+    # Filter by implementing entity (from Activity)
+    entity_list = request.args.getlist("implementing_entity")
+    # Filter by indicator type (Quantitative / Qualitative)
+    type_filter = (request.args.get("indicator_type") or "").strip()
+    
+    # Base query
+    query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
+    if entity_list:
+        query = query.filter(Activity.implementing_entity.in_(entity_list))
+    if type_filter in ("Quantitative", "Qualitative"):
+        query = query.filter(Indicator.indicator_type == type_filter)
+    
+    # Get indicators
+    try:
+        indicators = query.order_by(Activity.code, Indicator.id).all()
+    except Exception as e:
+        import traceback
+        print(f"Error loading indicators for chart: {e}")
+        print(traceback.format_exc())
+        indicators = []
+    
+    # Calculate per-year summaries
+    on_track_y1 = sum(1 for ind in indicators if ind.status_year1 == "On Track")
+    at_risk_y1 = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
+    behind_y1 = sum(1 for ind in indicators if ind.status_year1 == "Behind")
+    not_started_y1 = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+    
+    on_track_y2 = sum(1 for ind in indicators if ind.status_year2 == "On Track")
+    at_risk_y2 = sum(1 for ind in indicators if ind.status_year2 == "At Risk")
+    behind_y2 = sum(1 for ind in indicators if ind.status_year2 == "Behind")
+    not_started_y2 = sum(1 for ind in indicators if not ind.status_year2 or ind.status_year2 == "Not Started")
+    
+    on_track_y3 = sum(1 for ind in indicators if ind.status_year3 == "On Track")
+    at_risk_y3 = sum(1 for ind in indicators if ind.status_year3 == "At Risk")
+    behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
+    not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
+    
+    # Prepare data for stacked bar chart
+    years = ['Year 1', 'Year 2', 'Year 3']
+    on_track = [on_track_y1, on_track_y2, on_track_y3]
+    at_risk = [at_risk_y1, at_risk_y2, at_risk_y3]
+    behind = [behind_y1, behind_y2, behind_y3]
+    not_started = [not_started_y1, not_started_y2, not_started_y3]
+    
+    # Create the stacked bar chart
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
+    # Stack the bars (bottom to top: Not Started, Behind, At Risk, On Track)
+    ax.bar(years, not_started, label='Not Started', color='#6b7280')
+    bottom_behind = not_started
+    ax.bar(years, behind, label='Behind', color='#ef4444', bottom=bottom_behind)
+    bottom_at_risk = [not_started[i] + behind[i] for i in range(3)]
+    ax.bar(years, at_risk, label='At Risk', color='#f59e0b', bottom=bottom_at_risk)
+    bottom_on_track = [bottom_at_risk[i] + at_risk[i] for i in range(3)]
+    ax.bar(years, on_track, label='On Track', color='#10b981', bottom=bottom_on_track)
+    
+    # Add value labels on each segment
+    def add_value_labels(bars, values, bottom_values):
+        for i, (bar, val, bottom) in enumerate(zip(bars, values, bottom_values)):
+            if val > 0:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., bottom + height/2,
+                       f'{int(val)}', ha='center', va='center', 
+                       color='white', fontweight='bold', fontsize=9)
+    
+    # Get bar containers and add labels
+    bars = ax.containers
+    if len(bars) >= 4:
+        add_value_labels(bars[0], not_started, [0, 0, 0])
+        add_value_labels(bars[1], behind, bottom_behind)
+        add_value_labels(bars[2], at_risk, bottom_at_risk)
+        add_value_labels(bars[3], on_track, bottom_on_track)
+    
+    ax.set_ylabel('Number of Indicators', fontsize=10)
+    ax.set_title('Indicator Progress Status by Year', fontsize=12, fontweight='bold', pad=15)
+    ax.legend(loc='upper right', fontsize=9)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    
+    plt.tight_layout()
+    
+    # Save to bytes
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+    img_buffer.seek(0)
+    plt.close()
+    
+    return Response(img_buffer.getvalue(), mimetype='image/png')
 
 
 @activity_bp.route("/indicators", methods=["GET"])
