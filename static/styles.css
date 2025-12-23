@@ -1161,6 +1161,17 @@ tbody tr:hover {
         max-width: 150px;
     }
 
+/* Indicators page - wider table */
+.indicators-section .compact-table {
+    min-width: 1200px;
+}
+
+@media (max-width: 1024px) {
+    .indicators-section .compact-table {
+        min-width: 900px;
+    }
+}
+
     /* Progress container */
     .progress-container {
         flex-direction: column;
