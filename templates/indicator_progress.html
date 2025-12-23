@@ -95,38 +95,38 @@
         </div>
 
         {% if progress_summary %}
-        <div class="cards">
-            <div class="card card-total">
-                <div class="card-label">Total Indicators</div>
-                <div class="card-value">{{ progress_summary.total or 0 }}</div>
+        <div class="cards" style="margin-bottom: 0.5rem;">
+            <div class="card card-total" style="padding: 0.75rem;">
+                <div class="card-label" style="font-size: 0.85rem;">Total Indicators</div>
+                <div class="card-value" style="font-size: 1.5rem;">{{ progress_summary.total or 0 }}</div>
             </div>
         </div>
         
         <!-- Year 1 Summary -->
-        <div style="margin-top: 1rem;">
-            <h3 style="margin-bottom: 0.75rem; color: #374151; font-size: 1.1rem;">Year 1 Summary</h3>
-            <div class="cards">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">On Track</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.on_track_y1 or 0 }}</div>
+        <div style="margin-top: 0.5rem;">
+            <h3 style="margin-bottom: 0.5rem; color: #374151; font-size: 0.95rem; font-weight: 600;">Year 1 Summary</h3>
+            <div class="cards" style="gap: 0.5rem;">
+                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">On Track</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.on_track_y1 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">At Risk</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.at_risk_y1 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">At Risk</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.at_risk_y1 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Behind</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.behind_y1 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Behind</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.behind_y1 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Not Started</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.not_started_y1 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Not Started</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.not_started_y1 or 0 }}</div>
                 </div>
                 {% if progress_summary.avg_progress_y1 %}
-                <div class="card">
-                    <div class="card-label">Avg Progress</div>
-                    <div class="card-value">{{ progress_summary.avg_progress_y1 }}%</div>
-                    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">
+                <div class="card" style="padding: 0.5rem;">
+                    <div class="card-label" style="font-size: 0.75rem;">Avg Progress</div>
+                    <div class="card-value" style="font-size: 1.25rem;">{{ progress_summary.avg_progress_y1 }}%</div>
+                    <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">
                         ({{ progress_summary.with_progress_y1 }} indicators)
                     </div>
                 </div>
@@ -135,30 +135,30 @@
         </div>
         
         <!-- Year 2 Summary -->
-        <div style="margin-top: 1rem;">
-            <h3 style="margin-bottom: 0.75rem; color: #374151; font-size: 1.1rem;">Year 2 Summary</h3>
-            <div class="cards">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">On Track</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.on_track_y2 or 0 }}</div>
+        <div style="margin-top: 0.5rem;">
+            <h3 style="margin-bottom: 0.5rem; color: #374151; font-size: 0.95rem; font-weight: 600;">Year 2 Summary</h3>
+            <div class="cards" style="gap: 0.5rem;">
+                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">On Track</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.on_track_y2 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">At Risk</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.at_risk_y2 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">At Risk</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.at_risk_y2 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Behind</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.behind_y2 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Behind</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.behind_y2 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Not Started</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.not_started_y2 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Not Started</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.not_started_y2 or 0 }}</div>
                 </div>
                 {% if progress_summary.avg_progress_y2 %}
-                <div class="card">
-                    <div class="card-label">Avg Progress</div>
-                    <div class="card-value">{{ progress_summary.avg_progress_y2 }}%</div>
-                    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">
+                <div class="card" style="padding: 0.5rem;">
+                    <div class="card-label" style="font-size: 0.75rem;">Avg Progress</div>
+                    <div class="card-value" style="font-size: 1.25rem;">{{ progress_summary.avg_progress_y2 }}%</div>
+                    <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">
                         ({{ progress_summary.with_progress_y2 }} indicators)
                     </div>
                 </div>
@@ -167,30 +167,30 @@
         </div>
         
         <!-- Year 3 Summary -->
-        <div style="margin-top: 1rem;">
-            <h3 style="margin-bottom: 0.75rem; color: #374151; font-size: 1.1rem;">Year 3 Summary</h3>
-            <div class="cards">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">On Track</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.on_track_y3 or 0 }}</div>
+        <div style="margin-top: 0.5rem;">
+            <h3 style="margin-bottom: 0.5rem; color: #374151; font-size: 0.95rem; font-weight: 600;">Year 3 Summary</h3>
+            <div class="cards" style="gap: 0.5rem;">
+                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">On Track</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.on_track_y3 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">At Risk</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.at_risk_y3 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">At Risk</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.at_risk_y3 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Behind</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.behind_y3 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Behind</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.behind_y3 or 0 }}</div>
                 </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9);">Not Started</div>
-                    <div class="card-value" style="color: white;">{{ progress_summary.not_started_y3 or 0 }}</div>
+                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.5rem;">
+                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.75rem;">Not Started</div>
+                    <div class="card-value" style="color: white; font-size: 1.25rem;">{{ progress_summary.not_started_y3 or 0 }}</div>
                 </div>
                 {% if progress_summary.avg_progress_y3 %}
-                <div class="card">
-                    <div class="card-label">Avg Progress</div>
-                    <div class="card-value">{{ progress_summary.avg_progress_y3 }}%</div>
-                    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">
+                <div class="card" style="padding: 0.5rem;">
+                    <div class="card-label" style="font-size: 0.75rem;">Avg Progress</div>
+                    <div class="card-value" style="font-size: 1.25rem;">{{ progress_summary.avg_progress_y3 }}%</div>
+                    <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">
                         ({{ progress_summary.with_progress_y3 }} indicators)
                     </div>
                 </div>
