@@ -87,6 +87,80 @@
                        type="text"
                        value="{{ indicator.target_year3 if indicator else '' }}">
             </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #e5e7eb;">
+            <h3 style="margin-bottom: 1rem; color: #374151;">Actual Achievement Values</h3>
+            <p style="margin-bottom: 1rem; color: #6b7280; font-size: 0.9rem;">
+                Enter actual values achieved. Progress will be calculated automatically for quantitative indicators.
+            </p>
+        </div>
+
+        <div class="grid">
+            <div class="field-group">
+                <label for="actual_baseline">Actual Baseline</label>
+                <input id="actual_baseline"
+                       name="actual_baseline"
+                       type="text"
+                       placeholder="Enter actual baseline value"
+                       value="{{ indicator.actual_baseline if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="actual_year1">Actual Year 1</label>
+                <input id="actual_year1"
+                       name="actual_year1"
+                       type="text"
+                       placeholder="Enter actual achievement for Year 1"
+                       value="{{ indicator.actual_year1 if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="actual_year2">Actual Year 2</label>
+                <input id="actual_year2"
+                       name="actual_year2"
+                       type="text"
+                       placeholder="Enter actual achievement for Year 2"
+                       value="{{ indicator.actual_year2 if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="actual_year3">Actual Year 3</label>
+                <input id="actual_year3"
+                       name="actual_year3"
+                       type="text"
+                       placeholder="Enter actual achievement for Year 3"
+                       value="{{ indicator.actual_year3 if indicator else '' }}">
+            </div>
+
+            {% if indicator and (indicator.progress_year1 is not none or indicator.progress_year2 is not none or indicator.progress_year3 is not none) %}
+            <div class="field-group" style="grid-column: 1 / -1;">
+                <label>Progress Status</label>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 0.5rem;">
+                    {% if indicator.progress_year1 is not none %}
+                    <div style="padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem;">
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Year 1</div>
+                        <div style="font-weight: 600; color: #374151;">{{ "%.1f"|format(indicator.progress_year1) }}%</div>
+                        <div style="font-size: 0.85rem; color: #6b7280;">{{ indicator.status_year1 or 'Not Started' }}</div>
+                    </div>
+                    {% endif %}
+                    {% if indicator.progress_year2 is not none %}
+                    <div style="padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem;">
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Year 2</div>
+                        <div style="font-weight: 600; color: #374151;">{{ "%.1f"|format(indicator.progress_year2) }}%</div>
+                        <div style="font-size: 0.85rem; color: #6b7280;">{{ indicator.status_year2 or 'Not Started' }}</div>
+                    </div>
+                    {% endif %}
+                    {% if indicator.progress_year3 is not none %}
+                    <div style="padding: 0.75rem; background: #f3f4f6; border-radius: 0.5rem;">
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Year 3</div>
+                        <div style="font-weight: 600; color: #374151;">{{ "%.1f"|format(indicator.progress_year3) }}%</div>
+                        <div style="font-size: 0.85rem; color: #6b7280;">{{ indicator.status_year3 or 'Not Started' }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif}
 
             <div class="field-group">
                 <label for="submitted">Submitted</label>

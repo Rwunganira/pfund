@@ -36,6 +36,24 @@
                 <div class="card-label">% Portal Edited</div>
                 <div class="card-value">{{ indicator_summary.portal_edited_pct or 0 }}%</div>
             </div>
+            <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <div class="card-label" style="color: rgba(255,255,255,0.9);">On Track</div>
+                <div class="card-value" style="color: white;">{{ indicator_summary.on_track or 0 }}</div>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+                <div class="card-label" style="color: rgba(255,255,255,0.9);">At Risk</div>
+                <div class="card-value" style="color: white;">{{ indicator_summary.at_risk or 0 }}</div>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+                <div class="card-label" style="color: rgba(255,255,255,0.9);">Behind</div>
+                <div class="card-value" style="color: white;">{{ indicator_summary.behind or 0 }}</div>
+            </div>
+            {% if indicator_summary.avg_progress %}
+            <div class="card">
+                <div class="card-label">Avg Progress (Y1)</div>
+                <div class="card-value">{{ indicator_summary.avg_progress }}%</div>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -48,6 +66,13 @@
                     Each row shows an indicator linked to an activity (by code).
                 </p>
             </div>
+            {% if current_user.role == 'admin' %}
+            <div style="margin-left: auto;">
+                <a href="{{ url_for('activity.indicators_progress') }}" class="primary" style="text-decoration: none; display: inline-block;">
+                    View Progress Tracking
+                </a>
+            </div>
+            {% endif %}
             {% if current_user.role == 'admin' %}
             <div class="table-header-actions">
                 <a href="{{ url_for('activity.download_indicators') }}" class="secondary">
@@ -113,6 +138,10 @@
                         <th>Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Definition</th>
+                        <th class="col-small">Target Y1</th>
+                        <th class="col-small">Actual Y1</th>
+                        <th class="col-small">Progress Y1</th>
+                        <th class="col-small">Status</th>
                         {% if current_user.role == 'admin' %}
                         <th>Actions</th>
                         {% endif %}
@@ -136,6 +165,39 @@
                         </td>
                         <td>
                             {{ ind.indicator_definition or '-' }}
+                        </td>
+                        <td class="num col-small">
+                            {{ ind.target_year1 or '-' }}
+                        </td>
+                        <td class="num col-small">
+                            {{ ind.actual_year1 or '-' }}
+                        </td>
+                        <td class="num col-small">
+                            {% if ind.progress_year1 is not none %}
+                                <div class="progress-container" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div class="progress-bar" style="flex: 1; min-width: 60px;">
+                                        <div class="progress" style="width: {{ ind.progress_year1 }}%"></div>
+                                    </div>
+                                    <span class="progress-label" style="font-size: 0.85rem; white-space: nowrap;">{{ "%.0f"|format(ind.progress_year1) }}%</span>
+                                </div>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="col-small">
+                            {% if ind.status_year1 %}
+                                {% if ind.status_year1 == 'On Track' %}
+                                    <span style="color: #10b981; font-weight: 600;">🟢 On Track</span>
+                                {% elif ind.status_year1 == 'At Risk' %}
+                                    <span style="color: #f59e0b; font-weight: 600;">🟡 At Risk</span>
+                                {% elif ind.status_year1 == 'Behind' %}
+                                    <span style="color: #ef4444; font-weight: 600;">🔴 Behind</span>
+                                {% else %}
+                                    <span style="color: #6b7280;">⚪ {{ ind.status_year1 }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #6b7280;">⚪ Not Started</span>
+                            {% endif %}
                         </td>
                         {% if current_user.role == 'admin' %}
                         <td class="actions">
@@ -201,6 +263,16 @@ var indicatorData = {};
         target_year1: {{ (ind.target_year1 or '')|tojson }},
         target_year2: {{ (ind.target_year2 or '')|tojson }},
         target_year3: {{ (ind.target_year3 or '')|tojson }},
+        actual_baseline: {{ (ind.actual_baseline or '')|tojson }},
+        actual_year1: {{ (ind.actual_year1 or '')|tojson }},
+        actual_year2: {{ (ind.actual_year2 or '')|tojson }},
+        actual_year3: {{ (ind.actual_year3 or '')|tojson }},
+        progress_year1: {{ ind.progress_year1 if ind.progress_year1 is not none else 'null' }},
+        progress_year2: {{ ind.progress_year2 if ind.progress_year2 is not none else 'null' }},
+        progress_year3: {{ ind.progress_year3 if ind.progress_year3 is not none else 'null' }},
+        status_year1: {{ (ind.status_year1 or '')|tojson }},
+        status_year2: {{ (ind.status_year2 or '')|tojson }},
+        status_year3: {{ (ind.status_year3 or '')|tojson }},
         submitted: {{ (ind.submitted or '')|tojson }},
         comments: {{ (ind.comments or '')|tojson }},
         portal_edited: {{ (ind.portal_edited|string)|tojson }},
@@ -280,6 +352,61 @@ function openIndicatorDetailsModal(id) {
                     <div class="budget-item">
                         <label>Target Year 3:</label>
                         <span class="num">${data.target_year3 || '-'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section full-width">
+                <h3>Progress Tracking</h3>
+                <div class="budget-grid">
+                    <div class="budget-item">
+                        <label>Actual Baseline:</label>
+                        <span class="num">${data.actual_baseline || '-'}</span>
+                    </div>
+                    <div class="budget-item">
+                        <label>Actual Year 1:</label>
+                        <span class="num">${data.actual_year1 || '-'}</span>
+                        ${data.progress_year1 !== null ? `<div style="margin-top: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="progress-bar" style="flex: 1; min-width: 80px;">
+                                    <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year1))}%"></div>
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 600;">${Math.round(data.progress_year1)}%</span>
+                            </div>
+                            <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
+                                Status: <strong>${data.status_year1 || 'Not Started'}</strong>
+                            </div>
+                        </div>` : ''}
+                    </div>
+                    <div class="budget-item">
+                        <label>Actual Year 2:</label>
+                        <span class="num">${data.actual_year2 || '-'}</span>
+                        ${data.progress_year2 !== null ? `<div style="margin-top: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="progress-bar" style="flex: 1; min-width: 80px;">
+                                    <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year2))}%"></div>
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 600;">${Math.round(data.progress_year2)}%</span>
+                            </div>
+                            <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
+                                Status: <strong>${data.status_year2 || 'Not Started'}</strong>
+                            </div>
+                        </div>` : ''}
+                    </div>
+                    <div class="budget-item">
+                        <label>Actual Year 3:</label>
+                        <span class="num">${data.actual_year3 || '-'}</span>
+                        ${data.progress_year3 !== null ? `<div style="margin-top: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="progress-bar" style="flex: 1; min-width: 80px;">
+                                    <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year3))}%"></div>
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 600;">${Math.round(data.progress_year3)}%</span>
+                            </div>
+                            <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
+                                Status: <strong>${data.status_year3 || 'Not Started'}</strong>
+                            </div>
+                        </div>` : ''}
                     </div>
                 </div>
             </div>

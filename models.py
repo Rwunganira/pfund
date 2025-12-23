@@ -174,6 +174,25 @@ class Indicator(db.Model):
     target_year2 = db.Column(db.String, nullable=True)
     target_year3 = db.Column(db.String, nullable=True)
 
+    # Actual achievement values
+    actual_baseline = db.Column(db.Text, nullable=True)
+    actual_year1 = db.Column(db.Text, nullable=True)
+    actual_year2 = db.Column(db.Text, nullable=True)
+    actual_year3 = db.Column(db.Text, nullable=True)
+
+    # Progress percentages (auto-calculated, stored for performance)
+    progress_year1 = db.Column(db.Float, nullable=True)
+    progress_year2 = db.Column(db.Float, nullable=True)
+    progress_year3 = db.Column(db.Float, nullable=True)
+
+    # Progress status (On Track, At Risk, Behind, Not Started)
+    status_year1 = db.Column(db.String, nullable=True)
+    status_year2 = db.Column(db.String, nullable=True)
+    status_year3 = db.Column(db.String, nullable=True)
+
+    # Last updated timestamp
+    last_progress_update = db.Column(db.DateTime, nullable=True)
+
     submitted = db.Column(db.String, nullable=True)
     comments = db.Column(db.Text, nullable=True)
     portal_edited = db.Column(db.String, nullable=True)

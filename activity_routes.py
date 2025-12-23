@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for, session
 import tempfile
@@ -13,6 +14,55 @@ from usage_tracking import log_user_activity
 
 
 activity_bp = Blueprint("activity", __name__)
+
+
+def calculate_indicator_progress(indicator_type, actual, target, baseline):
+    """Calculate progress percentage for an indicator.
+    
+    For quantitative indicators: progress = ((actual - baseline) / (target - baseline)) * 100
+    For qualitative indicators: returns None (manual status selection)
+    
+    Returns:
+        float: Progress percentage (0-100) or None if cannot calculate
+    """
+    if not actual or not target:
+        return None
+    
+    if indicator_type != "Quantitative":
+        return None  # Qualitative indicators use manual status
+    
+    try:
+        actual_num = float(str(actual).strip())
+        target_num = float(str(target).strip())
+        baseline_num = float(str(baseline).strip()) if baseline else 0.0
+        
+        if target_num == baseline_num:
+            # Target equals baseline, check if actual equals target
+            if actual_num >= target_num:
+                return 100.0
+            return 0.0
+        
+        progress = ((actual_num - baseline_num) / (target_num - baseline_num)) * 100
+        return min(100.0, max(0.0, progress))  # Clamp between 0-100
+    except (ValueError, TypeError):
+        return None
+
+
+def get_progress_status(progress_pct, indicator_type):
+    """Determine status based on progress percentage.
+    
+    Returns:
+        str: "On Track" (>=80%), "At Risk" (50-79%), "Behind" (<50%), or "Not Started" (None)
+    """
+    if progress_pct is None:
+        return "Not Started"
+    
+    if progress_pct >= 80:
+        return "On Track"
+    elif progress_pct >= 50:
+        return "At Risk"
+    else:
+        return "Behind"
 
 
 @activity_bp.route("/test")
@@ -1429,6 +1479,98 @@ def download_activities():
     )
 
 
+@activity_bp.route("/indicators/progress", methods=["GET"])
+@login_required
+def indicators_progress():
+    """View indicator progress tracking - dedicated page for baseline, targets, and progress."""
+    # Filter by implementing entity (from Activity)
+    entity_list = request.args.getlist("implementing_entity")
+    # Filter by indicator type (Quantitative / Qualitative)
+    type_filter = (request.args.get("indicator_type") or "").strip()
+    # Filter by progress status
+    status_filter = (request.args.get("status") or "").strip()
+
+    # Base query
+    query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
+    if entity_list:
+        query = query.filter(Activity.implementing_entity.in_(entity_list))
+    if type_filter in ("Quantitative", "Qualitative"):
+        query = query.filter(Indicator.indicator_type == type_filter)
+    if status_filter in ("On Track", "At Risk", "Behind", "Not Started"):
+        query = query.filter(Indicator.status_year1 == status_filter)
+
+    # Get indicators with progress data
+    try:
+        indicators = query.order_by(Activity.code, Indicator.id).all()
+    except Exception as e:
+        import traceback
+        print(f"Error loading indicator progress: {e}")
+        print(traceback.format_exc())
+        indicators = []
+
+    # Progress-specific summary stats
+    total = len(indicators)
+    on_track = sum(1 for ind in indicators if ind.status_year1 == "On Track")
+    at_risk = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
+    behind = sum(1 for ind in indicators if ind.status_year1 == "Behind")
+    not_started = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+    
+    # Calculate average progress for indicators with progress data
+    progress_values = [ind.progress_year1 for ind in indicators if ind.progress_year1 is not None]
+    avg_progress_y1 = sum(progress_values) / len(progress_values) if progress_values else 0.0
+    
+    progress_values_y2 = [ind.progress_year2 for ind in indicators if ind.progress_year2 is not None]
+    avg_progress_y2 = sum(progress_values_y2) / len(progress_values_y2) if progress_values_y2 else 0.0
+    
+    progress_values_y3 = [ind.progress_year3 for ind in indicators if ind.progress_year3 is not None]
+    avg_progress_y3 = sum(progress_values_y3) / len(progress_values_y3) if progress_values_y3 else 0.0
+
+    # Count indicators with progress data
+    with_progress_y1 = len([ind for ind in indicators if ind.progress_year1 is not None])
+    with_progress_y2 = len([ind for ind in indicators if ind.progress_year2 is not None])
+    with_progress_y3 = len([ind for ind in indicators if ind.progress_year3 is not None])
+
+    progress_summary = {
+        "total": total,
+        "on_track": on_track,
+        "at_risk": at_risk,
+        "behind": behind,
+        "not_started": not_started,
+        "avg_progress_y1": round(avg_progress_y1, 1),
+        "avg_progress_y2": round(avg_progress_y2, 1),
+        "avg_progress_y3": round(avg_progress_y3, 1),
+        "with_progress_y1": with_progress_y1,
+        "with_progress_y2": with_progress_y2,
+        "with_progress_y3": with_progress_y3,
+    }
+
+    # Distinct implementing entities for filter dropdown
+    try:
+        entities = [
+            row[0]
+            for row in db.session.query(Activity.implementing_entity)
+            .filter(
+                Activity.implementing_entity.isnot(None),
+                Activity.implementing_entity != "",
+            )
+            .distinct()
+            .order_by(Activity.implementing_entity)
+            .all()
+        ]
+    except Exception:
+        entities = []
+
+    return render_template(
+        "indicator_progress.html",
+        indicators=indicators,
+        progress_summary=progress_summary,
+        entities=entities,
+        entity_filter=",".join(entity_list) if entity_list else "",
+        type_filter=type_filter,
+        status_filter=status_filter,
+    )
+
+
 @activity_bp.route("/indicators", methods=["GET"])
 @login_required
 def indicators_list():
@@ -1480,6 +1622,28 @@ def indicators_list():
         if ind.portal_edited is True or str(ind.portal_edited).strip().lower() in ("true", "yes", "1")
     )
     portal_edited_pct = (portal_edited_count / total * 100) if total > 0 else 0.0
+    
+    # Progress statistics
+    on_track_count = sum(
+        1 for ind in indicators
+        if ind.status_year1 == "On Track"
+    )
+    at_risk_count = sum(
+        1 for ind in indicators
+        if ind.status_year1 == "At Risk"
+    )
+    behind_count = sum(
+        1 for ind in indicators
+        if ind.status_year1 == "Behind"
+    )
+    not_started_count = sum(
+        1 for ind in indicators
+        if not ind.status_year1 or ind.status_year1 == "Not Started"
+    )
+    
+    # Average progress for indicators with progress data
+    progress_values = [ind.progress_year1 for ind in indicators if ind.progress_year1 is not None]
+    avg_progress = sum(progress_values) / len(progress_values) if progress_values else 0.0
 
     indicator_summary = {
         "total": total,
@@ -1490,6 +1654,11 @@ def indicators_list():
         "submitted_pct": round(submitted_pct, 1),
         "portal_edited_count": portal_edited_count,
         "portal_edited_pct": round(portal_edited_pct, 1),
+        "on_track": on_track_count,
+        "at_risk": at_risk_count,
+        "behind": behind_count,
+        "not_started": not_started_count,
+        "avg_progress": round(avg_progress, 1),
     }
 
     # Distinct implementing entities for filter dropdown
@@ -1582,6 +1751,22 @@ def new_indicator():
         portal_bool = parse_bool(request.form.get("portal_edited"))
         ca_bool = parse_bool(request.form.get("comment_addressed"))
 
+        # Get actual values
+        actual_baseline = request.form.get("actual_baseline") or None
+        actual_y1 = request.form.get("actual_year1") or None
+        actual_y2 = request.form.get("actual_year2") or None
+        actual_y3 = request.form.get("actual_year3") or None
+        
+        # Calculate progress percentages
+        progress_y1 = calculate_indicator_progress(indicator_type, actual_y1, t1, baseline)
+        progress_y2 = calculate_indicator_progress(indicator_type, actual_y2, t2, baseline)
+        progress_y3 = calculate_indicator_progress(indicator_type, actual_y3, t3, baseline)
+        
+        # Determine status
+        status_y1 = get_progress_status(progress_y1, indicator_type)
+        status_y2 = get_progress_status(progress_y2, indicator_type)
+        status_y3 = get_progress_status(progress_y3, indicator_type)
+        
         ind = Indicator(
             activity_id=activity.id,
             activity_code=activity.code,
@@ -1594,6 +1779,17 @@ def new_indicator():
             target_year1=t1,
             target_year2=t2,
             target_year3=t3,
+            actual_baseline=actual_baseline,
+            actual_year1=actual_y1,
+            actual_year2=actual_y2,
+            actual_year3=actual_y3,
+            progress_year1=progress_y1,
+            progress_year2=progress_y2,
+            progress_year3=progress_y3,
+            status_year1=status_y1,
+            status_year2=status_y2,
+            status_year3=status_y3,
+            last_progress_update=datetime.utcnow() if (actual_y1 or actual_y2 or actual_y3) else None,
             submitted=request.form.get("submitted") or "Reported",
             comments=request.form.get("comments") or None,
             portal_edited=portal_bool,
@@ -1677,6 +1873,22 @@ def edit_indicator(indicator_id):
         portal_bool = parse_bool(request.form.get("portal_edited"))
         ca_bool = parse_bool(request.form.get("comment_addressed"))
 
+        # Get actual values
+        actual_baseline = request.form.get("actual_baseline") or None
+        actual_y1 = request.form.get("actual_year1") or None
+        actual_y2 = request.form.get("actual_year2") or None
+        actual_y3 = request.form.get("actual_year3") or None
+        
+        # Calculate progress percentages
+        progress_y1 = calculate_indicator_progress(indicator_type, actual_y1, t1, baseline)
+        progress_y2 = calculate_indicator_progress(indicator_type, actual_y2, t2, baseline)
+        progress_y3 = calculate_indicator_progress(indicator_type, actual_y3, t3, baseline)
+        
+        # Determine status
+        status_y1 = get_progress_status(progress_y1, indicator_type)
+        status_y2 = get_progress_status(progress_y2, indicator_type)
+        status_y3 = get_progress_status(progress_y3, indicator_type)
+        
         ind.activity_id = activity.id
         ind.activity_code = activity.code
         ind.new_proposed_indicator = request.form.get("new_proposed_indicator") or None
@@ -1688,6 +1900,18 @@ def edit_indicator(indicator_id):
         ind.target_year1 = t1
         ind.target_year2 = t2
         ind.target_year3 = t3
+        ind.actual_baseline = actual_baseline
+        ind.actual_year1 = actual_y1
+        ind.actual_year2 = actual_y2
+        ind.actual_year3 = actual_y3
+        ind.progress_year1 = progress_y1
+        ind.progress_year2 = progress_y2
+        ind.progress_year3 = progress_y3
+        ind.status_year1 = status_y1
+        ind.status_year2 = status_y2
+        ind.status_year3 = status_y3
+        if actual_y1 or actual_y2 or actual_y3:
+            ind.last_progress_update = datetime.utcnow()
         ind.submitted = request.form.get("submitted") or "Reported"
         ind.comments = request.form.get("comments") or None
         ind.portal_edited = portal_bool
