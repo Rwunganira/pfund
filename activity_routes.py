@@ -1646,125 +1646,136 @@ def indicators_progress():
 @login_required
 def indicators_progress_chart():
     """Generate and return a stacked bar chart for indicator progress by year using Plotly."""
-    # Filter by implementing entity (from Activity)
-    entity_list = request.args.getlist("implementing_entity")
-    # Filter by indicator type (Quantitative / Qualitative)
-    type_filter = (request.args.get("indicator_type") or "").strip()
-    
-    # Base query
-    query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
-    if entity_list:
-        query = query.filter(Activity.implementing_entity.in_(entity_list))
-    if type_filter in ("Quantitative", "Qualitative"):
-        query = query.filter(Indicator.indicator_type == type_filter)
-    
-    # Get indicators
     try:
-        indicators = query.order_by(Activity.code, Indicator.id).all()
+        # Filter by implementing entity (from Activity)
+        entity_list = request.args.getlist("implementing_entity")
+        # Filter by indicator type (Quantitative / Qualitative)
+        type_filter = (request.args.get("indicator_type") or "").strip()
+        
+        # Base query
+        query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
+        if entity_list:
+            query = query.filter(Activity.implementing_entity.in_(entity_list))
+        if type_filter in ("Quantitative", "Qualitative"):
+            query = query.filter(Indicator.indicator_type == type_filter)
+        
+        # Get indicators
+        try:
+            indicators = query.order_by(Activity.code, Indicator.id).all()
+        except Exception as e:
+            import traceback
+            print(f"Error loading indicators for chart: {e}")
+            print(traceback.format_exc())
+            indicators = []
+        
+        # Calculate per-year summaries
+        on_track_y1 = sum(1 for ind in indicators if ind.status_year1 == "On Track")
+        at_risk_y1 = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
+        behind_y1 = sum(1 for ind in indicators if ind.status_year1 == "Behind")
+        not_started_y1 = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+        
+        on_track_y2 = sum(1 for ind in indicators if ind.status_year2 == "On Track")
+        at_risk_y2 = sum(1 for ind in indicators if ind.status_year2 == "At Risk")
+        behind_y2 = sum(1 for ind in indicators if ind.status_year2 == "Behind")
+        not_started_y2 = sum(1 for ind in indicators if not ind.status_year2 or ind.status_year2 == "Not Started")
+        
+        on_track_y3 = sum(1 for ind in indicators if ind.status_year3 == "On Track")
+        at_risk_y3 = sum(1 for ind in indicators if ind.status_year3 == "At Risk")
+        behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
+        not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
+        
+        # Create stacked bar chart with Plotly
+        fig = go.Figure()
+        
+        years = ['Year 1', 'Year 2', 'Year 3']
+        colors = {
+            'Not Started': '#6b7280',
+            'Behind': '#ef4444',
+            'At Risk': '#f59e0b',
+            'On Track': '#10b981'
+        }
+        
+        # Add stacked bars
+        fig.add_trace(go.Bar(
+            name='Not Started',
+            x=years,
+            y=[not_started_y1, not_started_y2, not_started_y3],
+            marker_color=colors['Not Started'],
+            text=[not_started_y1, not_started_y2, not_started_y3],
+            textposition='inside',
+            textfont=dict(color='white', size=8, family='Arial Black')
+        ))
+        
+        fig.add_trace(go.Bar(
+            name='Behind',
+            x=years,
+            y=[behind_y1, behind_y2, behind_y3],
+            marker_color=colors['Behind'],
+            text=[behind_y1, behind_y2, behind_y3],
+            textposition='inside',
+            textfont=dict(color='white', size=8, family='Arial Black')
+        ))
+        
+        fig.add_trace(go.Bar(
+            name='At Risk',
+            x=years,
+            y=[at_risk_y1, at_risk_y2, at_risk_y3],
+            marker_color=colors['At Risk'],
+            text=[at_risk_y1, at_risk_y2, at_risk_y3],
+            textposition='inside',
+            textfont=dict(color='white', size=8, family='Arial Black')
+        ))
+        
+        fig.add_trace(go.Bar(
+            name='On Track',
+            x=years,
+            y=[on_track_y1, on_track_y2, on_track_y3],
+            marker_color=colors['On Track'],
+            text=[on_track_y1, on_track_y2, on_track_y3],
+            textposition='inside',
+            textfont=dict(color='white', size=8, family='Arial Black')
+        ))
+        
+        # Update layout - smaller size for top corner
+        fig.update_layout(
+            barmode='stack',
+            title={
+                'text': 'Progress Status by Year',
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 10, 'family': 'Arial'}
+            },
+            xaxis_title="Year",
+            yaxis_title="Number of Indicators",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(size=7)
+            ),
+            height=250,
+            margin=dict(l=35, r=35, t=50, b=35),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            xaxis=dict(tickfont=dict(size=8)),
+            yaxis=dict(tickfont=dict(size=8))
+        )
+        
+        # Convert to JSON for embedding
+        graph_json = pio.to_json(fig)
+        response = Response(graph_json, mimetype='application/json')
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
     except Exception as e:
         import traceback
-        print(f"Error loading indicators for chart: {e}")
+        error_msg = f"Error generating chart: {str(e)}"
+        print(error_msg)
         print(traceback.format_exc())
-        indicators = []
-    
-    # Calculate per-year summaries
-    on_track_y1 = sum(1 for ind in indicators if ind.status_year1 == "On Track")
-    at_risk_y1 = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
-    behind_y1 = sum(1 for ind in indicators if ind.status_year1 == "Behind")
-    not_started_y1 = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
-    
-    on_track_y2 = sum(1 for ind in indicators if ind.status_year2 == "On Track")
-    at_risk_y2 = sum(1 for ind in indicators if ind.status_year2 == "At Risk")
-    behind_y2 = sum(1 for ind in indicators if ind.status_year2 == "Behind")
-    not_started_y2 = sum(1 for ind in indicators if not ind.status_year2 or ind.status_year2 == "Not Started")
-    
-    on_track_y3 = sum(1 for ind in indicators if ind.status_year3 == "On Track")
-    at_risk_y3 = sum(1 for ind in indicators if ind.status_year3 == "At Risk")
-    behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
-    not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
-    
-    # Create stacked bar chart with Plotly
-    fig = go.Figure()
-    
-    years = ['Year 1', 'Year 2', 'Year 3']
-    colors = {
-        'Not Started': '#6b7280',
-        'Behind': '#ef4444',
-        'At Risk': '#f59e0b',
-        'On Track': '#10b981'
-    }
-    
-    # Add stacked bars
-    fig.add_trace(go.Bar(
-        name='Not Started',
-        x=years,
-        y=[not_started_y1, not_started_y2, not_started_y3],
-        marker_color=colors['Not Started'],
-        text=[not_started_y1, not_started_y2, not_started_y3],
-        textposition='inside',
-        textfont=dict(color='white', size=8, family='Arial Black')
-    ))
-    
-    fig.add_trace(go.Bar(
-        name='Behind',
-        x=years,
-        y=[behind_y1, behind_y2, behind_y3],
-        marker_color=colors['Behind'],
-        text=[behind_y1, behind_y2, behind_y3],
-        textposition='inside',
-        textfont=dict(color='white', size=8, family='Arial Black')
-    ))
-    
-    fig.add_trace(go.Bar(
-        name='At Risk',
-        x=years,
-        y=[at_risk_y1, at_risk_y2, at_risk_y3],
-        marker_color=colors['At Risk'],
-        text=[at_risk_y1, at_risk_y2, at_risk_y3],
-        textposition='inside',
-        textfont=dict(color='white', size=8, family='Arial Black')
-    ))
-    
-    fig.add_trace(go.Bar(
-        name='On Track',
-        x=years,
-        y=[on_track_y1, on_track_y2, on_track_y3],
-        marker_color=colors['On Track'],
-        text=[on_track_y1, on_track_y2, on_track_y3],
-        textposition='inside',
-        textfont=dict(color='white', size=8, family='Arial Black')
-    ))
-    
-    # Update layout - smaller size for top corner
-    fig.update_layout(
-        barmode='stack',
-        title={
-            'text': 'Progress Status by Year',
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 10, 'family': 'Arial'}
-        },
-        xaxis_title="Year",
-        yaxis_title="Number of Indicators",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-            font=dict(size=7)
-        ),
-        height=250,
-        margin=dict(l=35, r=35, t=50, b=35),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        xaxis=dict(tickfont=dict(size=8)),
-        yaxis=dict(tickfont=dict(size=8))
-    )
-    
-    # Convert to JSON for embedding
-    graph_json = pio.to_json(fig)
-    return Response(graph_json, mimetype='application/json')
+        # Return error as JSON
+        error_json = '{"error": "' + error_msg.replace('"', '\\"') + '", "data": [], "layout": {}}'
+        return Response(error_json, mimetype='application/json', status=500)
 
 
 @activity_bp.route("/indicators", methods=["GET"])
