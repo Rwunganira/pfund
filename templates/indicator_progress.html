@@ -95,96 +95,91 @@
         </div>
 
         {% if progress_summary %}
-        <div class="cards" style="margin-bottom: 0.25rem; gap: 0.25rem;">
-            <div class="card card-total" style="padding: 0.4rem;">
-                <div class="card-label" style="font-size: 0.7rem; margin-bottom: 0.15rem;">Total</div>
-                <div class="card-value" style="font-size: 1.1rem;">{{ progress_summary.total or 0 }}</div>
+        <div style="display: grid; grid-template-columns: 1fr 3fr 3fr 3fr; gap: 0.5rem; margin-bottom: 0.5rem; align-items: start;">
+            <!-- Total -->
+            <div style="padding: 0.5rem; background: #f3f4f6; border-radius: 0.5rem; text-align: center;">
+                <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">Total</div>
+                <div style="font-size: 1.5rem; font-weight: 600; color: #374151;">{{ progress_summary.total or 0 }}</div>
             </div>
-        </div>
-        
-        <!-- Year 1 Summary -->
-        <div style="margin-top: 0.25rem;">
-            <h3 style="margin-bottom: 0.25rem; color: #374151; font-size: 0.8rem; font-weight: 600;">Y1</h3>
-            <div class="cards" style="gap: 0.25rem;">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">On Track</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.on_track_y1 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">At Risk</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.at_risk_y1 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Behind</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.behind_y1 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Not Started</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.not_started_y1 or 0 }}</div>
+            
+            <!-- Year 1 Stacked Bar -->
+            <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">Year 1</div>
+                {% set total_y1 = (progress_summary.on_track_y1 or 0) + (progress_summary.at_risk_y1 or 0) + (progress_summary.behind_y1 or 0) + (progress_summary.not_started_y1 or 0) %}
+                {% if total_y1 > 0 %}
+                <div style="display: flex; height: 24px; border-radius: 4px; overflow: hidden; border: 1px solid #e5e7eb;">
+                    {% if progress_summary.on_track_y1 %}
+                    <div style="background: #10b981; flex: {{ progress_summary.on_track_y1 / total_y1 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="On Track: {{ progress_summary.on_track_y1 }}">{{ progress_summary.on_track_y1 }}</div>
+                    {% endif %}
+                    {% if progress_summary.at_risk_y1 %}
+                    <div style="background: #f59e0b; flex: {{ progress_summary.at_risk_y1 / total_y1 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="At Risk: {{ progress_summary.at_risk_y1 }}">{{ progress_summary.at_risk_y1 }}</div>
+                    {% endif %}
+                    {% if progress_summary.behind_y1 %}
+                    <div style="background: #ef4444; flex: {{ progress_summary.behind_y1 / total_y1 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Behind: {{ progress_summary.behind_y1 }}">{{ progress_summary.behind_y1 }}</div>
+                    {% endif %}
+                    {% if progress_summary.not_started_y1 %}
+                    <div style="background: #6b7280; flex: {{ progress_summary.not_started_y1 / total_y1 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Not Started: {{ progress_summary.not_started_y1 }}">{{ progress_summary.not_started_y1 }}</div>
+                    {% endif %}
                 </div>
                 {% if progress_summary.avg_progress_y1 %}
-                <div class="card" style="padding: 0.3rem;">
-                    <div class="card-label" style="font-size: 0.65rem; margin-bottom: 0.1rem;">Avg</div>
-                    <div class="card-value" style="font-size: 1rem;">{{ progress_summary.avg_progress_y1 }}%</div>
-                </div>
+                <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">Avg: {{ progress_summary.avg_progress_y1 }}%</div>
+                {% endif %}
+                {% else %}
+                <div style="height: 24px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 0.65rem;">No data</div>
                 {% endif %}
             </div>
-        </div>
-        
-        <!-- Year 2 Summary -->
-        <div style="margin-top: 0.25rem;">
-            <h3 style="margin-bottom: 0.25rem; color: #374151; font-size: 0.8rem; font-weight: 600;">Y2</h3>
-            <div class="cards" style="gap: 0.25rem;">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">On Track</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.on_track_y2 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">At Risk</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.at_risk_y2 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Behind</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.behind_y2 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Not Started</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.not_started_y2 or 0 }}</div>
+            
+            <!-- Year 2 Stacked Bar -->
+            <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">Year 2</div>
+                {% set total_y2 = (progress_summary.on_track_y2 or 0) + (progress_summary.at_risk_y2 or 0) + (progress_summary.behind_y2 or 0) + (progress_summary.not_started_y2 or 0) %}
+                {% if total_y2 > 0 %}
+                <div style="display: flex; height: 24px; border-radius: 4px; overflow: hidden; border: 1px solid #e5e7eb;">
+                    {% if progress_summary.on_track_y2 %}
+                    <div style="background: #10b981; flex: {{ progress_summary.on_track_y2 / total_y2 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="On Track: {{ progress_summary.on_track_y2 }}">{{ progress_summary.on_track_y2 }}</div>
+                    {% endif %}
+                    {% if progress_summary.at_risk_y2 %}
+                    <div style="background: #f59e0b; flex: {{ progress_summary.at_risk_y2 / total_y2 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="At Risk: {{ progress_summary.at_risk_y2 }}">{{ progress_summary.at_risk_y2 }}</div>
+                    {% endif %}
+                    {% if progress_summary.behind_y2 %}
+                    <div style="background: #ef4444; flex: {{ progress_summary.behind_y2 / total_y2 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Behind: {{ progress_summary.behind_y2 }}">{{ progress_summary.behind_y2 }}</div>
+                    {% endif %}
+                    {% if progress_summary.not_started_y2 %}
+                    <div style="background: #6b7280; flex: {{ progress_summary.not_started_y2 / total_y2 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Not Started: {{ progress_summary.not_started_y2 }}">{{ progress_summary.not_started_y2 }}</div>
+                    {% endif %}
                 </div>
                 {% if progress_summary.avg_progress_y2 %}
-                <div class="card" style="padding: 0.3rem;">
-                    <div class="card-label" style="font-size: 0.65rem; margin-bottom: 0.1rem;">Avg</div>
-                    <div class="card-value" style="font-size: 1rem;">{{ progress_summary.avg_progress_y2 }}%</div>
-                </div>
+                <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">Avg: {{ progress_summary.avg_progress_y2 }}%</div>
+                {% endif %}
+                {% else %}
+                <div style="height: 24px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 0.65rem;">No data</div>
                 {% endif %}
             </div>
-        </div>
-        
-        <!-- Year 3 Summary -->
-        <div style="margin-top: 0.25rem;">
-            <h3 style="margin-bottom: 0.25rem; color: #374151; font-size: 0.8rem; font-weight: 600;">Y3</h3>
-            <div class="cards" style="gap: 0.25rem;">
-                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">On Track</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.on_track_y3 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">At Risk</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.at_risk_y3 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Behind</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.behind_y3 or 0 }}</div>
-                </div>
-                <div class="card" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 0.3rem;">
-                    <div class="card-label" style="color: rgba(255,255,255,0.9); font-size: 0.65rem; margin-bottom: 0.1rem;">Not Started</div>
-                    <div class="card-value" style="color: white; font-size: 1rem;">{{ progress_summary.not_started_y3 or 0 }}</div>
+            
+            <!-- Year 3 Stacked Bar -->
+            <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">Year 3</div>
+                {% set total_y3 = (progress_summary.on_track_y3 or 0) + (progress_summary.at_risk_y3 or 0) + (progress_summary.behind_y3 or 0) + (progress_summary.not_started_y3 or 0) %}
+                {% if total_y3 > 0 %}
+                <div style="display: flex; height: 24px; border-radius: 4px; overflow: hidden; border: 1px solid #e5e7eb;">
+                    {% if progress_summary.on_track_y3 %}
+                    <div style="background: #10b981; flex: {{ progress_summary.on_track_y3 / total_y3 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="On Track: {{ progress_summary.on_track_y3 }}">{{ progress_summary.on_track_y3 }}</div>
+                    {% endif %}
+                    {% if progress_summary.at_risk_y3 %}
+                    <div style="background: #f59e0b; flex: {{ progress_summary.at_risk_y3 / total_y3 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="At Risk: {{ progress_summary.at_risk_y3 }}">{{ progress_summary.at_risk_y3 }}</div>
+                    {% endif %}
+                    {% if progress_summary.behind_y3 %}
+                    <div style="background: #ef4444; flex: {{ progress_summary.behind_y3 / total_y3 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Behind: {{ progress_summary.behind_y3 }}">{{ progress_summary.behind_y3 }}</div>
+                    {% endif %}
+                    {% if progress_summary.not_started_y3 %}
+                    <div style="background: #6b7280; flex: {{ progress_summary.not_started_y3 / total_y3 }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; font-weight: 600;" title="Not Started: {{ progress_summary.not_started_y3 }}">{{ progress_summary.not_started_y3 }}</div>
+                    {% endif %}
                 </div>
                 {% if progress_summary.avg_progress_y3 %}
-                <div class="card" style="padding: 0.3rem;">
-                    <div class="card-label" style="font-size: 0.65rem; margin-bottom: 0.1rem;">Avg</div>
-                    <div class="card-value" style="font-size: 1rem;">{{ progress_summary.avg_progress_y3 }}%</div>
-                </div>
+                <div style="font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem;">Avg: {{ progress_summary.avg_progress_y3 }}%</div>
+                {% endif %}
+                {% else %}
+                <div style="height: 24px; background: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 0.65rem;">No data</div>
                 {% endif %}
             </div>
         </div>
