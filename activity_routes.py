@@ -1457,6 +1457,33 @@ def new_indicator():
     """Create a new indicator linked to an activity (by code)."""
     from flask import request
 
+    def parse_bool(value):
+        if value is None:
+            return None
+        v = str(value).strip().lower()
+        if v in ("yes", "true", "1"):
+            return True
+        if v in ("no", "false", "0"):
+            return False
+        return None
+
+    def validate_numeric_targets(indicator_type, baseline, t1, t2, t3):
+        errors = []
+        if indicator_type == "Quantitative":
+            for label, val in [
+                ("Baseline", baseline),
+                ("Target Year 1", t1),
+                ("Target Year 2", t2),
+                ("Target Year 3", t3),
+            ]:
+                if val is None or val == "":
+                    continue
+                try:
+                    int(str(val).strip())
+                except ValueError:
+                    errors.append(f"{label} must be a whole number for quantitative indicators.")
+        return errors
+
     if request.method == "POST":
         activity_code = (request.form.get("activity_code") or "").strip()
         if not activity_code:
@@ -1468,24 +1495,42 @@ def new_indicator():
             flash(f"No activity found with code '{activity_code}'.", "error")
             return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
 
+        indicator_type = (request.form.get("indicator_type") or "").strip()
+        if indicator_type not in ("Quantitative", "Qualitative"):
+            flash("Indicator type must be Quantitative or Qualitative.", "error")
+            return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
+
+        baseline = request.form.get("baseline_proposal_year") or None
+        t1 = request.form.get("target_year1") or None
+        t2 = request.form.get("target_year2") or None
+        t3 = request.form.get("target_year3") or None
+
+        errors = validate_numeric_targets(indicator_type, baseline, t1, t2, t3)
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
+
+        naphs_bool = parse_bool(request.form.get("naphs"))
+        portal_bool = parse_bool(request.form.get("portal_edited"))
+        ca_bool = parse_bool(request.form.get("comment_addressed"))
+
         ind = Indicator(
             activity_id=activity.id,
             activity_code=activity.code,
-            fundholder_implementing_entity=request.form.get("fundholder_implementing_entity") or None,
-            key_project_activity=request.form.get("key_project_activity") or None,
             new_proposed_indicator=request.form.get("new_proposed_indicator") or None,
-            indicator_type=request.form.get("indicator_type") or None,
-            naphs=request.form.get("naphs") or None,
+            indicator_type=indicator_type,
+            naphs=naphs_bool,
             indicator_definition=request.form.get("indicator_definition") or None,
             data_source=request.form.get("data_source") or None,
-            baseline_proposal_year=request.form.get("baseline_proposal_year") or None,
-            target_year1=request.form.get("target_year1") or None,
-            target_year2=request.form.get("target_year2") or None,
-            target_year3=request.form.get("target_year3") or None,
-            submitted=request.form.get("submitted") or None,
+            baseline_proposal_year=baseline,
+            target_year1=t1,
+            target_year2=t2,
+            target_year3=t3,
+            submitted=request.form.get("submitted") or "Reported",
             comments=request.form.get("comments") or None,
-            portal_edited=request.form.get("portal_edited") or None,
-            comment_addressed=request.form.get("comment_addressed") or None,
+            portal_edited=portal_bool,
+            comment_addressed=ca_bool,
         )
         db.session.add(ind)
         db.session.commit()
@@ -1501,6 +1546,33 @@ def new_indicator():
 def edit_indicator(indicator_id):
     """Edit an existing indicator."""
     from flask import request
+
+    def parse_bool(value):
+        if value is None:
+            return None
+        v = str(value).strip().lower()
+        if v in ("yes", "true", "1"):
+            return True
+        if v in ("no", "false", "0"):
+            return False
+        return None
+
+    def validate_numeric_targets(indicator_type, baseline, t1, t2, t3):
+        errors = []
+        if indicator_type == "Quantitative":
+            for label, val in [
+                ("Baseline", baseline),
+                ("Target Year 1", t1),
+                ("Target Year 2", t2),
+                ("Target Year 3", t3),
+            ]:
+                if val is None or val == "":
+                    continue
+                try:
+                    int(str(val).strip())
+                except ValueError:
+                    errors.append(f"{label} must be a whole number for quantitative indicators.")
+        return errors
 
     ind = Indicator.query.get(indicator_id)
     if not ind:
@@ -1518,23 +1590,41 @@ def edit_indicator(indicator_id):
             flash(f"No activity found with code '{activity_code}'.", "error")
             return render_template("indicator_form.html", indicator=ind, activity_code=activity_code)
 
+        indicator_type = (request.form.get("indicator_type") or "").strip()
+        if indicator_type not in ("Quantitative", "Qualitative"):
+            flash("Indicator type must be Quantitative or Qualitative.", "error")
+            return render_template("indicator_form.html", indicator=ind, activity_code=activity_code)
+
+        baseline = request.form.get("baseline_proposal_year") or None
+        t1 = request.form.get("target_year1") or None
+        t2 = request.form.get("target_year2") or None
+        t3 = request.form.get("target_year3") or None
+
+        errors = validate_numeric_targets(indicator_type, baseline, t1, t2, t3)
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template("indicator_form.html", indicator=ind, activity_code=activity_code)
+
+        naphs_bool = parse_bool(request.form.get("naphs"))
+        portal_bool = parse_bool(request.form.get("portal_edited"))
+        ca_bool = parse_bool(request.form.get("comment_addressed"))
+
         ind.activity_id = activity.id
         ind.activity_code = activity.code
-        ind.fundholder_implementing_entity = request.form.get("fundholder_implementing_entity") or None
-        ind.key_project_activity = request.form.get("key_project_activity") or None
         ind.new_proposed_indicator = request.form.get("new_proposed_indicator") or None
-        ind.indicator_type = request.form.get("indicator_type") or None
-        ind.naphs = request.form.get("naphs") or None
+        ind.indicator_type = indicator_type
+        ind.naphs = naphs_bool
         ind.indicator_definition = request.form.get("indicator_definition") or None
         ind.data_source = request.form.get("data_source") or None
-        ind.baseline_proposal_year = request.form.get("baseline_proposal_year") or None
-        ind.target_year1 = request.form.get("target_year1") or None
-        ind.target_year2 = request.form.get("target_year2") or None
-        ind.target_year3 = request.form.get("target_year3") or None
-        ind.submitted = request.form.get("submitted") or None
+        ind.baseline_proposal_year = baseline
+        ind.target_year1 = t1
+        ind.target_year2 = t2
+        ind.target_year3 = t3
+        ind.submitted = request.form.get("submitted") or "Reported"
         ind.comments = request.form.get("comments") or None
-        ind.portal_edited = request.form.get("portal_edited") or None
-        ind.comment_addressed = request.form.get("comment_addressed") or None
+        ind.portal_edited = portal_bool
+        ind.comment_addressed = ca_bool
 
         db.session.commit()
         flash("Indicator updated successfully.", "success")
@@ -1542,6 +1632,396 @@ def edit_indicator(indicator_id):
 
     # GET
     return render_template("indicator_form.html", indicator=ind)
+
+
+@activity_bp.route("/indicators/<int:indicator_id>/delete", methods=["POST"])
+@admin_required
+def delete_indicator(indicator_id):
+    """Delete an indicator (admin only)."""
+    ind = Indicator.query.get(indicator_id)
+    if not ind:
+        flash("Indicator not found.", "error")
+        return redirect(url_for("activity.indicators_list"))
+
+    db.session.delete(ind)
+    db.session.commit()
+    flash("Indicator deleted.", "info")
+    return redirect(url_for("activity.indicators_list"))
+
+
+@activity_bp.route("/indicators/download", methods=["GET"])
+@login_required
+def download_indicators():
+    """Download all indicators as CSV in the specified column order."""
+    from flask import Response
+    import csv
+    import io
+
+    indicators = (
+        db.session.query(Indicator)
+        .join(Activity, Indicator.activity_id == Activity.id)
+        .order_by(Activity.code, Indicator.id)
+        .all()
+    )
+
+    def bool_to_yes_no(val):
+        if val in (True, "true", "True", "yes", "Yes", "1"):
+            return "Yes"
+        if val in (False, "false", "False", "no", "No", "0"):
+            return "No"
+        return ""
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Column order per spec
+    writer.writerow(
+        [
+            "code",
+            "fundholder_implementing_entity",
+            "key_project_activity",
+            "new_proposed_indicator",
+            "indicator_type",
+            "naphs",
+            "indicator_definition",
+            "data_source",
+            "baseline_proposal_year",
+            "target_year_1",
+            "target_year_2",
+            "target_year_3",
+            "submitted",
+            "comments",
+            "portal_edited",
+            "comment_addressed",
+        ]
+    )
+
+    for ind in indicators:
+        act = ind.activity
+        code = ind.activity_code or (act.code if act else "")
+        fundholder = act.implementing_entity if act else ""
+        key_proj = act.proposed_activity if act else ""
+        writer.writerow(
+            [
+                code,
+                fundholder,
+                key_proj,
+                ind.new_proposed_indicator or "",
+                ind.indicator_type or "",
+                bool_to_yes_no(ind.naphs),
+                ind.indicator_definition or "",
+                ind.data_source or "",
+                ind.baseline_proposal_year or "",
+                ind.target_year1 or "",
+                ind.target_year2 or "",
+                ind.target_year3 or "",
+                ind.submitted or "",
+                ind.comments or "",
+                bool_to_yes_no(ind.portal_edited),
+                bool_to_yes_no(ind.comment_addressed),
+            ]
+        )
+
+    output.seek(0)
+    return Response(
+        output.read(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=indicators.csv"},
+    )
+
+
+@activity_bp.route("/indicators/download_excel", methods=["GET"])
+@login_required
+def download_indicators_excel():
+    """Download all indicators as an Excel file, with proper typing."""
+    from flask import Response
+    import io
+    from openpyxl import Workbook
+
+    indicators = (
+        db.session.query(Indicator)
+        .join(Activity, Indicator.activity_id == Activity.id)
+        .order_by(Activity.code, Indicator.id)
+        .all()
+    )
+
+    def bool_to_yes_no(val):
+        if val in (True, "true", "True", "yes", "Yes", "1"):
+            return "Yes"
+        if val in (False, "false", "False", "no", "No", "0"):
+            return "No"
+        return ""
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Indicators"
+
+    headers = [
+        "code",
+        "fundholder_implementing_entity",
+        "key_project_activity",
+        "new_proposed_indicator",
+        "indicator_type",
+        "naphs",
+        "indicator_definition",
+        "data_source",
+        "baseline_proposal_year",
+        "target_year_1",
+        "target_year_2",
+        "target_year_3",
+        "submitted",
+        "comments",
+        "portal_edited",
+        "comment_addressed",
+    ]
+    ws.append(headers)
+
+    for ind in indicators:
+        act = ind.activity
+        code = ind.activity_code or (act.code if act else "")
+        fundholder = act.implementing_entity if act else ""
+        key_proj = act.proposed_activity if act else ""
+
+        row = [
+            code,
+            fundholder,
+            key_proj,
+            ind.new_proposed_indicator or "",
+            ind.indicator_type or "",
+            bool_to_yes_no(ind.naphs),
+            ind.indicator_definition or "",
+            ind.data_source or "",
+            None,  # baseline placeholder
+            None,  # t1
+            None,  # t2
+            None,  # t3
+            ind.submitted or "",
+            ind.comments or "",
+            bool_to_yes_no(ind.portal_edited),
+            bool_to_yes_no(ind.comment_addressed),
+        ]
+
+        # Baseline and targets: numeric cells for Quantitative, text for Qualitative
+        baseline = ind.baseline_proposal_year
+        t1 = ind.target_year1
+        t2 = ind.target_year2
+        t3 = ind.target_year3
+
+        if (ind.indicator_type or "").strip() == "Quantitative":
+            def to_int_or_text(val):
+                if val is None or val == "":
+                    return ""
+                try:
+                    return int(str(val).strip())
+                except ValueError:
+                    # Fallback to text if somehow non-numeric slipped through
+                    return str(val)
+
+            row[8] = to_int_or_text(baseline)
+            row[9] = to_int_or_text(t1)
+            row[10] = to_int_or_text(t2)
+            row[11] = to_int_or_text(t3)
+        else:
+            # Qualitative: keep as text
+            row[8] = baseline or ""
+            row[9] = t1 or ""
+            row[10] = t2 or ""
+            row[11] = t3 or ""
+
+        ws.append(row)
+
+    bio = io.BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    return Response(
+        bio.read(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=indicators.xlsx"},
+    )
+
+
+@activity_bp.route("/indicators/upload", methods=["POST"])
+@admin_required
+def upload_indicators():
+    """Upload indicators from an Excel file.
+
+    Rules:
+    - code must match an existing Activity.code
+    - implementing entity in file is ignored; always taken from Activity
+    - indicator_type must be Quantitative or Qualitative
+    - Quantitative: baseline/targets must be whole numbers
+    - Qualitative: baseline/targets can be free text
+    """
+    file = request.files.get("file")
+    if not file or file.filename == "":
+        flash("No file selected for indicators upload.", "error")
+        return redirect(url_for("activity.indicators_list"))
+
+    if not (file.filename.lower().endswith(".xlsx") or file.filename.lower().endswith(".xls")):
+        flash("Please upload an Excel file (.xlsx or .xls) for indicators.", "error")
+        return redirect(url_for("activity.indicators_list"))
+
+    # Helpers reused from form logic
+    def parse_bool(value):
+        if value is None:
+            return None
+        v = str(value).strip().lower()
+        if v in ("yes", "true", "1"):
+            return True
+        if v in ("no", "false", "0"):
+            return False
+        return None
+
+    def validate_numeric_targets(indicator_type, baseline, t1, t2, t3):
+        errors = []
+        if indicator_type == "Quantitative":
+            for label, val in [
+                ("Baseline", baseline),
+                ("Target Year 1", t1),
+                ("Target Year 2", t2),
+                ("Target Year 3", t3),
+            ]:
+                if val in (None, "", "nan"):
+                    continue
+                try:
+                    int(str(val).strip())
+                except ValueError:
+                    errors.append(f"{label} must be a whole number for quantitative indicators.")
+        return errors
+
+    try:
+        import tempfile
+        import pandas as pd
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            file.save(tmp.name)
+            df = pd.read_excel(tmp.name, dtype=str)
+
+        columns = list(df.columns)
+        lower_map = {str(c).strip().lower(): c for c in columns}
+
+        def get_val(row, *names):
+            for n in names:
+                key = str(n).strip().lower()
+                col = lower_map.get(key)
+                if not col:
+                    for c in columns:
+                        if key == str(c).strip().lower():
+                            col = c
+                            break
+                if col and col in row:
+                    val = row[col]
+                    if isinstance(val, str):
+                        val = val.strip()
+                    if val not in (None, "", "nan"):
+                        return str(val)
+            return None
+
+        created = 0
+        updated = 0
+        skipped = 0
+        errors_total = 0
+
+        for _, row in df.iterrows():
+            code = get_val(row, "code")
+            if not code:
+                continue
+
+            activity = Activity.query.filter_by(code=code).first()
+            if not activity:
+                skipped += 1
+                continue
+
+            indicator_type = get_val(row, "indicator_type")
+            if indicator_type not in ("Quantitative", "Qualitative"):
+                errors_total += 1
+                continue
+
+            baseline = get_val(row, "baseline_proposal_year")
+            t1 = get_val(row, "target_year_1", "target_year1")
+            t2 = get_val(row, "target_year_2", "target_year2")
+            t3 = get_val(row, "target_year_3", "target_year3")
+
+            validation_errors = validate_numeric_targets(
+                indicator_type, baseline, t1, t2, t3
+            )
+            if validation_errors:
+                errors_total += len(validation_errors)
+                continue
+
+            naphs_raw = get_val(row, "naphs")
+            portal_raw = get_val(row, "portal_edited")
+            ca_raw = get_val(row, "comment_addressed")
+            new_indicator_text = get_val(row, "new_proposed_indicator")
+
+            # Upsert rule: match by (activity_id, new_proposed_indicator)
+            existing = None
+            if new_indicator_text:
+                existing = (
+                    Indicator.query.filter_by(
+                        activity_id=activity.id,
+                        new_proposed_indicator=new_indicator_text,
+                    ).first()
+                )
+
+            if existing:
+                # Update existing indicator
+                existing.indicator_type = indicator_type
+                existing.naphs = parse_bool(naphs_raw)
+                existing.indicator_definition = get_val(row, "indicator_definition")
+                existing.data_source = get_val(row, "data_source")
+                existing.baseline_proposal_year = baseline
+                existing.target_year1 = t1
+                existing.target_year2 = t2
+                existing.target_year3 = t3
+                existing.submitted = get_val(row, "submitted") or "Reported"
+                existing.comments = get_val(row, "comments")
+                existing.portal_edited = parse_bool(portal_raw)
+                existing.comment_addressed = parse_bool(ca_raw)
+                updated += 1
+            else:
+                # Create new indicator
+                ind = Indicator(
+                    activity_id=activity.id,
+                    activity_code=activity.code,
+                    new_proposed_indicator=new_indicator_text,
+                    indicator_type=indicator_type,
+                    naphs=parse_bool(naphs_raw),
+                    indicator_definition=get_val(row, "indicator_definition"),
+                    data_source=get_val(row, "data_source"),
+                    baseline_proposal_year=baseline,
+                    target_year1=t1,
+                    target_year2=t2,
+                    target_year3=t3,
+                    submitted=get_val(row, "submitted") or "Reported",
+                    comments=get_val(row, "comments"),
+                    portal_edited=parse_bool(portal_raw),
+                    comment_addressed=parse_bool(ca_raw),
+                )
+                db.session.add(ind)
+                created += 1
+
+        if created or updated:
+            db.session.commit()
+
+        msg_parts = [f"Created {created} indicators.", f"Updated {updated} indicators."]
+        if skipped:
+            msg_parts.append(f"Skipped {skipped} rows with missing/unknown code.")
+        if errors_total:
+            msg_parts.append(
+                f"{errors_total} quantitative baseline/target validation errors (those rows were skipped)."
+            )
+        flash(" ".join(msg_parts), "success" if created else "info")
+    except Exception as exc:
+        import traceback
+
+        print(f"Error reading indicators file: {exc}")
+        print(traceback.format_exc())
+        db.session.rollback()
+        flash(f"Error reading indicators file: {exc}", "error")
+
+    return redirect(url_for("activity.indicators_list"))
 
 
 @activity_bp.route("/admin/usage", methods=["GET"])

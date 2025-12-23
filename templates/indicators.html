@@ -20,7 +20,20 @@
                 </p>
             </div>
             {% if current_user.role == 'admin' %}
-            <div>
+            <div class="table-header-actions">
+                <a href="{{ url_for('activity.download_indicators') }}" class="secondary">
+                    Download CSV
+                </a>
+                <a href="{{ url_for('activity.download_indicators_excel') }}" class="secondary">
+                    Download Excel
+                </a>
+                <form method="post"
+                      action="{{ url_for('activity.upload_indicators') }}"
+                      enctype="multipart/form-data"
+                      style="display:inline-flex; gap:0.5rem; align-items:center; margin-left: 0.5rem;">
+                    <input type="file" name="file" accept=".xlsx,.xls" required>
+                    <button type="submit" class="secondary">Upload Excel</button>
+                </form>
                 <a href="{{ url_for('activity.new_indicator') }}" class="primary">
                     Add Indicator
                 </a>
@@ -52,10 +65,16 @@
                 {% for ind in indicators %}
                     <tr>
                         <td><strong>{{ ind.activity_code or (ind.activity.code if ind.activity else '-') }}</strong></td>
-                        <td>{{ ind.fundholder_implementing_entity or '-' }}</td>
                         <td>
-                            <span class="truncate-text" title="{{ ind.key_project_activity }}">
-                                {{ ind.key_project_activity or '-' }}
+                            {% if ind.activity %}
+                                {{ ind.activity.implementing_entity or '-' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="truncate-text" title="{{ ind.activity.proposed_activity if ind.activity else '' }}">
+                                {{ ind.activity.proposed_activity if ind.activity else '-' }}
                             </span>
                         </td>
                         <td>
@@ -71,10 +90,16 @@
                         <td class="num">{{ ind.target_year3 or '-' }}</td>
                         <td>{{ ind.submitted or '-' }}</td>
                         {% if current_user.role == 'admin' %}
-                        <td>
+                        <td class="actions">
                             <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit">
                                 Edit
                             </a>
+                            <form method="post"
+                                  action="{{ url_for('activity.delete_indicator', indicator_id=ind.id) }}"
+                                  style="display:inline;"
+                                  onsubmit="return confirm('Delete this indicator?');">
+                                <button type="submit" class="btn-delete">Delete</button>
+                            </form>
                         </td>
                         {% endif %}
                     </tr>

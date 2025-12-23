@@ -20,27 +20,31 @@
             </div>
 
             <div class="field-group">
-                <label for="fundholder_implementing_entity">Fundholder implementing entity</label>
-                <input id="fundholder_implementing_entity"
-                       name="fundholder_implementing_entity"
-                       type="text"
-                       value="{{ indicator.fundholder_implementing_entity if indicator else '' }}">
+                <label>Fundholder implementing entity</label>
+                <input type="text"
+                       value="{% if indicator and indicator.activity %}{{ indicator.activity.implementing_entity or '' }}{% endif %}"
+                       disabled
+                       placeholder="Auto-filled from Activity">
             </div>
 
             <div class="field-group">
                 <label for="indicator_type">Indicator type</label>
-                <input id="indicator_type"
-                       name="indicator_type"
-                       type="text"
-                       value="{{ indicator.indicator_type if indicator else '' }}">
+                {% set current_type = indicator.indicator_type if indicator else '' %}
+                <select id="indicator_type" name="indicator_type" required>
+                    <option value="">-- Select type --</option>
+                    <option value="Quantitative" {% if current_type == 'Quantitative' %}selected{% endif %}>Quantitative</option>
+                    <option value="Qualitative" {% if current_type == 'Qualitative' %}selected{% endif %}>Qualitative</option>
+                </select>
             </div>
 
             <div class="field-group">
                 <label for="naphs">NAPHS</label>
-                <input id="naphs"
-                       name="naphs"
-                       type="text"
-                       value="{{ indicator.naphs if indicator else '' }}">
+                {% set naphs_val = indicator.naphs if indicator else '' %}
+                <select id="naphs" name="naphs">
+                    <option value="">--</option>
+                    <option value="true" {% if naphs_val in [True, 'true', 'True', 'yes', 'Yes', '1'] %}selected{% endif %}>Yes</option>
+                    <option value="false" {% if naphs_val in [False, 'false', 'False', 'no', 'No', '0'] %}selected{% endif %}>No</option>
+                </select>
             </div>
 
             <div class="field-group">
@@ -56,7 +60,7 @@
                 <input id="baseline_proposal_year"
                        name="baseline_proposal_year"
                        type="text"
-                       placeholder="e.g. 2024"
+                       placeholder="e.g. 2024 or narrative milestone"
                        value="{{ indicator.baseline_proposal_year if indicator else '' }}">
             </div>
 
@@ -86,27 +90,42 @@
 
             <div class="field-group">
                 <label for="submitted">Submitted</label>
-                <input id="submitted"
-                       name="submitted"
-                       type="text"
-                       value="{{ indicator.submitted if indicator else '' }}">
+                {% set submitted_val = indicator.submitted if indicator else 'Reported' %}
+                <select id="submitted" name="submitted">
+                    <option value="Reported" {% if submitted_val == 'Reported' %}selected{% endif %}>Reported</option>
+                    <option value="Not reported" {% if submitted_val == 'Not reported' %}selected{% endif %}>Not reported</option>
+                    <option value="Pending" {% if submitted_val == 'Pending' %}selected{% endif %}>Pending</option>
+                </select>
             </div>
 
             <div class="field-group">
                 <label for="portal_edited">Portal edited</label>
-                <input id="portal_edited"
-                       name="portal_edited"
-                       type="text"
-                       value="{{ indicator.portal_edited if indicator else '' }}">
+                {% set portal_val = indicator.portal_edited if indicator else '' %}
+                <select id="portal_edited" name="portal_edited">
+                    <option value="">--</option>
+                    <option value="true" {% if portal_val in [True, 'true', 'True', 'yes', 'Yes', '1'] %}selected{% endif %}>Yes</option>
+                    <option value="false" {% if portal_val in [False, 'false', 'False', 'no', 'No', '0'] %}selected{% endif %}>No</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="comment_addressed">Comment addressed</label>
+                {% set ca_val = indicator.comment_addressed if indicator else '' %}
+                <select id="comment_addressed" name="comment_addressed">
+                    <option value="">--</option>
+                    <option value="true" {% if ca_val in [True, 'true', 'True', 'yes', 'Yes', '1'] %}selected{% endif %}>Yes</option>
+                    <option value="false" {% if ca_val in [False, 'false', 'False', 'no', 'No', '0'] %}selected{% endif %}>No</option>
+                </select>
             </div>
         </div>
 
         <div class="field-group">
-            <label for="key_project_activity">Key Project activity</label>
+            <label>Key Project activity</label>
             <textarea id="key_project_activity"
-                      name="key_project_activity"
                       rows="2"
-                      placeholder="Describe the key project activity">{{ indicator.key_project_activity if indicator else '' }}</textarea>
+                      disabled
+                      placeholder="Auto-filled from Activity (proposed activity)">
+{% if indicator and indicator.activity %}{{ indicator.activity.proposed_activity or '' }}{% endif %}</textarea>
         </div>
 
         <div class="field-group">
