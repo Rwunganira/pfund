@@ -68,17 +68,33 @@
             {% endif %}
         </div>
 
-        <!-- Implementing Entity Filter -->
+        <!-- Filters -->
         <form method="get" class="indicator-filters" style="margin-bottom: 1rem; display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
-            <div class="field-group" style="max-width:260px;">
-                <label for="implementing_entity">Implementing Entity</label>
-                <select id="implementing_entity" name="implementing_entity" onchange="this.form.submit()">
-                    <option value="">All</option>
+            <div class="field-group" style="max-width:420px;">
+                <label>Implementing Entity</label>
+                <div class="indicator-entity-options" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
                     {% for e in entities or [] %}
-                        <option value="{{ e }}" {% if entity_filter and e in entity_filter.split(',') %}selected{% endif %}>{{ e }}</option>
+                        <label class="checkbox-inline" style="font-size:0.85rem;">
+                            <input type="checkbox"
+                                   name="implementing_entity"
+                                   value="{{ e }}"
+                                   {% if entity_filter and e in entity_filter.split(',') %}checked{% endif %}>
+                            <span>{{ e }}</span>
+                        </label>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="field-group" style="max-width:200px;">
+                <label for="indicator_type_filter">Indicator Type</label>
+                <select id="indicator_type_filter" name="indicator_type">
+                    <option value="">All</option>
+                    <option value="Quantitative" {% if type_filter == 'Quantitative' %}selected{% endif %}>Quantitative</option>
+                    <option value="Qualitative" {% if type_filter == 'Qualitative' %}selected{% endif %}>Qualitative</option>
                 </select>
             </div>
+
+            <button type="submit" class="secondary">Apply filters</button>
         </form>
 
         <div class="table-wrapper">
@@ -89,6 +105,8 @@
                         <th>New Proposed Indicator</th>
                         <th>Indicator Type</th>
                         <th class="col-small">Baseline</th>
+                        <th class="col-small">Target Y1</th>
+                        <th class="col-small">Target Y2</th>
                         <th class="col-small">Target Y3</th>
                         <th>Submitted</th>
                         {% if current_user.role == 'admin' %}
@@ -116,6 +134,16 @@
                             </span>
                         </td>
                         <td class="num col-small">
+                            <span class="truncate-text" title="{{ ind.target_year1 or '' }}">
+                                {{ ind.target_year1 or '-' }}
+                            </span>
+                        </td>
+                        <td class="num col-small">
+                            <span class="truncate-text" title="{{ ind.target_year2 or '' }}">
+                                {{ ind.target_year2 or '-' }}
+                            </span>
+                        </td>
+                        <td class="num col-small">
                             <span class="truncate-text" title="{{ ind.target_year3 or '' }}">
                                 {{ ind.target_year3 or '-' }}
                             </span>
@@ -137,7 +165,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="8" class="empty">No indicators yet.</td>
+                        <td colspan="10" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
