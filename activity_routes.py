@@ -8,7 +8,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
-from models import Activity, Challenge, SubActivity, db
+from models import Activity, Challenge, SubActivity, Indicator, db
 from usage_tracking import log_user_activity
 
 
@@ -1426,6 +1426,31 @@ def download_activities():
         headers={
             "Content-Disposition": "attachment; filename=activities.csv",
         },
+    )
+
+
+@activity_bp.route("/indicators", methods=["GET"])
+@login_required
+def indicators_list():
+    """View all indicators linked to activities."""
+    # Simple read-only view of all indicators with their activities
+    try:
+        indicators = (
+            db.session.query(Indicator)
+            .join(Activity, Indicator.activity_id == Activity.id)
+            .order_by(Activity.code, Indicator.id)
+            .all()
+        )
+    except Exception as e:
+        import traceback
+
+        print(f"Error loading indicators: {e}")
+        print(traceback.format_exc())
+        indicators = []
+
+    return render_template(
+        "indicators.html",
+        indicators=indicators,
     )
 
 

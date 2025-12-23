@@ -40,6 +40,13 @@ class Activity(db.Model):
         cascade="all, delete-orphan",
         lazy="dynamic",
     )
+    # One-to-many: an activity can have multiple indicators
+    indicators = db.relationship(
+        "Indicator",
+        backref="activity",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
 
 
 class Challenge(db.Model):
@@ -134,6 +141,46 @@ class UserActivity(db.Model):
 
     def __repr__(self):
         return f"<UserActivity {self.id}: {self.user_id} - {self.action}>"
+
+
+class Indicator(db.Model):
+    """Indicators linked to activities (by activity and code)."""
+    __tablename__ = "indicators"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Link to Activity
+    activity_id = db.Column(
+        db.Integer,
+        db.ForeignKey("activities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Keep a copy of the activity code for reference / easier imports
+    activity_code = db.Column(db.String, nullable=True, index=True)
+
+    # Columns based on your header
+    fundholder_implementing_entity = db.Column(db.String, nullable=True)
+    key_project_activity = db.Column(db.Text, nullable=True)
+    new_proposed_indicator = db.Column(db.Text, nullable=True)
+    indicator_type = db.Column(db.String, nullable=True)
+    naphs = db.Column(db.String, nullable=True)
+    indicator_definition = db.Column(db.Text, nullable=True)
+    data_source = db.Column(db.String, nullable=True)
+
+    baseline_proposal_year = db.Column(db.String, nullable=True)
+    target_year1 = db.Column(db.String, nullable=True)
+    target_year2 = db.Column(db.String, nullable=True)
+    target_year3 = db.Column(db.String, nullable=True)
+
+    submitted = db.Column(db.String, nullable=True)
+    comments = db.Column(db.Text, nullable=True)
+    portal_edited = db.Column(db.String, nullable=True)
+    comment_addressed = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f"<Indicator {self.id} activity_id={self.activity_id} code={self.activity_code}>"
 
 
 def init_db(app) -> None:

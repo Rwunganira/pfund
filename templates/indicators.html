@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    <div>
+        <div class="hero-header">
+            <div>
+                <h1>Indicators</h1>
+                <p>View indicators linked to activities across the portfolio.</p>
+            </div>
+        </div>
+    </div>
+
+    <section class="table-section" style="margin-top: 1.5rem;">
+        <div class="table-header">
+            <h2>Indicators ({{ indicators|length }})</h2>
+            <p class="table-hint">
+                Each row shows an indicator linked to an activity (by code).
+            </p>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        <th>Activity Code</th>
+                        <th>Fundholder implementing entity</th>
+                        <th>Key Project Activity</th>
+                        <th>New Proposed Indicator</th>
+                        <th>Indicator Type</th>
+                        <th>NAPHS</th>
+                        <th>Baseline Proposal Year</th>
+                        <th>Target Y1</th>
+                        <th>Target Y2</th>
+                        <th>Target Y3</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ind in indicators %}
+                    <tr>
+                        <td><strong>{{ ind.activity_code or (ind.activity.code if ind.activity else '-') }}</strong></td>
+                        <td>{{ ind.fundholder_implementing_entity or '-' }}</td>
+                        <td>
+                            <span class="truncate-text" title="{{ ind.key_project_activity }}">
+                                {{ ind.key_project_activity or '-' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="truncate-text" title="{{ ind.new_proposed_indicator }}">
+                                {{ ind.new_proposed_indicator or '-' }}
+                            </span>
+                        </td>
+                        <td>{{ ind.indicator_type or '-' }}</td>
+                        <td>{{ ind.naphs or '-' }}</td>
+                        <td class="num">{{ ind.baseline_proposal_year or '-' }}</td>
+                        <td class="num">{{ ind.target_year1 or '-' }}</td>
+                        <td class="num">{{ ind.target_year2 or '-' }}</td>
+                        <td class="num">{{ ind.target_year3 or '-' }}</td>
+                        <td>{{ ind.submitted or '-' }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="11" class="empty">No indicators yet.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}
+
+

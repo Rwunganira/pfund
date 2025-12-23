@@ -16,6 +16,7 @@
 
         {% if current_user.role == 'admin' %}
             <a href="{{ url_for('activity.new_activity') }}" class="primary">New Activity</a>
+            <a href="{{ url_for('activity.indicators_list') }}">Indicators</a>
             <a href="{{ url_for('auth.manage_users') }}">Users</a>
             <a href="{{ url_for('activity.usage_statistics') }}">Usage Stats</a>
         {% endif %}
