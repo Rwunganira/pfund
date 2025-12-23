@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="form-card">
+    <h1>{{ "Edit Indicator" if indicator else "New Indicator" }}</h1>
+    <p class="table-hint">
+        Link the indicator to an activity by its <strong>code</strong>. Make sure the code already exists in the activities table.
+    </p>
+
+    <form method="post" class="upload-form">
+        <div class="grid">
+            <div class="field-group">
+                <label for="activity_code">Activity Code</label>
+                <input id="activity_code"
+                       name="activity_code"
+                       type="text"
+                       required
+                       placeholder="e.g. ACT001"
+                       value="{% if activity_code is defined %}{{ activity_code }}{% elif indicator %}{{ indicator.activity_code }}{% endif %}">
+            </div>
+
+            <div class="field-group">
+                <label for="fundholder_implementing_entity">Fundholder implementing entity</label>
+                <input id="fundholder_implementing_entity"
+                       name="fundholder_implementing_entity"
+                       type="text"
+                       value="{{ indicator.fundholder_implementing_entity if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="indicator_type">Indicator type</label>
+                <input id="indicator_type"
+                       name="indicator_type"
+                       type="text"
+                       value="{{ indicator.indicator_type if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="naphs">NAPHS</label>
+                <input id="naphs"
+                       name="naphs"
+                       type="text"
+                       value="{{ indicator.naphs if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="data_source">Data source</label>
+                <input id="data_source"
+                       name="data_source"
+                       type="text"
+                       value="{{ indicator.data_source if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="baseline_proposal_year">Baseline Proposal Year</label>
+                <input id="baseline_proposal_year"
+                       name="baseline_proposal_year"
+                       type="text"
+                       placeholder="e.g. 2024"
+                       value="{{ indicator.baseline_proposal_year if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="target_year1">Target Year 1</label>
+                <input id="target_year1"
+                       name="target_year1"
+                       type="text"
+                       value="{{ indicator.target_year1 if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="target_year2">Target Year 2</label>
+                <input id="target_year2"
+                       name="target_year2"
+                       type="text"
+                       value="{{ indicator.target_year2 if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="target_year3">Target Year 3</label>
+                <input id="target_year3"
+                       name="target_year3"
+                       type="text"
+                       value="{{ indicator.target_year3 if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="submitted">Submitted</label>
+                <input id="submitted"
+                       name="submitted"
+                       type="text"
+                       value="{{ indicator.submitted if indicator else '' }}">
+            </div>
+
+            <div class="field-group">
+                <label for="portal_edited">Portal edited</label>
+                <input id="portal_edited"
+                       name="portal_edited"
+                       type="text"
+                       value="{{ indicator.portal_edited if indicator else '' }}">
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="key_project_activity">Key Project activity</label>
+            <textarea id="key_project_activity"
+                      name="key_project_activity"
+                      rows="2"
+                      placeholder="Describe the key project activity">{{ indicator.key_project_activity if indicator else '' }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="new_proposed_indicator">New proposed indicator</label>
+            <textarea id="new_proposed_indicator"
+                      name="new_proposed_indicator"
+                      rows="2"
+                      placeholder="Describe the indicator">{{ indicator.new_proposed_indicator if indicator else '' }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="indicator_definition">Indicator definition</label>
+            <textarea id="indicator_definition"
+                      name="indicator_definition"
+                      rows="3"
+                      placeholder="Definition, numerator, denominator, etc.">{{ indicator.indicator_definition if indicator else '' }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="comments">Comments</label>
+            <textarea id="comments"
+                      name="comments"
+                      rows="2">{{ indicator.comments if indicator else '' }}</textarea>
+        </div>
+
+        <div class="field-group">
+            <label for="comment_addressed">Comment addressed</label>
+            <textarea id="comment_addressed"
+                      name="comment_addressed"
+                      rows="2">{{ indicator.comment_addressed if indicator else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary">
+                {{ "Save changes" if indicator else "Create indicator" }}
+            </button>
+            <a href="{{ url_for('activity.indicators_list') }}" class="secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+

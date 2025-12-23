@@ -13,10 +13,19 @@
 
     <section class="table-section" style="margin-top: 1.5rem;">
         <div class="table-header">
-            <h2>Indicators ({{ indicators|length }})</h2>
-            <p class="table-hint">
-                Each row shows an indicator linked to an activity (by code).
-            </p>
+            <div>
+                <h2>Indicators ({{ indicators|length }})</h2>
+                <p class="table-hint">
+                    Each row shows an indicator linked to an activity (by code).
+                </p>
+            </div>
+            {% if current_user.role == 'admin' %}
+            <div>
+                <a href="{{ url_for('activity.new_indicator') }}" class="primary">
+                    Add Indicator
+                </a>
+            </div>
+            {% endif %}
         </div>
 
         <div class="table-wrapper">
@@ -34,6 +43,9 @@
                         <th>Target Y2</th>
                         <th>Target Y3</th>
                         <th>Submitted</th>
+                        {% if current_user.role == 'admin' %}
+                        <th>Actions</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -58,10 +70,17 @@
                         <td class="num">{{ ind.target_year2 or '-' }}</td>
                         <td class="num">{{ ind.target_year3 or '-' }}</td>
                         <td>{{ ind.submitted or '-' }}</td>
+                        {% if current_user.role == 'admin' %}
+                        <td>
+                            <a href="{{ url_for('activity.edit_indicator', indicator_id=ind.id) }}" class="btn-edit">
+                                Edit
+                            </a>
+                        </td>
+                        {% endif %}
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="11" class="empty">No indicators yet.</td>
+                        <td colspan="12" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>

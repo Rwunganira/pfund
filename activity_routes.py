@@ -1448,10 +1448,100 @@ def indicators_list():
         print(traceback.format_exc())
         indicators = []
 
-    return render_template(
-        "indicators.html",
-        indicators=indicators,
-    )
+    return render_template("indicators.html", indicators=indicators)
+
+
+@activity_bp.route("/indicators/new", methods=["GET", "POST"])
+@admin_required
+def new_indicator():
+    """Create a new indicator linked to an activity (by code)."""
+    from flask import request
+
+    if request.method == "POST":
+        activity_code = (request.form.get("activity_code") or "").strip()
+        if not activity_code:
+            flash("Activity code is required.", "error")
+            return render_template("indicator_form.html", indicator=None)
+
+        activity = Activity.query.filter_by(code=activity_code).first()
+        if not activity:
+            flash(f"No activity found with code '{activity_code}'.", "error")
+            return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
+
+        ind = Indicator(
+            activity_id=activity.id,
+            activity_code=activity.code,
+            fundholder_implementing_entity=request.form.get("fundholder_implementing_entity") or None,
+            key_project_activity=request.form.get("key_project_activity") or None,
+            new_proposed_indicator=request.form.get("new_proposed_indicator") or None,
+            indicator_type=request.form.get("indicator_type") or None,
+            naphs=request.form.get("naphs") or None,
+            indicator_definition=request.form.get("indicator_definition") or None,
+            data_source=request.form.get("data_source") or None,
+            baseline_proposal_year=request.form.get("baseline_proposal_year") or None,
+            target_year1=request.form.get("target_year1") or None,
+            target_year2=request.form.get("target_year2") or None,
+            target_year3=request.form.get("target_year3") or None,
+            submitted=request.form.get("submitted") or None,
+            comments=request.form.get("comments") or None,
+            portal_edited=request.form.get("portal_edited") or None,
+            comment_addressed=request.form.get("comment_addressed") or None,
+        )
+        db.session.add(ind)
+        db.session.commit()
+        flash("Indicator created successfully.", "success")
+        return redirect(url_for("activity.indicators_list"))
+
+    # GET
+    return render_template("indicator_form.html", indicator=None)
+
+
+@activity_bp.route("/indicators/<int:indicator_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_indicator(indicator_id):
+    """Edit an existing indicator."""
+    from flask import request
+
+    ind = Indicator.query.get(indicator_id)
+    if not ind:
+        flash("Indicator not found.", "error")
+        return redirect(url_for("activity.indicators_list"))
+
+    if request.method == "POST":
+        activity_code = (request.form.get("activity_code") or "").strip()
+        if not activity_code:
+            flash("Activity code is required.", "error")
+            return render_template("indicator_form.html", indicator=ind)
+
+        activity = Activity.query.filter_by(code=activity_code).first()
+        if not activity:
+            flash(f"No activity found with code '{activity_code}'.", "error")
+            return render_template("indicator_form.html", indicator=ind, activity_code=activity_code)
+
+        ind.activity_id = activity.id
+        ind.activity_code = activity.code
+        ind.fundholder_implementing_entity = request.form.get("fundholder_implementing_entity") or None
+        ind.key_project_activity = request.form.get("key_project_activity") or None
+        ind.new_proposed_indicator = request.form.get("new_proposed_indicator") or None
+        ind.indicator_type = request.form.get("indicator_type") or None
+        ind.naphs = request.form.get("naphs") or None
+        ind.indicator_definition = request.form.get("indicator_definition") or None
+        ind.data_source = request.form.get("data_source") or None
+        ind.baseline_proposal_year = request.form.get("baseline_proposal_year") or None
+        ind.target_year1 = request.form.get("target_year1") or None
+        ind.target_year2 = request.form.get("target_year2") or None
+        ind.target_year3 = request.form.get("target_year3") or None
+        ind.submitted = request.form.get("submitted") or None
+        ind.comments = request.form.get("comments") or None
+        ind.portal_edited = request.form.get("portal_edited") or None
+        ind.comment_addressed = request.form.get("comment_addressed") or None
+
+        db.session.commit()
+        flash("Indicator updated successfully.", "success")
+        return redirect(url_for("activity.indicators_list"))
+
+    # GET
+    return render_template("indicator_form.html", indicator=ind)
 
 
 @activity_bp.route("/admin/usage", methods=["GET"])
