@@ -1695,6 +1695,20 @@ def delete_indicator(indicator_id):
     return redirect(url_for("activity.indicators_list"))
 
 
+@activity_bp.route("/indicators/delete_all", methods=["POST"])
+@admin_required
+def delete_all_indicators():
+    """Delete all indicators from the database (super admin only)."""
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can delete all indicators.", "error")
+        return redirect(url_for("activity.indicators_list"))
+
+    Indicator.query.delete()
+    db.session.commit()
+    flash("All indicators have been deleted.", "info")
+    return redirect(url_for("activity.indicators_list"))
+
+
 @activity_bp.route("/indicators/download", methods=["GET"])
 @login_required
 def download_indicators():
