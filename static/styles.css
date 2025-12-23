@@ -1186,6 +1186,11 @@ tbody tr:hover {
     text-align: right;
 }
 
+/* In indicators table, allow a bit more text before truncating */
+.indicators-section .truncate-text {
+    max-width: 220px;
+}
+
     /* Progress container */
     .progress-container {
         flex-direction: column;
