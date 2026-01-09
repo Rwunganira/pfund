@@ -1,5 +1,6 @@
 from flask import Flask, session
 from flask_migrate import Migrate
+import os
 
 from activity_routes import activity_bp
 from auth_routes import auth_bp
@@ -24,13 +25,16 @@ app.register_blueprint(activity_bp)
 @app.context_processor
 def inject_current_user():
     """Expose simple current_user info to all templates."""
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "samuel.rwunganira@gmail.com")
     return {
         "current_user": {
             "id": session.get("user_id"),
             "username": session.get("username"),
             "email": session.get("email"),
             "role": session.get("role"),
-        }
+        },
+        "ADMIN_EMAIL": ADMIN_EMAIL,
+        "is_super_admin": session.get("email") and session.get("email").lower() == ADMIN_EMAIL.lower()
     }
 
 

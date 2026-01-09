@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for, session, Response
+from flask import Blueprint, flash, redirect, render_template, request, url_for, session, Response, jsonify
 import tempfile
 import io
 
@@ -15,11 +15,22 @@ from sqlalchemy import inspect, text
 from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
+from functools import wraps
 from models import Activity, Challenge, SubActivity, Indicator, db
 from usage_tracking import log_user_activity
 
 
 activity_bp = Blueprint("activity", __name__)
+
+
+def login_required_json(view_func):
+    """Decorator that requires login but returns JSON error instead of redirect for API endpoints."""
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not session.get("user_id"):
+            return jsonify({"error": "Authentication required", "data": [], "layout": {}}), 401
+        return view_func(*args, **kwargs)
+    return wrapper
 
 
 def calculate_indicator_progress(indicator_type, actual, target, baseline):
@@ -1643,147 +1654,191 @@ def indicators_progress():
 
 
 @activity_bp.route("/indicators/progress/chart", methods=["GET"])
-@login_required
 def indicators_progress_chart():
     """Generate and return a stacked bar chart for indicator progress by year using Plotly."""
+    import traceback
+    import sys
+    
+    # Check authentication first - return JSON error instead of redirect
+    if not session.get("user_id"):
+        return jsonify({"error": "Authentication required", "data": [], "layout": {}}), 401
+    
     try:
+        
         # Filter by implementing entity (from Activity)
         entity_list = request.args.getlist("implementing_entity")
         # Filter by indicator type (Quantitative / Qualitative)
         type_filter = (request.args.get("indicator_type") or "").strip()
         
         # Base query
-        query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
-        if entity_list:
-            query = query.filter(Activity.implementing_entity.in_(entity_list))
-        if type_filter in ("Quantitative", "Qualitative"):
-            query = query.filter(Indicator.indicator_type == type_filter)
-        
-        # Get indicators
         try:
+            query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
+            if entity_list:
+                query = query.filter(Activity.implementing_entity.in_(entity_list))
+            if type_filter in ("Quantitative", "Qualitative"):
+                query = query.filter(Indicator.indicator_type == type_filter)
+            
+            # Get indicators - order by activity code and indicator id
             indicators = query.order_by(Activity.code, Indicator.id).all()
-        except Exception as e:
-            import traceback
-            print(f"Error loading indicators for chart: {e}")
-            print(traceback.format_exc())
-            indicators = []
+        except Exception as db_error:
+            error_msg = f"Database error loading indicators: {str(db_error)}"
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print(f"ERROR: {error_msg}")
+            print(f"Exception type: {exc_type}")
+            print(f"Exception value: {exc_value}")
+            print(traceback.format_exception(exc_type, exc_value, exc_traceback))
+            return jsonify({"error": error_msg, "data": [], "layout": {}}), 500
         
-        # Calculate per-year summaries
-        on_track_y1 = sum(1 for ind in indicators if ind.status_year1 == "On Track")
-        at_risk_y1 = sum(1 for ind in indicators if ind.status_year1 == "At Risk")
-        behind_y1 = sum(1 for ind in indicators if ind.status_year1 == "Behind")
-        not_started_y1 = sum(1 for ind in indicators if not ind.status_year1 or ind.status_year1 == "Not Started")
+        # Calculate per-year summaries (with defensive checks)
+        on_track_y1 = sum(1 for ind in indicators if getattr(ind, 'status_year1', None) == "On Track")
+        at_risk_y1 = sum(1 for ind in indicators if getattr(ind, 'status_year1', None) == "At Risk")
+        behind_y1 = sum(1 for ind in indicators if getattr(ind, 'status_year1', None) == "Behind")
+        not_started_y1 = sum(1 for ind in indicators if not getattr(ind, 'status_year1', None) or getattr(ind, 'status_year1', None) == "Not Started")
         
-        on_track_y2 = sum(1 for ind in indicators if ind.status_year2 == "On Track")
-        at_risk_y2 = sum(1 for ind in indicators if ind.status_year2 == "At Risk")
-        behind_y2 = sum(1 for ind in indicators if ind.status_year2 == "Behind")
-        not_started_y2 = sum(1 for ind in indicators if not ind.status_year2 or ind.status_year2 == "Not Started")
+        on_track_y2 = sum(1 for ind in indicators if getattr(ind, 'status_year2', None) == "On Track")
+        at_risk_y2 = sum(1 for ind in indicators if getattr(ind, 'status_year2', None) == "At Risk")
+        behind_y2 = sum(1 for ind in indicators if getattr(ind, 'status_year2', None) == "Behind")
+        not_started_y2 = sum(1 for ind in indicators if not getattr(ind, 'status_year2', None) or getattr(ind, 'status_year2', None) == "Not Started")
         
-        on_track_y3 = sum(1 for ind in indicators if ind.status_year3 == "On Track")
-        at_risk_y3 = sum(1 for ind in indicators if ind.status_year3 == "At Risk")
-        behind_y3 = sum(1 for ind in indicators if ind.status_year3 == "Behind")
-        not_started_y3 = sum(1 for ind in indicators if not ind.status_year3 or ind.status_year3 == "Not Started")
+        on_track_y3 = sum(1 for ind in indicators if getattr(ind, 'status_year3', None) == "On Track")
+        at_risk_y3 = sum(1 for ind in indicators if getattr(ind, 'status_year3', None) == "At Risk")
+        behind_y3 = sum(1 for ind in indicators if getattr(ind, 'status_year3', None) == "Behind")
+        not_started_y3 = sum(1 for ind in indicators if not getattr(ind, 'status_year3', None) or getattr(ind, 'status_year3', None) == "Not Started")
         
         # Create stacked bar chart with Plotly
-        fig = go.Figure()
-        
-        years = ['Year 1', 'Year 2', 'Year 3']
-        colors = {
-            'Not Started': '#6b7280',
-            'Behind': '#ef4444',
-            'At Risk': '#f59e0b',
-            'On Track': '#10b981'
-        }
-        
-        # Add stacked bars
-        fig.add_trace(go.Bar(
-            name='Not Started',
-            x=years,
-            y=[not_started_y1, not_started_y2, not_started_y3],
-            marker_color=colors['Not Started'],
-            text=[not_started_y1, not_started_y2, not_started_y3],
-            textposition='inside',
-            textfont=dict(color='white', size=11, family='Arial Black')
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='Behind',
-            x=years,
-            y=[behind_y1, behind_y2, behind_y3],
-            marker_color=colors['Behind'],
-            text=[behind_y1, behind_y2, behind_y3],
-            textposition='inside',
-            textfont=dict(color='white', size=11, family='Arial Black')
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='At Risk',
-            x=years,
-            y=[at_risk_y1, at_risk_y2, at_risk_y3],
-            marker_color=colors['At Risk'],
-            text=[at_risk_y1, at_risk_y2, at_risk_y3],
-            textposition='inside',
-            textfont=dict(color='white', size=11, family='Arial Black')
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='On Track',
-            x=years,
-            y=[on_track_y1, on_track_y2, on_track_y3],
-            marker_color=colors['On Track'],
-            text=[on_track_y1, on_track_y2, on_track_y3],
-            textposition='inside',
-            textfont=dict(color='white', size=11, family='Arial Black')
-        ))
-        
-        # Update layout - smaller size for top corner
-        fig.update_layout(
-            barmode='stack',
-            title={
-                'text': 'Progress Status by Year',
-                'x': 0.5,
-                'xanchor': 'center',
-                'y': 1.0,
-                'yanchor': 'top',
-                'font': {'size': 14, 'family': 'Arial'}
-            },
-            xaxis_title="Year",
-            yaxis_title="Number of Indicators",
-            xaxis=dict(
-                titlefont=dict(size=12),
-                tickfont=dict(size=11)
-            ),
-            yaxis=dict(
-                titlefont=dict(size=12),
-                tickfont=dict(size=11)
-            ),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.08,
-                xanchor="right",
-                x=1,
-                font=dict(size=10)
-            ),
-            height=250,
-            margin=dict(l=35, r=35, t=70, b=35),
-            plot_bgcolor='white',
-            paper_bgcolor='white'
-        )
-        
-        # Convert to JSON for embedding
-        graph_json = pio.to_json(fig)
-        response = Response(graph_json, mimetype='application/json')
-        response.headers['Cache-Control'] = 'no-cache'
-        return response
+        try:
+            fig = go.Figure()
+            
+            years = ['Year 1', 'Year 2', 'Year 3']
+            colors = {
+                'Not Started': '#6b7280',
+                'Behind': '#ef4444',
+                'At Risk': '#f59e0b',
+                'On Track': '#10b981'
+            }
+            
+            # Add stacked bars
+            fig.add_trace(go.Bar(
+                name='Not Started',
+                x=years,
+                y=[not_started_y1, not_started_y2, not_started_y3],
+                marker_color=colors['Not Started'],
+                text=[not_started_y1, not_started_y2, not_started_y3],
+                textposition='inside',
+                textfont=dict(color='white', size=11, family='Arial Black')
+            ))
+            
+            fig.add_trace(go.Bar(
+                name='Behind',
+                x=years,
+                y=[behind_y1, behind_y2, behind_y3],
+                marker_color=colors['Behind'],
+                text=[behind_y1, behind_y2, behind_y3],
+                textposition='inside',
+                textfont=dict(color='white', size=11, family='Arial Black')
+            ))
+            
+            fig.add_trace(go.Bar(
+                name='At Risk',
+                x=years,
+                y=[at_risk_y1, at_risk_y2, at_risk_y3],
+                marker_color=colors['At Risk'],
+                text=[at_risk_y1, at_risk_y2, at_risk_y3],
+                textposition='inside',
+                textfont=dict(color='white', size=11, family='Arial Black')
+            ))
+            
+            fig.add_trace(go.Bar(
+                name='On Track',
+                x=years,
+                y=[on_track_y1, on_track_y2, on_track_y3],
+                marker_color=colors['On Track'],
+                text=[on_track_y1, on_track_y2, on_track_y3],
+                textposition='inside',
+                textfont=dict(color='white', size=11, family='Arial Black')
+            ))
+            
+            # Update layout - smaller size for top corner
+            fig.update_layout(
+                barmode='stack',
+                title={
+                    'text': 'Progress Status by Year',
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'y': 1.0,
+                    'yanchor': 'top',
+                    'font': {'size': 14, 'family': 'Arial'}
+                },
+                xaxis_title="Year",
+                yaxis_title="Number of Indicators",
+                xaxis=dict(
+                    titlefont=dict(size=12),
+                    tickfont=dict(size=11)
+                ),
+                yaxis=dict(
+                    titlefont=dict(size=12),
+                    tickfont=dict(size=11)
+                ),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.08,
+                    xanchor="right",
+                    x=1,
+                    font=dict(size=10)
+                ),
+                height=250,
+                margin=dict(l=35, r=35, t=70, b=35),
+                plot_bgcolor='white',
+                paper_bgcolor='white'
+            )
+            
+            # Convert to JSON for embedding
+            try:
+                # Use pio.to_json to get the full figure JSON structure
+                graph_dict = fig.to_dict()
+                # Ensure we have the correct structure with data and layout
+                chart_data = {
+                    "data": graph_dict.get("data", []),
+                    "layout": graph_dict.get("layout", {})
+                }
+                response = jsonify(chart_data)
+                response.headers['Cache-Control'] = 'no-cache'
+                return response
+            except Exception as json_error:
+                import traceback
+                error_msg = f"Error serializing chart to JSON: {str(json_error)}"
+                print(error_msg)
+                print(traceback.format_exc())
+                return jsonify({"error": error_msg, "data": [], "layout": {}}), 500
+        except Exception as plotly_error:
+            import traceback
+            error_msg = f"Error creating chart: {str(plotly_error)}"
+            print(error_msg)
+            print(traceback.format_exc())
+            return jsonify({"error": error_msg, "data": [], "layout": {}}), 500
+            
     except Exception as e:
-        import traceback
-        error_msg = f"Error generating chart: {str(e)}"
-        print(error_msg)
-        print(traceback.format_exc())
-        # Return error as JSON
-        error_json = '{"error": "' + error_msg.replace('"', '\\"') + '", "data": [], "layout": {}}'
-        return Response(error_json, mimetype='application/json', status=500)
+        import sys
+        error_msg = f"Unexpected error generating chart: {str(e)}"
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print(f"FATAL ERROR: {error_msg}")
+        print(f"Exception type: {exc_type}")
+        print(f"Exception value: {exc_value}")
+        try:
+            print("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        except:
+            print(traceback.format_exc())
+        # Return error as JSON using jsonify for proper encoding
+        try:
+            return jsonify({"error": error_msg, "data": [], "layout": {}}), 500
+        except:
+            # Fallback if jsonify fails
+            return Response(
+                '{"error": "Internal server error", "data": [], "layout": {}}',
+                mimetype='application/json',
+                status=500
+            )
 
 
 @activity_bp.route("/indicators", methods=["GET"])
@@ -2156,7 +2211,11 @@ def edit_indicator(indicator_id):
 @activity_bp.route("/indicators/<int:indicator_id>/delete", methods=["POST"])
 @admin_required
 def delete_indicator(indicator_id):
-    """Delete an indicator (admin only)."""
+    """Delete an indicator (super admin only)."""
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can delete indicators.", "error")
+        return redirect(url_for("activity.indicators_list"))
+    
     ind = Indicator.query.get(indicator_id)
     if not ind:
         flash("Indicator not found.", "error")

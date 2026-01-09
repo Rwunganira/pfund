@@ -69,20 +69,44 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
   .progress-mini .progress-bar{
     width: 26px;
     height: 6px;
     margin: 0;
+    flex-shrink: 0;
+    background-color: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-mini .progress-bar .progress{
+    height: 100%;
+    background-color: #3b82f6;
+    transition: width 0.3s ease;
+    border-radius: 3px;
   }
   .progress-mini .pct{
     font-size: 0.65rem;
     min-width: 28px;
     text-align: right;
+    flex-shrink: 0;
+    line-height: 1;
   }
 
-  /* Numbers centered */
-  td.num{ text-align: center; }
+  /* Numbers centered - ensure proper alignment */
+  td.num{ 
+    text-align: center; 
+    vertical-align: middle;
+  }
+  
+  /* Ensure progress cells are properly aligned */
+  td.num .progress-mini{
+    margin: 0 auto;
+  }
 </style>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
@@ -97,30 +121,41 @@
 
         {% if progress_summary %}
         <div style="position: absolute; top: 1rem; right: 1rem; z-index: 10; width: 400px; max-width: 50%;">
-            <div style="padding: 0.25rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                {% set chart_url = url_for('activity.indicators_progress_chart') %}
-                {% set first_param = true %}
-                {% if entity_filter %}
-                    {% for entity in entity_filter.split(',') %}
-                        {% if entity %}
-                            {% if first_param %}
-                                {% set chart_url = chart_url + '?implementing_entity=' + entity %}
-                                {% set first_param = false %}
-                            {% else %}
-                                {% set chart_url = chart_url + '&implementing_entity=' + entity %}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-                {% if type_filter %}
-                    {% if first_param %}
-                        {% set chart_url = chart_url + '?indicator_type=' + type_filter %}
-                    {% else %}
-                        {% set chart_url = chart_url + '&indicator_type=' + type_filter %}
-                    {% endif %}
-                {% endif %}
-                <!-- Plotly chart (current implementation) -->
-                <div id="progress-chart" style="width: 100%; height: 250px;"></div>
+            <div style="padding: 0.75rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: #111827;">Progress Status by Year</h3>
+                
+                <!-- Interactive Plotly Chart Container -->
+                <div id="progress-chart" style="width: 100%; height: 250px; min-height: 250px;"></div>
+                
+                <!-- Fallback Static Summary (hidden by default, shown if chart fails) -->
+                <div id="chart-fallback" style="display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;">
+                        <div style="text-align: center; padding: 0.5rem; background: white; border-radius: 0.25rem;">
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">Year 1</div>
+                            <div style="font-size: 0.75rem;">
+                                <span style="color: #10b981;">🟢 {{ progress_summary.on_track_y1 or 0 }}</span> |
+                                <span style="color: #f59e0b;">🟡 {{ progress_summary.at_risk_y1 or 0 }}</span> |
+                                <span style="color: #ef4444;">🔴 {{ progress_summary.behind_y1 or 0 }}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: center; padding: 0.5rem; background: white; border-radius: 0.25rem;">
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">Year 2</div>
+                            <div style="font-size: 0.75rem;">
+                                <span style="color: #10b981;">🟢 {{ progress_summary.on_track_y2 or 0 }}</span> |
+                                <span style="color: #f59e0b;">🟡 {{ progress_summary.at_risk_y2 or 0 }}</span> |
+                                <span style="color: #ef4444;">🔴 {{ progress_summary.behind_y2 or 0 }}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: center; padding: 0.5rem; background: white; border-radius: 0.25rem;">
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">Year 3</div>
+                            <div style="font-size: 0.75rem;">
+                                <span style="color: #10b981;">🟢 {{ progress_summary.on_track_y3 or 0 }}</span> |
+                                <span style="color: #f59e0b;">🟡 {{ progress_summary.at_risk_y3 or 0 }}</span> |
+                                <span style="color: #ef4444;">🔴 {{ progress_summary.behind_y3 or 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <script>
                     // Make loadChart globally accessible
                     window.loadChart = function() {
@@ -155,10 +190,24 @@
                             }
                         })
                             .then(response => {
-                                if (!response.ok) {
-                                    throw new Error(`HTTP error! status: ${response.status}`);
-                                }
-                                return response.json();
+                                // Try to parse JSON even for error responses
+                                return response.json().then(data => {
+                                    if (!response.ok) {
+                                        // If response is not ok, check if we have an error message in JSON
+                                        if (data && data.error) {
+                                            throw new Error(data.error);
+                                        } else {
+                                            throw new Error(`HTTP error! status: ${response.status}`);
+                                        }
+                                    }
+                                    return data;
+                                }).catch(parseError => {
+                                    // If JSON parsing fails, throw original HTTP error
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                    throw parseError;
+                                });
                             })
                             .then(data => {
                                 if (data && data.data && data.layout) {
@@ -174,11 +223,15 @@
                             })
                             .catch(error => {
                                 console.error('Error loading chart:', error);
-                                document.getElementById('progress-chart').innerHTML = 
-                                    '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
-                                    '<p>Chart temporarily unavailable.</p>' +
-                                    '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: ' + error.message + '</p>' +
-                                    '</div>';
+                                // Hide chart container and show fallback
+                                var chartContainer = document.getElementById('progress-chart');
+                                var fallbackContainer = document.getElementById('chart-fallback');
+                                if (chartContainer) {
+                                    chartContainer.style.display = 'none';
+                                }
+                                if (fallbackContainer) {
+                                    fallbackContainer.style.display = 'block';
+                                }
                             });
                     };
                     
@@ -191,11 +244,15 @@
                             window.loadChart();
                         };
                         script.onerror = function() {
-                            document.getElementById('progress-chart').innerHTML = 
-                                '<div style="text-align: center; color: #6b7280; padding: 1rem; font-size: 0.875rem;">' +
-                                '<p>Chart temporarily unavailable.</p>' +
-                                '<p style="font-size: 0.75rem; margin-top: 0.5rem;">Error: Failed to load Plotly.js library</p>' +
-                                '</div>';
+                            // Show fallback if Plotly fails to load
+                            var chartContainer = document.getElementById('progress-chart');
+                            var fallbackContainer = document.getElementById('chart-fallback');
+                            if (chartContainer) {
+                                chartContainer.style.display = 'none';
+                            }
+                            if (fallbackContainer) {
+                                fallbackContainer.style.display = 'block';
+                            }
                         };
                         document.head.appendChild(script);
                     } else {
@@ -224,7 +281,7 @@
                     View baseline, targets, actual achievements, and progress percentages for all indicators.
                 </p>
             </div>
-            {% if current_user.role == 'admin' %}
+            {% if current_user.id %}
             <div style="margin-left: auto;">
                 <a href="{{ url_for('activity.indicators_list') }}" class="secondary" style="text-decoration: none; display: inline-block; margin-right: 0.5rem;">
                     View All Indicators
