@@ -1758,7 +1758,7 @@ def indicators_progress_chart():
                 textfont=dict(color='white', size=11, family='Arial Black')
             ))
             
-            # Update layout - smaller size for top corner
+            # Update layout - consistent across all environments
             fig.update_layout(
                 barmode='stack',
                 title={
@@ -1767,17 +1767,21 @@ def indicators_progress_chart():
                     'xanchor': 'center',
                     'y': 1.0,
                     'yanchor': 'top',
-                    'font': {'size': 14, 'family': 'Arial'}
+                    'font': {'size': 14, 'family': 'Arial, sans-serif'}
                 },
-                xaxis_title="Year",
-                yaxis_title="Number of Indicators",
                 xaxis=dict(
-                    titlefont=dict(size=12),
-                    tickfont=dict(size=11)
+                    title="Year",
+                    titlefont=dict(size=12, family='Arial, sans-serif'),
+                    tickfont=dict(size=11, family='Arial, sans-serif'),
+                    showgrid=False
                 ),
                 yaxis=dict(
-                    titlefont=dict(size=12),
-                    tickfont=dict(size=11)
+                    title="Number of Indicators",
+                    titlefont=dict(size=12, family='Arial, sans-serif'),
+                    tickfont=dict(size=11, family='Arial, sans-serif'),
+                    showgrid=True,
+                    gridcolor='#e5e7eb',
+                    gridwidth=1
                 ),
                 legend=dict(
                     orientation="h",
@@ -1785,12 +1789,16 @@ def indicators_progress_chart():
                     y=1.08,
                     xanchor="right",
                     x=1,
-                    font=dict(size=10)
+                    font=dict(size=10, family='Arial, sans-serif'),
+                    bgcolor='rgba(255,255,255,0)',
+                    bordercolor='rgba(255,255,255,0)'
                 ),
                 height=250,
                 margin=dict(l=35, r=35, t=70, b=35),
                 plot_bgcolor='white',
-                paper_bgcolor='white'
+                paper_bgcolor='white',
+                autosize=True,
+                showlegend=True
             )
             
             # Convert to JSON for embedding

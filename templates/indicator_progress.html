@@ -211,10 +211,26 @@
                             })
                             .then(data => {
                                 if (data && data.data && data.layout) {
-                                    Plotly.newPlot('progress-chart', data.data, data.layout, {
-                                        displayModeBar: false, 
-                                        responsive: true
-                                    });
+                                    // Ensure consistent chart rendering across environments
+                                    var chartContainer = document.getElementById('progress-chart');
+                                    if (chartContainer) {
+                                        // Clear any existing content
+                                        chartContainer.innerHTML = '';
+                                        
+                                        // Create plot with consistent settings
+                                        Plotly.newPlot('progress-chart', data.data, data.layout, {
+                                            displayModeBar: false,
+                                            responsive: true,
+                                            staticPlot: false,
+                                            autosizable: true
+                                        });
+                                        
+                                        // Ensure fallback is hidden
+                                        var fallbackContainer = document.getElementById('chart-fallback');
+                                        if (fallbackContainer) {
+                                            fallbackContainer.style.display = 'none';
+                                        }
+                                    }
                                 } else if (data && data.error) {
                                     throw new Error(data.error);
                                 } else {
