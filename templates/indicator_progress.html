@@ -124,12 +124,12 @@
             <div style="padding: 0.75rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: #111827;">Progress Status by Year</h3>
                 
-                <!-- Interactive Plotly Chart Container -->
+                <!-- Plotly Chart Container -->
                 <div id="progress-chart" style="width: 100%; height: 250px; min-height: 250px;"></div>
                 
-                <!-- Fallback Static Summary (hidden by default, shown if chart fails) -->
-                <div id="chart-fallback" style="display: none;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;">
+                <!-- Static Summary (always available, complements chart) -->
+                <div style="margin-top: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                         <div style="text-align: center; padding: 0.5rem; background: white; border-radius: 0.25rem;">
                             <div style="font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem;">Year 1</div>
                             <div style="font-size: 0.75rem;">
@@ -157,123 +157,141 @@
                     </div>
                 </div>
                 <script>
-                    // Make loadChart globally accessible
-                    window.loadChart = function() {
-                        // Build chart URL dynamically from current form filter values
-                        var chartUrl = '{{ url_for("activity.indicators_progress_chart") }}';
-                        var params = [];
-                        
-                        // Get selected entities from checkboxes
-                        var entityCheckboxes = document.querySelectorAll('input[name="implementing_entity"]:checked');
-                        entityCheckboxes.forEach(function(cb) {
-                            params.push('implementing_entity=' + encodeURIComponent(cb.value));
-                        });
-                        
-                        // Get indicator type from select dropdown
-                        var typeSelect = document.getElementById('indicator_type_filter');
-                        if (typeSelect && typeSelect.value) {
-                            params.push('indicator_type=' + encodeURIComponent(typeSelect.value));
-                        }
-                        
-                        // Build final URL
-                        if (params.length > 0) {
-                            chartUrl += '?' + params.join('&');
-                        }
-                        
-                        console.log('Loading chart with filters:', chartUrl);
-                        
-                        fetch(chartUrl, {
-                            method: 'GET',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        })
-                            .then(response => {
-                                // Try to parse JSON even for error responses
-                                return response.json().then(data => {
-                                    if (!response.ok) {
-                                        // If response is not ok, check if we have an error message in JSON
-                                        if (data && data.error) {
-                                            throw new Error(data.error);
-                                        } else {
-                                            throw new Error(`HTTP error! status: ${response.status}`);
-                                        }
-                                    }
-                                    return data;
-                                }).catch(parseError => {
-                                    // If JSON parsing fails, throw original HTTP error
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP error! status: ${response.status}`);
-                                    }
-                                    throw parseError;
-                                });
-                            })
-                            .then(data => {
-                                if (data && data.data && data.layout) {
-                                    // Ensure consistent chart rendering across environments
-                                    var chartContainer = document.getElementById('progress-chart');
-                                    if (chartContainer) {
-                                        // Clear any existing content
-                                        chartContainer.innerHTML = '';
-                                        
-                                        // Create plot with consistent settings
-                                        Plotly.newPlot('progress-chart', data.data, data.layout, {
-                                            displayModeBar: false,
-                                            responsive: true,
-                                            staticPlot: false,
-                                            autosizable: true
-                                        });
-                                        
-                                        // Ensure fallback is hidden
-                                        var fallbackContainer = document.getElementById('chart-fallback');
-                                        if (fallbackContainer) {
-                                            fallbackContainer.style.display = 'none';
-                                        }
-                                    }
-                                } else if (data && data.error) {
-                                    throw new Error(data.error);
-                                } else {
-                                    throw new Error('Invalid chart data format');
+                    document.addEventListener('DOMContentLoaded', function () {
+                        function renderProgressChart() {
+                            var years = ['Year 1', 'Year 2', 'Year 3'];
+
+                            var notStarted = [
+                                {{ progress_summary.not_started_y1 or 0 }},
+                                {{ progress_summary.not_started_y2 or 0 }},
+                                {{ progress_summary.not_started_y3 or 0 }}
+                            ];
+
+                            var behind = [
+                                {{ progress_summary.behind_y1 or 0 }},
+                                {{ progress_summary.behind_y2 or 0 }},
+                                {{ progress_summary.behind_y3 or 0 }}
+                            ];
+
+                            var atRisk = [
+                                {{ progress_summary.at_risk_y1 or 0 }},
+                                {{ progress_summary.at_risk_y2 or 0 }},
+                                {{ progress_summary.at_risk_y3 or 0 }}
+                            ];
+
+                            var onTrack = [
+                                {{ progress_summary.on_track_y1 or 0 }},
+                                {{ progress_summary.on_track_y2 or 0 }},
+                                {{ progress_summary.on_track_y3 or 0 }}
+                            ];
+
+                            var data = [
+                                {
+                                    name: 'Not Started',
+                                    x: years,
+                                    y: notStarted,
+                                    type: 'bar',
+                                    marker: { color: '#6b7280' },
+                                    text: notStarted,
+                                    textposition: 'inside',
+                                    textfont: { color: 'white', size: 11, family: 'Arial Black' }
+                                },
+                                {
+                                    name: 'Behind',
+                                    x: years,
+                                    y: behind,
+                                    type: 'bar',
+                                    marker: { color: '#ef4444' },
+                                    text: behind,
+                                    textposition: 'inside',
+                                    textfont: { color: 'white', size: 11, family: 'Arial Black' }
+                                },
+                                {
+                                    name: 'At Risk',
+                                    x: years,
+                                    y: atRisk,
+                                    type: 'bar',
+                                    marker: { color: '#f59e0b' },
+                                    text: atRisk,
+                                    textposition: 'inside',
+                                    textfont: { color: 'white', size: 11, family: 'Arial Black' }
+                                },
+                                {
+                                    name: 'On Track',
+                                    x: years,
+                                    y: onTrack,
+                                    type: 'bar',
+                                    marker: { color: '#10b981' },
+                                    text: onTrack,
+                                    textposition: 'inside',
+                                    textfont: { color: 'white', size: 11, family: 'Arial Black' }
                                 }
-                            })
-                            .catch(error => {
-                                console.error('Error loading chart:', error);
-                                // Hide chart container and show fallback
-                                var chartContainer = document.getElementById('progress-chart');
-                                var fallbackContainer = document.getElementById('chart-fallback');
-                                if (chartContainer) {
-                                    chartContainer.style.display = 'none';
-                                }
-                                if (fallbackContainer) {
-                                    fallbackContainer.style.display = 'block';
-                                }
-                            });
-                    };
-                    
-                    // Wait for Plotly to be available and load chart on page load
-                    if (typeof Plotly === 'undefined') {
-                        console.error('Plotly.js not loaded. Loading from CDN...');
-                        var script = document.createElement('script');
-                        script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
-                        script.onload = function() {
-                            window.loadChart();
-                        };
-                        script.onerror = function() {
-                            // Show fallback if Plotly fails to load
+                            ];
+
+                            var layout = {
+                                barmode: 'stack',
+                                title: {
+                                    text: 'Progress Status by Year',
+                                    x: 0.5,
+                                    xanchor: 'center',
+                                    y: 1.0,
+                                    yanchor: 'top',
+                                    font: { size: 14, family: 'Arial, sans-serif' }
+                                },
+                                xaxis: {
+                                    title: 'Year',
+                                    titlefont: { size: 12, family: 'Arial, sans-serif' },
+                                    tickfont: { size: 11, family: 'Arial, sans-serif' },
+                                    showgrid: false
+                                },
+                                yaxis: {
+                                    title: 'Number of Indicators',
+                                    titlefont: { size: 12, family: 'Arial, sans-serif' },
+                                    tickfont: { size: 11, family: 'Arial, sans-serif' },
+                                    showgrid: true,
+                                    gridcolor: '#e5e7eb',
+                                    gridwidth: 1
+                                },
+                                legend: {
+                                    orientation: 'h',
+                                    yanchor: 'bottom',
+                                    y: 1.08,
+                                    xanchor: 'right',
+                                    x: 1,
+                                    font: { size: 10, family: 'Arial, sans-serif' },
+                                    bgcolor: 'rgba(255,255,255,0)',
+                                    bordercolor: 'rgba(255,255,255,0)'
+                                },
+                                height: 250,
+                                margin: { l: 35, r: 35, t: 70, b: 35 },
+                                plot_bgcolor: 'white',
+                                paper_bgcolor: 'white'
+                            };
+
                             var chartContainer = document.getElementById('progress-chart');
-                            var fallbackContainer = document.getElementById('chart-fallback');
-                            if (chartContainer) {
-                                chartContainer.style.display = 'none';
-                            }
-                            if (fallbackContainer) {
-                                fallbackContainer.style.display = 'block';
-                            }
-                        };
-                        document.head.appendChild(script);
-                    } else {
-                        window.loadChart();
-                    }
+                            if (!chartContainer) return;
+
+                            Plotly.newPlot('progress-chart', data, layout, {
+                                displayModeBar: false,
+                                responsive: true
+                            });
+                        }
+
+                        if (typeof Plotly === 'undefined') {
+                            console.error('Plotly.js not loaded. Loading from CDN...');
+                            var script = document.createElement('script');
+                            script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+                            script.onload = function () {
+                                renderProgressChart();
+                            };
+                            script.onerror = function () {
+                                console.error('Failed to load Plotly.js');
+                            };
+                            document.head.appendChild(script);
+                        } else {
+                            renderProgressChart();
+                        }
+                    });
                 </script>
                 
                 <!-- Alternative: Uncomment to use Streamlit iframe directly -->
