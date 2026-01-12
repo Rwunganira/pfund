@@ -1877,6 +1877,8 @@ def indicators_list():
     entity_list = request.args.getlist("implementing_entity")
     # Filter by indicator type (Quantitative / Qualitative)
     type_filter = (request.args.get("indicator_type") or "").strip()
+    # Search query
+    search_query = (request.args.get("q") or "").strip()
 
     # Base query
     query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
@@ -1884,6 +1886,20 @@ def indicators_list():
         query = query.filter(Activity.implementing_entity.in_(entity_list))
     if type_filter in ("Quantitative", "Qualitative"):
         query = query.filter(Indicator.indicator_type == type_filter)
+    if search_query:
+        search_term = f"%{search_query}%"
+        query = query.filter(
+            db.or_(
+                Activity.code.ilike(search_term),
+                Indicator.activity_code.ilike(search_term),
+                Indicator.new_proposed_indicator.ilike(search_term),
+                Indicator.indicator_definition.ilike(search_term),
+                Indicator.data_source.ilike(search_term),
+                Indicator.comments.ilike(search_term),
+                Activity.proposed_activity.ilike(search_term),
+                Activity.implementing_entity.ilike(search_term),
+            )
+        )
 
     # Simple read-only view of all indicators with their activities
     try:
@@ -1982,6 +1998,7 @@ def indicators_list():
         entities=entities,
         entity_filter=",".join(entity_list) if entity_list else "",
         type_filter=type_filter,
+        search_query=search_query,
     )
 
 
