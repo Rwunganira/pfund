@@ -1480,6 +1480,7 @@ def download_activities():
             "budget_used_year1",
             "budget_used_year2",
             "budget_used_year3",
+            "total_budget_used",  # Sum of all years (matches dashboard display)
             "status",
             "progress",
             "notes",
@@ -1493,7 +1494,8 @@ def download_activities():
         budget_used_year2 = getattr(a, 'budget_used_year2', None) or 0
         budget_used_year3 = getattr(a, 'budget_used_year3', None) or 0
         total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
-        calculated_progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        # Match dashboard calculation: round() returns float, but we'll use int for CSV
+        calculated_progress = round((total_budget_used / budget_total) * 100) if budget_total > 0 else 0
         
         writer.writerow(
             [
@@ -1512,8 +1514,9 @@ def download_activities():
                 budget_used_year1,
                 budget_used_year2,
                 budget_used_year3,
+                total_budget_used,  # Total of all years (matches dashboard "Budget Used" column)
                 a.status or "",
-                calculated_progress,  # Use auto-calculated progress based on all years
+                calculated_progress,  # Use auto-calculated progress based on all years (matches dashboard)
                 (a.notes or "").replace("\n", " ").replace("\r", " "),
             ]
         )
@@ -2286,9 +2289,23 @@ def download_indicators():
             "indicator_definition",
             "data_source",
             "baseline_proposal_year",
+            "actual_baseline",
             "target_year_1",
+            "actual_year_1",
+            "progress_year_1",
+            "status_year_1",
+            "qualitative_stage_year_1",
             "target_year_2",
+            "actual_year_2",
+            "progress_year_2",
+            "status_year_2",
+            "qualitative_stage_year_2",
             "target_year_3",
+            "actual_year_3",
+            "progress_year_3",
+            "status_year_3",
+            "qualitative_stage_year_3",
+            "last_progress_update",
             "submitted",
             "comments",
             "portal_edited",
@@ -2301,6 +2318,16 @@ def download_indicators():
         code = ind.activity_code or (act.code if act else "")
         fundholder = act.implementing_entity if act else ""
         key_proj = act.proposed_activity if act else ""
+        
+        # Format progress percentages
+        def format_progress(val):
+            if val is None:
+                return ""
+            try:
+                return f"{float(val):.2f}"
+            except (ValueError, TypeError):
+                return ""
+        
         writer.writerow(
             [
                 code,
@@ -2312,9 +2339,23 @@ def download_indicators():
                 ind.indicator_definition or "",
                 ind.data_source or "",
                 ind.baseline_proposal_year or "",
+                ind.actual_baseline or "",
                 ind.target_year1 or "",
+                ind.actual_year1 or "",
+                format_progress(ind.progress_year1),
+                ind.status_year1 or "",
+                ind.qualitative_stage_year1 or "",
                 ind.target_year2 or "",
+                ind.actual_year2 or "",
+                format_progress(ind.progress_year2),
+                ind.status_year2 or "",
+                ind.qualitative_stage_year2 or "",
                 ind.target_year3 or "",
+                ind.actual_year3 or "",
+                format_progress(ind.progress_year3),
+                ind.status_year3 or "",
+                ind.qualitative_stage_year3 or "",
+                ind.last_progress_update.strftime("%Y-%m-%d %H:%M:%S") if ind.last_progress_update else "",
                 ind.submitted or "",
                 ind.comments or "",
                 bool_to_yes_no(ind.portal_edited),
@@ -2366,9 +2407,23 @@ def download_indicators_excel():
         "indicator_definition",
         "data_source",
         "baseline_proposal_year",
+        "actual_baseline",
         "target_year_1",
+        "actual_year_1",
+        "progress_year_1",
+        "status_year_1",
+        "qualitative_stage_year_1",
         "target_year_2",
+        "actual_year_2",
+        "progress_year_2",
+        "status_year_2",
+        "qualitative_stage_year_2",
         "target_year_3",
+        "actual_year_3",
+        "progress_year_3",
+        "status_year_3",
+        "qualitative_stage_year_3",
+        "last_progress_update",
         "submitted",
         "comments",
         "portal_edited",
@@ -2382,6 +2437,28 @@ def download_indicators_excel():
         fundholder = act.implementing_entity if act else ""
         key_proj = act.proposed_activity if act else ""
 
+        # Helper function for numeric conversion
+        def to_num_or_text(val, is_quantitative):
+            if val is None or val == "":
+                return ""
+            if is_quantitative:
+                try:
+                    return float(str(val).strip())
+                except ValueError:
+                    return str(val)
+            return str(val)
+
+        is_quantitative = (ind.indicator_type or "").strip() == "Quantitative"
+        
+        # Format progress percentages
+        def format_progress(val):
+            if val is None:
+                return ""
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return ""
+
         row = [
             code,
             fundholder,
@@ -2391,42 +2468,29 @@ def download_indicators_excel():
             bool_to_yes_no(ind.naphs),
             ind.indicator_definition or "",
             ind.data_source or "",
-            None,  # baseline placeholder
-            None,  # t1
-            None,  # t2
-            None,  # t3
+            to_num_or_text(ind.baseline_proposal_year, is_quantitative),
+            to_num_or_text(ind.actual_baseline, is_quantitative),
+            to_num_or_text(ind.target_year1, is_quantitative),
+            to_num_or_text(ind.actual_year1, is_quantitative),
+            format_progress(ind.progress_year1),
+            ind.status_year1 or "",
+            ind.qualitative_stage_year1 or "",
+            to_num_or_text(ind.target_year2, is_quantitative),
+            to_num_or_text(ind.actual_year2, is_quantitative),
+            format_progress(ind.progress_year2),
+            ind.status_year2 or "",
+            ind.qualitative_stage_year2 or "",
+            to_num_or_text(ind.target_year3, is_quantitative),
+            to_num_or_text(ind.actual_year3, is_quantitative),
+            format_progress(ind.progress_year3),
+            ind.status_year3 or "",
+            ind.qualitative_stage_year3 or "",
+            ind.last_progress_update.strftime("%Y-%m-%d %H:%M:%S") if ind.last_progress_update else "",
             ind.submitted or "",
             ind.comments or "",
             bool_to_yes_no(ind.portal_edited),
             bool_to_yes_no(ind.comment_addressed),
         ]
-
-        # Baseline and targets: numeric cells for Quantitative, text for Qualitative
-        baseline = ind.baseline_proposal_year
-        t1 = ind.target_year1
-        t2 = ind.target_year2
-        t3 = ind.target_year3
-
-        if (ind.indicator_type or "").strip() == "Quantitative":
-            def to_int_or_text(val):
-                if val is None or val == "":
-                    return ""
-                try:
-                    return int(str(val).strip())
-                except ValueError:
-                    # Fallback to text if somehow non-numeric slipped through
-                    return str(val)
-
-            row[8] = to_int_or_text(baseline)
-            row[9] = to_int_or_text(t1)
-            row[10] = to_int_or_text(t2)
-            row[11] = to_int_or_text(t3)
-        else:
-            # Qualitative: keep as text
-            row[8] = baseline or ""
-            row[9] = t1 or ""
-            row[10] = t2 or ""
-            row[11] = t3 or ""
 
         ws.append(row)
 
