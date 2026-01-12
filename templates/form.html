@@ -68,21 +68,24 @@
             </div>
 
             <div class="field-group">
-                <label for="budget_year1">Budget Year 1</label>
+                <label for="budget_year1">Budget Year 1 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_year1" name="budget_year1" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_year1 if activity else '' }}">
+                       value="{{ activity.budget_year1 if activity else '' }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">
-                <label for="budget_year2">Budget Year 2</label>
+                <label for="budget_year2">Budget Year 2 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_year2" name="budget_year2" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_year2 if activity else '' }}">
+                       value="{{ activity.budget_year2 if activity else '' }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">
-                <label for="budget_year3">Budget Year 3</label>
+                <label for="budget_year3">Budget Year 3 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_year3" name="budget_year3" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_year3 if activity else '' }}">
+                       value="{{ activity.budget_year3 if activity else '' }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">
@@ -94,21 +97,24 @@
             </div>
 
             <div class="field-group">
-                <label for="budget_used_year1">Budget Used Year 1</label>
+                <label for="budget_used_year1">Budget Used Year 1 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_used_year1" name="budget_used_year1" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_used_year1 if (activity and activity.budget_used_year1) else (activity.budget_used if activity else '') }}">
+                       value="{{ activity.budget_used_year1 if (activity and activity.budget_used_year1) else (activity.budget_used if activity else '') }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">
-                <label for="budget_used_year2">Budget Used Year 2</label>
+                <label for="budget_used_year2">Budget Used Year 2 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_used_year2" name="budget_used_year2" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_used_year2 if activity else '' }}">
+                       value="{{ activity.budget_used_year2 if activity else '' }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">
-                <label for="budget_used_year3">Budget Used Year 3</label>
+                <label for="budget_used_year3">Budget Used Year 3 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_used_year3" name="budget_used_year3" type="number" step="0.01" min="0"
-                       value="{{ activity.budget_used_year3 if activity else '' }}">
+                       value="{{ activity.budget_used_year3 if activity else '' }}"
+                       {% if not is_super_admin %}readonly style="background-color: #f3f4f6; cursor: not-allowed;"{% endif %}>
             </div>
 
             <div class="field-group">

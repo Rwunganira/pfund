@@ -628,6 +628,9 @@ def index():
 @admin_required
 def new_activity():
     if request.method == "POST":
+        # Check if user is super admin (only super admin can set budget/cost fields)
+        is_super_admin = session.get("email") and session.get("email").lower() == ADMIN_EMAIL.lower()
+        
         data = {
             "code": request.form.get("code") or None,
             "initial_activity": request.form.get("initial_activity") or None,
@@ -648,15 +651,24 @@ def new_activity():
             "notes": request.form.get("notes") or None,
         }
 
-        # Get budget used values per year - use only year-specific fields for all calculations
-        budget_used_year1 = float(data["budget_used_year1"] or 0)
-        budget_used_year2 = float(data["budget_used_year2"] or 0)
-        budget_used_year3 = float(data["budget_used_year3"] or 0)
+        # Only allow budget/cost setting for super admin
+        if is_super_admin:
+            # Get budget used values per year - use only year-specific fields for all calculations
+            budget_used_year1 = float(data["budget_used_year1"] or 0)
+            budget_used_year2 = float(data["budget_used_year2"] or 0)
+            budget_used_year3 = float(data["budget_used_year3"] or 0)
 
-        # Auto-calculate progress from total budget used (all years) and budget_total
-        budget_total = float(data["budget_total"] or 0)
-        total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
-        progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
+            # Auto-calculate progress from total budget used (all years) and budget_total
+            budget_total = float(data["budget_total"] or 0)
+            total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+            progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        else:
+            # For non-super-admin, set budget fields to 0
+            budget_used_year1 = 0
+            budget_used_year2 = 0
+            budget_used_year3 = 0
+            budget_total = 0
+            progress = 0
         
         activity = Activity(
             code=data["code"],
@@ -666,9 +678,9 @@ def new_activity():
             delivery_partner=data["delivery_partner"],
             results_area=data["results_area"],
             category=data["category"],
-            budget_year1=float(data["budget_year1"] or 0),
-            budget_year2=float(data["budget_year2"] or 0),
-            budget_year3=float(data["budget_year3"] or 0),
+            budget_year1=float(data["budget_year1"] or 0) if is_super_admin else 0,
+            budget_year2=float(data["budget_year2"] or 0) if is_super_admin else 0,
+            budget_year3=float(data["budget_year3"] or 0) if is_super_admin else 0,
             budget_total=budget_total,
             budget_used=budget_used_year1,  # Keep for backward compatibility only
             budget_used_year1=budget_used_year1,
@@ -705,6 +717,9 @@ def edit_activity(activity_id):
             db.session.commit()
 
     if request.method == "POST":
+        # Check if user is super admin (only super admin can edit budget/cost fields)
+        is_super_admin = session.get("email") and session.get("email").lower() == ADMIN_EMAIL.lower()
+        
         data = {
             "code": request.form.get("code") or None,
             "initial_activity": request.form.get("initial_activity") or None,
@@ -725,11 +740,6 @@ def edit_activity(activity_id):
             "notes": request.form.get("notes") or None,
         }
 
-        # Get budget used values per year - use only year-specific fields for all calculations
-        budget_used_year1 = float(data["budget_used_year1"] or 0)
-        budget_used_year2 = float(data["budget_used_year2"] or 0)
-        budget_used_year3 = float(data["budget_used_year3"] or 0)
-
         activity.code = data["code"]
         activity.initial_activity = data["initial_activity"]
         activity.proposed_activity = data["proposed_activity"]
@@ -737,20 +747,35 @@ def edit_activity(activity_id):
         activity.delivery_partner = data["delivery_partner"]
         activity.results_area = data["results_area"]
         activity.category = data["category"]
-        activity.budget_year1 = float(data["budget_year1"] or 0)
-        activity.budget_year2 = float(data["budget_year2"] or 0)
-        activity.budget_year3 = float(data["budget_year3"] or 0)
-        activity.budget_total = float(data["budget_total"] or 0)
-        activity.budget_used = budget_used_year1  # Keep for backward compatibility only
-        activity.budget_used_year1 = budget_used_year1
-        activity.budget_used_year2 = budget_used_year2
-        activity.budget_used_year3 = budget_used_year3
         activity.status = data["status"]
-        # Auto-calculate progress from total budget used (all years) and budget_total
-        budget_total = activity.budget_total or 0
-        total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
-        activity.progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
         activity.notes = data["notes"]
+        
+        # Only allow budget/cost editing for super admin
+        if is_super_admin:
+            # Get budget used values per year - use only year-specific fields for all calculations
+            budget_used_year1 = float(data["budget_used_year1"] or 0)
+            budget_used_year2 = float(data["budget_used_year2"] or 0)
+            budget_used_year3 = float(data["budget_used_year3"] or 0)
+            
+            activity.budget_year1 = float(data["budget_year1"] or 0)
+            activity.budget_year2 = float(data["budget_year2"] or 0)
+            activity.budget_year3 = float(data["budget_year3"] or 0)
+            activity.budget_total = float(data["budget_total"] or 0)
+            activity.budget_used = budget_used_year1  # Keep for backward compatibility only
+            activity.budget_used_year1 = budget_used_year1
+            activity.budget_used_year2 = budget_used_year2
+            activity.budget_used_year3 = budget_used_year3
+            
+            # Auto-calculate progress from total budget used (all years) and budget_total
+            budget_total = activity.budget_total or 0
+            total_budget_used = budget_used_year1 + budget_used_year2 + budget_used_year3
+            activity.progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
+        else:
+            # For non-super-admin, keep existing budget values unchanged
+            # Recalculate progress from existing budget values
+            budget_total = activity.budget_total or 0
+            total_budget_used = (activity.budget_used_year1 or 0) + (activity.budget_used_year2 or 0) + (activity.budget_used_year3 or 0)
+            activity.progress = int(round((total_budget_used / budget_total) * 100)) if budget_total > 0 else 0
 
         db.session.commit()
         log_user_activity("edit_activity", resource_type="activity", resource_id=activity_id)
