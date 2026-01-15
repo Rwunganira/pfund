@@ -1,6 +1,24 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  /* Styles for qualitative targets in modal */
+  .budget-grid.qualitative-targets {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  }
+  
+  .budget-item .num.qualitative-text {
+    display: block !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+    text-align: left !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 100% !important;
+  }
+</style>
 <section class="indicators-page">
     <div>
         <div class="hero-header">
@@ -62,20 +80,22 @@
             </div>
             {% endif %}
             {% if current_user.role == 'admin' %}
-            <div class="table-header-actions">
+            <div class="table-header-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                {% if is_super_admin %}
                 <form method="post"
                       action="{{ url_for('activity.upload_indicators') }}"
                       enctype="multipart/form-data"
-                      style="display:inline-flex; gap:0.5rem; align-items:center; margin-left: 0.5rem;">
+                      style="display:inline-flex; gap:0.5rem; align-items:center;">
                     <input type="file" name="file" accept=".xlsx,.xls" required>
                     <button type="submit" class="secondary">Upload Excel</button>
                 </form>
+                {% endif %}
                 {% if is_super_admin %}
                 <form method="post"
                       action="{{ url_for('activity.delete_all_indicators') }}"
-                      style="display:inline-block; margin-left: 0.5rem;"
+                      style="display:inline-block;"
                       onsubmit="return confirm('Delete ALL indicators? This cannot be undone.');">
-                    <button type="submit" class="btn-delete">Delete all</button>
+                    <button type="submit" class="btn-delete">Delete All Indicators</button>
                 </form>
                 {% endif %}
                 <a href="{{ url_for('activity.new_indicator') }}" class="primary">
@@ -240,6 +260,9 @@ var indicatorData = {};
         actual_year1: {{ (ind.actual_year1 or '')|tojson }},
         actual_year2: {{ (ind.actual_year2 or '')|tojson }},
         actual_year3: {{ (ind.actual_year3 or '')|tojson }},
+        qualitative_stage_year1: {{ (ind.qualitative_stage_year1 or '')|tojson }},
+        qualitative_stage_year2: {{ (ind.qualitative_stage_year2 or '')|tojson }},
+        qualitative_stage_year3: {{ (ind.qualitative_stage_year3 or '')|tojson }},
         progress_year1: {{ ind.progress_year1 if ind.progress_year1 is not none else 'null' }},
         progress_year2: {{ ind.progress_year2 if ind.progress_year2 is not none else 'null' }},
         progress_year3: {{ ind.progress_year3 if ind.progress_year3 is not none else 'null' }},
@@ -309,37 +332,37 @@ function openIndicatorDetailsModal(id) {
 
             <div class="detail-section">
                 <h3>Targets</h3>
-                <div class="budget-grid">
+                <div class="budget-grid ${data.indicator_type === 'Qualitative' ? 'qualitative-targets' : ''}">
                     <div class="budget-item">
                         <label>Baseline proposal year:</label>
-                        <span class="num">${data.baseline_proposal_year || '-'}</span>
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.baseline_proposal_year || '-'}</span>
                     </div>
                     <div class="budget-item">
                         <label>Target Year 1:</label>
-                        <span class="num">${data.target_year1 || '-'}</span>
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.target_year1 || '-'}</span>
                     </div>
                     <div class="budget-item">
                         <label>Target Year 2:</label>
-                        <span class="num">${data.target_year2 || '-'}</span>
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.target_year2 || '-'}</span>
                     </div>
                     <div class="budget-item">
                         <label>Target Year 3:</label>
-                        <span class="num">${data.target_year3 || '-'}</span>
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.target_year3 || '-'}</span>
                     </div>
                 </div>
             </div>
 
             <div class="detail-section full-width">
                 <h3>Progress Tracking</h3>
-                <div class="budget-grid">
+                <div class="budget-grid ${data.indicator_type === 'Qualitative' ? 'qualitative-targets' : ''}">
                     <div class="budget-item">
                         <label>Actual Baseline:</label>
-                        <span class="num">${data.actual_baseline || '-'}</span>
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.actual_baseline || '-'}</span>
                     </div>
                     <div class="budget-item">
                         <label>Actual Year 1:</label>
-                        <span class="num">${data.actual_year1 || '-'}</span>
-                        ${data.progress_year1 !== null ? `<div style="margin-top: 0.5rem;">
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.indicator_type === 'Qualitative' ? (data.qualitative_stage_year1 || data.actual_year1 || '-') : (data.actual_year1 || '-')}</span>
+                        ${data.progress_year1 !== null && data.indicator_type !== 'Qualitative' ? `<div style="margin-top: 0.5rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <div class="progress-bar" style="flex: 1; min-width: 80px;">
                                     <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year1))}%"></div>
@@ -349,12 +372,14 @@ function openIndicatorDetailsModal(id) {
                             <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
                                 Status: <strong>${data.status_year1 || 'Not Started'}</strong>
                             </div>
-                        </div>` : ''}
+                        </div>` : (data.indicator_type === 'Qualitative' && data.status_year1 ? `<div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+                            Status: <strong>${data.status_year1 || 'Not Started'}</strong>
+                        </div>` : '')}
                     </div>
                     <div class="budget-item">
                         <label>Actual Year 2:</label>
-                        <span class="num">${data.actual_year2 || '-'}</span>
-                        ${data.progress_year2 !== null ? `<div style="margin-top: 0.5rem;">
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.indicator_type === 'Qualitative' ? (data.qualitative_stage_year2 || data.actual_year2 || '-') : (data.actual_year2 || '-')}</span>
+                        ${data.progress_year2 !== null && data.indicator_type !== 'Qualitative' ? `<div style="margin-top: 0.5rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <div class="progress-bar" style="flex: 1; min-width: 80px;">
                                     <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year2))}%"></div>
@@ -364,12 +389,14 @@ function openIndicatorDetailsModal(id) {
                             <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
                                 Status: <strong>${data.status_year2 || 'Not Started'}</strong>
                             </div>
-                        </div>` : ''}
+                        </div>` : (data.indicator_type === 'Qualitative' && data.status_year2 ? `<div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+                            Status: <strong>${data.status_year2 || 'Not Started'}</strong>
+                        </div>` : '')}
                     </div>
                     <div class="budget-item">
                         <label>Actual Year 3:</label>
-                        <span class="num">${data.actual_year3 || '-'}</span>
-                        ${data.progress_year3 !== null ? `<div style="margin-top: 0.5rem;">
+                        <span class="num ${data.indicator_type === 'Qualitative' ? 'qualitative-text' : ''}">${data.indicator_type === 'Qualitative' ? (data.qualitative_stage_year3 || data.actual_year3 || '-') : (data.actual_year3 || '-')}</span>
+                        ${data.progress_year3 !== null && data.indicator_type !== 'Qualitative' ? `<div style="margin-top: 0.5rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <div class="progress-bar" style="flex: 1; min-width: 80px;">
                                     <div class="progress" style="width: ${Math.min(100, Math.max(0, data.progress_year3))}%"></div>
@@ -379,7 +406,9 @@ function openIndicatorDetailsModal(id) {
                             <div style="margin-top: 0.25rem; font-size: 0.85rem; color: #6b7280;">
                                 Status: <strong>${data.status_year3 || 'Not Started'}</strong>
                             </div>
-                        </div>` : ''}
+                        </div>` : (data.indicator_type === 'Qualitative' && data.status_year3 ? `<div style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">
+                            Status: <strong>${data.status_year3 || 'Not Started'}</strong>
+                        </div>` : '')}
                     </div>
                 </div>
             </div>

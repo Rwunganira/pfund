@@ -898,7 +898,12 @@ def download_challenges():
 @activity_bp.route("/challenges/upload", methods=["POST"])
 @admin_required
 def upload_challenges():
-    """Upload an Excel file and bulk-insert/update challenges."""
+    """Upload an Excel file and bulk-insert/update challenges (super admin only)."""
+    # Check if user is super admin
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can upload challenges.", "error")
+        return redirect(url_for("activity.challenges_page"))
+    
     file = request.files.get("file")
     if not file or file.filename == "":
         flash("No file selected for challenges upload.", "error")
@@ -1240,7 +1245,12 @@ def delete_subactivity(sub_id):
 @activity_bp.route("/upload", methods=["POST"])
 @admin_required
 def upload_excel():
-    """Upload an Excel file and bulk-insert activities."""
+    """Upload an Excel file and bulk-insert activities (super admin only)."""
+    # Check if user is super admin
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can upload activities.", "error")
+        return redirect(url_for("activity.index"))
+    
     file = request.files.get("file")
     if not file or file.filename == "":
         flash("No file selected.", "error")
@@ -2542,7 +2552,7 @@ def download_indicators_excel():
 @activity_bp.route("/indicators/upload", methods=["POST"])
 @admin_required
 def upload_indicators():
-    """Upload indicators from an Excel file.
+    """Upload indicators from an Excel file (super admin only).
 
     Rules:
     - code must match an existing Activity.code
@@ -2551,6 +2561,11 @@ def upload_indicators():
     - Quantitative: baseline/targets must be whole numbers
     - Qualitative: baseline/targets can be free text
     """
+    # Check if user is super admin
+    if session.get("email") != ADMIN_EMAIL:
+        flash("Only the super administrator can upload indicators.", "error")
+        return redirect(url_for("activity.indicators_list"))
+    
     file = request.files.get("file")
     if not file or file.filename == "":
         flash("No file selected for indicators upload.", "error")

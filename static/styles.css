@@ -1200,33 +1200,35 @@ tbody tr:hover {
 /* Progress table - extra compact columns */
 .indicators-section .compact-table th.col-tiny,
 .indicators-section .compact-table td.col-tiny {
-    width: 35px;
-    max-width: 35px;
+    width: 60px;
+    min-width: 60px;
     text-align: center;
-    padding: 0.3rem 0.1rem;
+    padding: 0.5rem 0.4rem;
     font-size: 0.75rem;
 }
 
 
 .indicators-section .compact-table th.col-status,
 .indicators-section .compact-table td.col-status {
-    width: 30px;
-    max-width: 30px;
+    width: 50px;
+    min-width: 50px;
     text-align: center;
-    padding: 0.3rem 0.1rem;
+    padding: 0.5rem 0.4rem;
 }
 
 .indicators-section .compact-table th.col-actions,
 .indicators-section .compact-table td.col-actions {
-    width: 50px;
-    max-width: 50px;
-    padding: 0.3rem 0.1rem;
+    width: 70px;
+    min-width: 70px;
+    padding: 0.5rem 0.4rem;
+    text-align: center;
 }
 
-/* Progress table - remove min-width constraint to fit on screen */
+/* Progress table - use fixed layout for consistent column sizing */
 .indicators-section .compact-table {
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed;
+    min-width: 1400px;
 }
 
 /* Ensure indicator column in progress table matches indicators page */

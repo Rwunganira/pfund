@@ -16,7 +16,7 @@
                       style="margin-right: 0.5rem;">
                        Download follow-up CSV
                    </a>
-                   {% if current_user.role == 'admin' %}
+                   {% if current_user.role == 'admin' and is_super_admin %}
                        <form method="post"
                              action="{{ url_for('activity.upload_challenges') }}"
                              enctype="multipart/form-data"

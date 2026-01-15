@@ -222,7 +222,7 @@
            onclick="updateDownloadLink(); return false;">Download CSV</a>
     </form>
 
-    {% if current_user.role == 'admin' %}
+    {% if current_user.role == 'admin' and is_super_admin %}
         <form method="post" action="{{ url_for('activity.upload_excel') }}" enctype="multipart/form-data" class="upload-form">
             <div class="field-group">
                 <label for="file">Upload Excel to populate activities</label>
