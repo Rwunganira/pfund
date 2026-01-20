@@ -17,6 +17,7 @@
         {% if current_user.id %}
             <a href="{{ url_for('activity.indicators_list') }}">Indicators</a>
             <a href="{{ url_for('activity.indicators_progress') }}">Progress</a>
+            <a href="{{ url_for('activity.roadmap') }}">Roadmap</a>
         {% endif %}
         
         {% if current_user.role == 'admin' %}

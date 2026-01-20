@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="activities-section">
+    <div class="section-header">
+        <h1>Activities & Sub-activities Roadmap</h1>
+        <div class="action-buttons">
+            <a href="{{ url_for('activity.index') }}" class="button secondary">Back to Activities</a>
+        </div>
+    </div>
+
+    <div class="roadmap-container">
+        <!-- Timeline Header -->
+        <div class="timeline-info">
+            <p><strong>Timeline Range:</strong> {{ min_date.strftime('%B %d, %Y') }} to {{ max_date.strftime('%B %d, %Y') }}</p>
+            <p><strong>Total Quarters:</strong> {{ sorted_quarters|length }} | <strong>Total Activities:</strong> 
+                {% set total_activities = namespace(count=0) %}
+                {% for quarter in sorted_quarters %}
+                    {% set total_activities.count = total_activities.count + activities_by_quarter[quarter]|length %}
+                {% endfor %}
+                {{ total_activities.count }}
+            </p>
+        </div>
+
+        <!-- Activities Section with Sub-activities Grouped by Quarter -->
+        {% if sorted_quarters %}
+            {% for quarter in sorted_quarters %}
+            <div class="roadmap-section quarter-section">
+                <h2 class="quarter-header">
+                    <span class="quarter-badge">{{ quarter }}</span>
+                    <span class="quarter-count">({{ activities_by_quarter[quarter]|length }} activities)</span>
+                </h2>
+                <div class="roadmap-items">
+                    {% for activity in activities_by_quarter[quarter] %}
+                <div class="roadmap-item activity-item">
+                    <div class="item-header">
+                        <div class="item-title">
+                            <strong>{{ activity.code or 'N/A' }}</strong> - {{ activity.proposed_activity or activity.initial_activity or 'Unnamed Activity' }}
+                        </div>
+                        <div class="item-meta">
+                            <span class="status-badge status-{{ activity.status|lower|replace(' ', '-') }}">
+                                {{ activity.status }}
+                            </span>
+                            {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('activity.edit_activity', activity_id=activity.id) }}" 
+                               class="edit-link" 
+                               title="Edit Activity">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M11.333 2.00004C11.5085 1.82453 11.7163 1.68488 11.9451 1.58906C12.1739 1.49324 12.419 1.44305 12.6663 1.44305C12.9137 1.44305 13.1588 1.49324 13.3876 1.58906C13.6164 1.68488 13.8242 1.82453 13.9997 2.00004C14.1752 2.17555 14.3148 2.38334 14.4107 2.61213C14.5065 2.84093 14.5567 3.08601 14.5567 3.33337C14.5567 3.58074 14.5065 3.82582 14.4107 4.05461C14.3148 4.28341 14.1752 4.4912 13.9997 4.66671L5.33301 13.3334L1.66634 14.3334L2.66634 10.6667L11.333 2.00004Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Edit
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="item-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Implementing Entity:</span>
+                            <span>{{ activity.implementing_entity or 'N/A' }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Category:</span>
+                            <span>{{ activity.category or 'N/A' }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Results Area:</span>
+                            <span>{{ activity.results_area or 'N/A' }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Timeline:</span>
+                            <span class="timeline-dates">
+                                {% if activity.start_date and activity.end_date %}
+                                    {{ activity.start_date.strftime('%b %d, %Y') }} → {{ activity.end_date.strftime('%b %d, %Y') }}
+                                    <span class="duration">({{ (activity.end_date - activity.start_date).days }} days)</span>
+                                {% elif activity.start_date %}
+                                    Starts: {{ activity.start_date.strftime('%b %d, %Y') }}
+                                {% elif activity.end_date %}
+                                    Ends: {{ activity.end_date.strftime('%b %d, %Y') }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if activity.start_date and activity.end_date %}
+                        <div class="timeline-bar-container">
+                            {% set total_days = (max_date - min_date).days %}
+                            {% set start_offset = ((activity.start_date - min_date).days / total_days * 100) %}
+                            {% set duration = ((activity.end_date - activity.start_date).days / total_days * 100) %}
+                            <div class="timeline-bar activity-bar" style="margin-left: {{ start_offset }}%; width: {{ duration }}%;"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Sub-activities for this Activity -->
+                    {% set activity_subs = [] %}
+                    {% for sub in activity.sub_activities %}
+                        {% if sub.start_date or sub.end_date %}
+                            {% set _ = activity_subs.append(sub) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if activity_subs %}
+                    <div class="subactivities-container">
+                        <h4 style="color: #7c3aed; margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">Sub-activities:</h4>
+                        {% for sub in activity_subs %}
+                        <div class="roadmap-item subactivity-item" style="margin-left: 2rem; margin-bottom: 0.75rem;">
+                            <div class="item-header">
+                                <div class="item-title" style="font-size: 1rem;">
+                                    {{ sub.title }}
+                                </div>
+                                <div class="item-meta">
+                                    <span class="status-badge status-{{ sub.status|lower|replace(' ', '-') }}" style="font-size: 0.8rem;">
+                                        {{ sub.status }}
+                                    </span>
+                                    {% if current_user.role == 'admin' %}
+                                    <a href="{{ url_for('activity.edit_subactivity', sub_id=sub.id) }}" 
+                                       class="edit-link edit-link-small" 
+                                       title="Edit Sub-activity">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M11.333 2.00004C11.5085 1.82453 11.7163 1.68488 11.9451 1.58906C12.1739 1.49324 12.419 1.44305 12.6663 1.44305C12.9137 1.44305 13.1588 1.49324 13.3876 1.58906C13.6164 1.68488 13.8242 1.82453 13.9997 2.00004C14.1752 2.17555 14.3148 2.38334 14.4107 2.61213C14.5065 2.84093 14.5567 3.08601 14.5567 3.33337C14.5567 3.58074 14.5065 3.82582 14.4107 4.05461C14.3148 4.28341 14.1752 4.4912 13.9997 4.66671L5.33301 13.3334L1.66634 14.3334L2.66634 10.6667L11.333 2.00004Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        Edit
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="item-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Responsible:</span>
+                                    <span>{{ sub.responsible or 'Not assigned' }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Timeline:</span>
+                                    <span class="timeline-dates">
+                                        {% if sub.start_date and sub.end_date %}
+                                            {{ sub.start_date.strftime('%b %d, %Y') }} → {{ sub.end_date.strftime('%b %d, %Y') }}
+                                            <span class="duration">({{ (sub.end_date - sub.start_date).days }} days)</span>
+                                        {% elif sub.start_date %}
+                                            Starts: {{ sub.start_date.strftime('%b %d, %Y') }}
+                                        {% elif sub.end_date %}
+                                            Ends: {{ sub.end_date.strftime('%b %d, %Y') }}
+                                        {% else %}
+                                            Not specified
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if sub.start_date and sub.end_date %}
+                                <div class="timeline-bar-container">
+                                    {% set total_days = (max_date - min_date).days %}
+                                    {% set start_offset = ((sub.start_date - min_date).days / total_days * 100) %}
+                                    {% set duration = ((sub.end_date - sub.start_date).days / total_days * 100) %}
+                                    <div class="timeline-bar subactivity-bar" style="margin-left: {{ start_offset }}%; width: {{ duration }}%;"></div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <p>No activities with dates found. Add start and end dates to activities to see them on the roadmap.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.roadmap-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-info {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+
+.timeline-info p {
+    margin: 0.5rem 0;
+    color: #374151;
+}
+
+.roadmap-section {
+    margin-bottom: 3rem;
+}
+
+.quarter-section {
+    background: linear-gradient(to right, #f0f9ff, #ffffff);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 2px solid #bfdbfe;
+}
+
+.quarter-header {
+    color: #1e40af;
+    margin: 0 0 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.5rem;
+}
+
+.quarter-badge {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+.quarter-count {
+    font-size: 1rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.roadmap-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.roadmap-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.2s;
+}
+
+.roadmap-item:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.activity-item {
+    border-left: 4px solid #3b82f6;
+}
+
+.subactivity-item {
+    border-left: 4px solid #8b5cf6;
+    background: #faf5ff;
+}
+
+.subactivities-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px dashed #e5e7eb;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.item-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #111827;
+    flex: 1;
+}
+
+.item-meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.edit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    background: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid #e5e7eb;
+}
+
+.edit-link:hover {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.edit-link svg {
+    width: 14px;
+    height: 14px;
+}
+
+.edit-link-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.edit-link-small svg {
+    width: 12px;
+    height: 12px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-planned {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-in-progress {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-on-hold {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-cancelled, .status-canceled {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.status-pending {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.detail-row {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #6b7280;
+    min-width: 150px;
+}
+
+.timeline-dates {
+    color: #111827;
+    font-weight: 500;
+}
+
+.duration {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: normal;
+    margin-left: 0.5rem;
+}
+
+.timeline-bar-container {
+    margin-top: 0.5rem;
+    height: 24px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.timeline-bar {
+    height: 100%;
+    border-radius: 4px;
+    position: absolute;
+    top: 0;
+    transition: all 0.3s ease;
+}
+
+.activity-bar {
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.subactivity-bar {
+    background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+.timeline-bar:hover {
+    opacity: 0.8;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+    .roadmap-container {
+        padding: 1rem;
+    }
+    
+    .item-header {
+        flex-direction: column;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .detail-label {
+        min-width: auto;
+    }
+}
+</style>
+{% endblock %}

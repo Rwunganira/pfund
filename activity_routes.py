@@ -649,7 +649,24 @@ def new_activity():
             "status": request.form.get("status") or "Planned",
             "progress": request.form.get("progress") or 0,
             "notes": request.form.get("notes") or None,
+            "start_date": request.form.get("start_date") or None,
+            "end_date": request.form.get("end_date") or None,
         }
+        
+        # Parse dates
+        from datetime import datetime
+        start_date = None
+        end_date = None
+        if data["start_date"]:
+            try:
+                start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if data["end_date"]:
+            try:
+                end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            except ValueError:
+                pass
 
         # Budget used fields can be set by all admin users
         budget_used_year1 = float(data["budget_used_year1"] or 0)
@@ -686,6 +703,8 @@ def new_activity():
             status=data["status"],
             progress=progress,
             notes=data["notes"],
+            start_date=start_date,
+            end_date=end_date,
         )
         db.session.add(activity)
         db.session.commit()
@@ -735,7 +754,24 @@ def edit_activity(activity_id):
             "status": request.form.get("status") or "Planned",
             "progress": request.form.get("progress") or 0,
             "notes": request.form.get("notes") or None,
+            "start_date": request.form.get("start_date") or None,
+            "end_date": request.form.get("end_date") or None,
         }
+        
+        # Parse dates
+        from datetime import datetime
+        start_date = None
+        end_date = None
+        if data["start_date"]:
+            try:
+                start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if data["end_date"]:
+            try:
+                end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            except ValueError:
+                pass
 
         activity.code = data["code"]
         activity.initial_activity = data["initial_activity"]
@@ -746,6 +782,8 @@ def edit_activity(activity_id):
         activity.category = data["category"]
         activity.status = data["status"]
         activity.notes = data["notes"]
+        activity.start_date = start_date
+        activity.end_date = end_date
         
         # Budget used fields can be edited by all admin users
         budget_used_year1 = float(data["budget_used_year1"] or 0)
@@ -1148,8 +1186,21 @@ def manage_subactivities(activity_id):
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         responsible = (request.form.get("responsible") or "").strip()
-        timeline = (request.form.get("timeline") or "").strip()
         status = (request.form.get("status") or "pending").strip().lower()
+        
+        # Parse dates
+        start_date = None
+        end_date = None
+        if request.form.get("start_date"):
+            try:
+                start_date = datetime.strptime(request.form.get("start_date"), "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if request.form.get("end_date"):
+            try:
+                end_date = datetime.strptime(request.form.get("end_date"), "%Y-%m-%d").date()
+            except ValueError:
+                pass
 
         if not title:
             flash("Sub-activity title is required.", "error")
@@ -1162,8 +1213,9 @@ def manage_subactivities(activity_id):
             activity_id=activity.id,
             title=title,
             responsible=responsible or None,
-            timeline=timeline or None,
             status=status,
+            start_date=start_date,
+            end_date=end_date,
         )
         db.session.add(sub)
         db.session.commit()
@@ -1190,8 +1242,21 @@ def edit_subactivity(sub_id):
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         responsible = (request.form.get("responsible") or "").strip()
-        timeline = (request.form.get("timeline") or "").strip()
         status = (request.form.get("status") or "pending").strip().lower()
+        
+        # Parse dates
+        start_date = None
+        end_date = None
+        if request.form.get("start_date"):
+            try:
+                start_date = datetime.strptime(request.form.get("start_date"), "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if request.form.get("end_date"):
+            try:
+                end_date = datetime.strptime(request.form.get("end_date"), "%Y-%m-%d").date()
+            except ValueError:
+                pass
 
         if not title:
             flash("Sub-activity title is required.", "error")
@@ -1202,7 +1267,8 @@ def edit_subactivity(sub_id):
 
         sub.title = title
         sub.responsible = responsible or None
-        sub.timeline = timeline or None
+        sub.start_date = start_date
+        sub.end_date = end_date
         # Guard against older DBs without the column
         try:
             sub.status = status
@@ -2827,4 +2893,79 @@ def usage_statistics():
         total_activities=len(activities)
     )
 
+
+@activity_bp.route("/roadmap", methods=["GET"])
+@login_required
+def roadmap():
+    """Display activities and subactivities roadmap with timeline visualization."""
+    from datetime import datetime, timedelta
+    from models import Activity, SubActivity
+    from collections import defaultdict
+    
+    # Log user activity
+    log_user_activity("view_roadmap")
+    
+    # Get all activities with dates
+    activities = Activity.query.filter(
+        db.or_(
+            Activity.start_date.isnot(None),
+            Activity.end_date.isnot(None)
+        )
+    ).order_by(Activity.start_date.asc()).all()
+    
+    # Group activities by quarter
+    activities_by_quarter = defaultdict(list)
+    
+    for activity in activities:
+        # Use start_date for quarter, fall back to end_date if no start_date
+        date_for_quarter = activity.start_date or activity.end_date
+        if date_for_quarter:
+            year = date_for_quarter.year
+            quarter = (date_for_quarter.month - 1) // 3 + 1
+            quarter_key = f"Q{quarter} {year}"
+            activities_by_quarter[quarter_key].append(activity)
+    
+    # Sort quarters chronologically
+    def quarter_sort_key(quarter_str):
+        # Parse "Q1 2024" -> (2024, 1)
+        parts = quarter_str.split()
+        quarter = int(parts[0][1])  # Extract number from Q1, Q2, etc.
+        year = int(parts[1])
+        return (year, quarter)
+    
+    sorted_quarters = sorted(activities_by_quarter.keys(), key=quarter_sort_key)
+    
+    # Calculate date range for visualization including sub-activities
+    all_dates = []
+    for activity in activities:
+        if activity.start_date:
+            all_dates.append(activity.start_date)
+        if activity.end_date:
+            all_dates.append(activity.end_date)
+        # Include dates from sub-activities
+        for sub in activity.sub_activities:
+            if sub.start_date:
+                all_dates.append(sub.start_date)
+            if sub.end_date:
+                all_dates.append(sub.end_date)
+    
+    if all_dates:
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        # Add some padding
+        min_date = min_date - timedelta(days=30)
+        max_date = max_date + timedelta(days=30)
+    else:
+        # Default range
+        min_date = datetime.now().date()
+        max_date = min_date + timedelta(days=365)
+    
+    return render_template(
+        "roadmap.html",
+        activities_by_quarter=activities_by_quarter,
+        sorted_quarters=sorted_quarters,
+        min_date=min_date,
+        max_date=max_date,
+        admin_email=ADMIN_EMAIL
+    )
 

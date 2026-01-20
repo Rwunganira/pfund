@@ -68,6 +68,18 @@
             </div>
 
             <div class="field-group">
+                <label for="start_date">Start Date</label>
+                <input id="start_date" name="start_date" type="date"
+                       value="{% if activity and activity.start_date %}{{ activity.start_date.strftime('%Y-%m-%d') }}{% endif %}">
+            </div>
+
+            <div class="field-group">
+                <label for="end_date">End Date</label>
+                <input id="end_date" name="end_date" type="date"
+                       value="{% if activity and activity.end_date %}{{ activity.end_date.strftime('%Y-%m-%d') }}{% endif %}">
+            </div>
+
+            <div class="field-group">
                 <label for="budget_year1">Budget Year 1 {% if not is_super_admin %}<span style="font-size: 0.75rem; color: #6b7280; font-weight: normal;">(Super Admin Only)</span>{% endif %}</label>
                 <input id="budget_year1" name="budget_year1" type="number" step="0.01" min="0"
                        value="{{ activity.budget_year1 if activity else '' }}"
@@ -161,7 +173,193 @@
             <a href="{{ url_for('activity.index') }}" class="secondary">Cancel</a>
         </div>
     </form>
+
+    <!-- Sub-activities Section (only shown when editing existing activity) -->
+    {% if activity and activity.id %}
+    <div class="subactivities-section">
+        <div class="section-header-inline">
+            <h2>Sub-activities</h2>
+            <a href="{{ url_for('activity.manage_subactivities', activity_id=activity.id) }}" class="button primary">
+                + Add Sub-activity
+            </a>
+        </div>
+        
+        {% set subs = activity.sub_activities.all() %}
+        {% if subs %}
+        <div class="subactivities-list">
+            {% for sub in subs %}
+            <div class="subactivity-card">
+                <div class="subactivity-content">
+                    <div class="subactivity-title">{{ sub.title }}</div>
+                    <div class="subactivity-details">
+                        <span class="detail-item">
+                            <strong>Responsible:</strong> {{ sub.responsible or 'Not assigned' }}
+                        </span>
+                        {% if sub.start_date or sub.end_date %}
+                        <span class="detail-item">
+                            <strong>Dates:</strong> 
+                            {% if sub.start_date and sub.end_date %}
+                                {{ sub.start_date.strftime('%b %d, %Y') }} → {{ sub.end_date.strftime('%b %d, %Y') }}
+                            {% elif sub.start_date %}
+                                Starts: {{ sub.start_date.strftime('%b %d, %Y') }}
+                            {% elif sub.end_date %}
+                                Ends: {{ sub.end_date.strftime('%b %d, %Y') }}
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        <span class="detail-item status-{{ sub.status|lower }}">
+                            <strong>Status:</strong> {{ sub.status }}
+                        </span>
+                    </div>
+                </div>
+                <div class="subactivity-actions">
+                    <a href="{{ url_for('activity.edit_subactivity', sub_id=sub.id) }}" class="button secondary small">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11.333 2.00004C11.5085 1.82453 11.7163 1.68488 11.9451 1.58906C12.1739 1.49324 12.419 1.44305 12.6663 1.44305C12.9137 1.44305 13.1588 1.49324 13.3876 1.58906C13.6164 1.68488 13.8242 1.82453 13.9997 2.00004C14.1752 2.17555 14.3148 2.38334 14.4107 2.61213C14.5065 2.84093 14.5567 3.08601 14.5567 3.33337C14.5567 3.58074 14.5065 3.82582 14.4107 4.05461C14.3148 4.28341 14.1752 4.4912 13.9997 4.66671L5.33301 13.3334L1.66634 14.3334L2.66634 10.6667L11.333 2.00004Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Edit
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-small">
+            <p>No sub-activities yet. Click "Add Sub-activity" to create one.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </section>
+
+<style>
+.subactivities-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.section-header-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header-inline h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 1.5rem;
+}
+
+.subactivities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.subactivity-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #8b5cf6;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.subactivity-card:hover {
+    background: #f3f4f6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.subactivity-content {
+    flex: 1;
+}
+
+.subactivity-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.subactivity-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.detail-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.detail-item.status-pending {
+    color: #3730a3;
+}
+
+.detail-item.status-in-progress {
+    color: #92400e;
+}
+
+.detail-item.status-completed {
+    color: #065f46;
+}
+
+.detail-item.status-canceled {
+    color: #991b1b;
+}
+
+.subactivity-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.button.small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.button.small svg {
+    width: 14px;
+    height: 14px;
+}
+
+.empty-state-small {
+    padding: 2rem;
+    text-align: center;
+    color: #6b7280;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 2px dashed #e5e7eb;
+}
+
+.empty-state-small p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .subactivity-card {
+        flex-direction: column;
+    }
+    
+    .subactivity-details {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}

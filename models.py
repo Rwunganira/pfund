@@ -32,6 +32,8 @@ class Activity(db.Model):
     status = db.Column(db.String, default="Planned")
     progress = db.Column(db.Integer, default=0)
     notes = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
 
     # One-to-many: an activity can have multiple sub-activities
     sub_activities = db.relationship(
@@ -71,8 +73,9 @@ class SubActivity(db.Model):
     )
     title = db.Column(db.String, nullable=False)
     responsible = db.Column(db.String, nullable=True)
-    timeline = db.Column(db.String, nullable=True)
     status = db.Column(db.String, nullable=False, default="pending")
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
 
 
 class User(db.Model):

@@ -7,7 +7,7 @@
         <div>
             <h2>Sub-activities for {{ activity.code or activity.proposed_activity or 'activity' }}</h2>
             <p class="table-hint">
-                Break down this activity into smaller sub-activities with a responsible person, timeline and status.
+                Break down this activity into smaller sub-activities with a responsible person, dates and status.
             </p>
         </div>
     </div>
@@ -16,12 +16,13 @@
         <table class="compact-table">
             <thead>
             <tr>
-                <th style="width: 40%;">Sub-activity</th>
-                <th style="width: 18%;">Responsible</th>
-                <th style="width: 18%;">Timeline</th>
+                <th style="width: 30%;">Sub-activity</th>
+                <th style="width: 15%;">Responsible</th>
+                <th style="width: 13%;">Start Date</th>
+                <th style="width: 13%;">End Date</th>
                 <th style="width: 12%;">Status</th>
                 {% if current_user.role == 'admin' %}
-                <th style="width: 12%;">Actions</th>
+                <th style="width: 17%;">Actions</th>
                 {% endif %}
             </tr>
             </thead>
@@ -30,7 +31,8 @@
                 <tr>
                     <td>{{ sa.title }}</td>
                     <td>{{ sa.responsible or "-" }}</td>
-                    <td>{{ sa.timeline or "-" }}</td>
+                    <td>{% if sa.start_date %}{{ sa.start_date.strftime('%b %d, %Y') }}{% else %}-{% endif %}</td>
+                    <td>{% if sa.end_date %}{{ sa.end_date.strftime('%b %d, %Y') }}{% else %}-{% endif %}</td>
                     <td>
                         {% set st = sa.status or 'pending' %}
                         <span class="status-badge status-{{ st }}">
@@ -62,7 +64,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="{% if current_user.role == 'admin' %}5{% else %}4{% endif %}" class="empty">
+                    <td colspan="{% if current_user.role == 'admin' %}6{% else %}5{% endif %}" class="empty">
                         No sub-activities have been defined for this activity yet.
                     </td>
                 </tr>
@@ -83,8 +85,12 @@
             <input id="responsible" name="responsible" type="text" placeholder="Person / team">
         </div>
         <div class="field-group">
-            <label for="timeline">Timeline</label>
-            <input id="timeline" name="timeline" type="text" placeholder="e.g. Q2 2026, by 31 July">
+            <label for="start_date">Start Date</label>
+            <input id="start_date" name="start_date" type="date">
+        </div>
+        <div class="field-group">
+            <label for="end_date">End Date</label>
+            <input id="end_date" name="end_date" type="date">
         </div>
         <div class="field-group">
             <label for="status">Status</label>
