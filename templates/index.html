@@ -509,18 +509,6 @@ function openDetailsModal(activityId) {
                         <span class="progress-label">${data.progress || 0}%</span>
                     </div>
                 </div>
-                ${data.indicator_id ? `
-                <div class="detail-item">
-                    <label>Indicator:</label>
-                    <span>
-                        <a href="${indicatorsUrl}?indicator_id=${data.indicator_id}" 
-                           style="color: #2563eb; text-decoration: underline; font-weight: 600;" 
-                           title="View linked indicator">
-                            View Indicator Details
-                        </a>
-                    </span>
-                </div>
-                ` : ''}
             </div>
 
             <div class="detail-section">
