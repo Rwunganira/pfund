@@ -152,11 +152,12 @@ class Indicator(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # Link to Activity
+    # Link to Activity (one-to-one relationship)
     activity_id = db.Column(
         db.Integer,
         db.ForeignKey("activities.id", ondelete="CASCADE"),
         nullable=False,
+        unique=True,  # Enforce one-to-one relationship
         index=True,
     )
 

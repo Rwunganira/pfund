@@ -3,6 +3,22 @@
 {% block content %}
 <section class="form-card">
     <h1>{{ "Edit Activity" if activity else "New Activity" }}</h1>
+    
+    {% if activity and activity.indicator %}
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg style="width: 20px; height: 20px; color: #3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <strong style="color: #1e40af;">Linked Indicator:</strong>
+            <a href="{{ url_for('activity.indicators_list') }}?indicator_id={{ activity.indicator.id }}" 
+               style="color: #2563eb; text-decoration: underline; font-weight: 600;"
+               title="View linked indicator details">
+                View Indicator Details →
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <form method="post">
         <div class="grid">

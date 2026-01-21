@@ -149,6 +149,7 @@
                 <thead>
                     <tr>
                         <th>Details</th>
+                        <th>Activity</th>
                         <th>New Proposed Indicator</th>
                         <th>Indicator Definition</th>
                         <th>Comments</th>
@@ -167,6 +168,17 @@
                                     onclick="openIndicatorDetailsModal({{ ind.id }})">
                                 View
                             </button>
+                        </td>
+                        <td>
+                            {% if ind.activity %}
+                                <a href="{{ url_for('activity.index') }}?activity_id={{ ind.activity.id }}"
+                                   style="color: #2563eb; text-decoration: underline; font-weight: 600;"
+                                   title="View activity details: {{ ind.activity.proposed_activity or ind.activity.code }}">
+                                    {{ ind.activity.code or 'Activity #' ~ ind.activity.id }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
                         </td>
                         <td>
                             {{ ind.new_proposed_indicator or '-' }}
@@ -208,7 +220,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="{{ 6 if current_user.role == 'admin' else 5 }}" class="empty">No indicators yet.</td>
+                        <td colspan="{{ 7 if current_user.role == 'admin' else 6 }}" class="empty">No indicators yet.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -216,7 +228,7 @@
         </div>
     </section>
 
-    <!-- Details Modal -->
+    <!-- Indicator Details Modal -->
     <div id="indicatorDetailsModal" class="modal">
         <div class="modal-content">
 
@@ -228,22 +240,29 @@
             <div class="modal-body" id="indicatorModalBody"></div>
 
             <div class="modal-footer">
+                <a id="editIndicatorLink" href="#" class="btn-edit" style="margin-right: 1rem;">Edit Indicator</a>
                 <button onclick="closeIndicatorDetailsModal()" class="btn-secondary">Close</button>
             </div>
 
         </div>
     </div>
+
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Flask-generated URLs
+var dashboardUrl = {{ url_for('activity.index')|tojson }};
+
 // Preload indicator data for modal
 var indicatorData = {};
+
 {% for ind in indicators %}
     {% if ind and ind.id %}
     indicatorData[{{ ind.id }}] = {
         id: {{ ind.id }},
+        activity_id: {{ ind.activity.id if ind.activity else 'null' }},
         code: {{ (ind.activity_code or (ind.activity.code if ind.activity else ''))|tojson }},
         implementing_entity: {{ (ind.activity.implementing_entity if ind.activity else '')|tojson }},
         key_project_activity: {{ (ind.activity.proposed_activity if ind.activity else '')|tojson }},
@@ -272,7 +291,8 @@ var indicatorData = {};
         submitted: {{ (ind.submitted or '')|tojson }},
         comments: {{ (ind.comments or '')|tojson }},
         portal_edited: {{ (ind.portal_edited|string)|tojson }},
-        comment_addressed: {{ (ind.comment_addressed|string)|tojson }}
+        comment_addressed: {{ (ind.comment_addressed|string)|tojson }},
+        edit_url: {{ url_for('activity.edit_indicator', indicator_id=ind.id)|tojson }}
     };
     {% endif %}
 {% endfor %}
@@ -302,7 +322,7 @@ function openIndicatorDetailsModal(id) {
                 <h3>Link to Activity</h3>
                 <div class="detail-item">
                     <label>Activity Code:</label>
-                    <span>${data.code || '-'}</span>
+                    <span>${data.code ? `<a href="${dashboardUrl}?activity_id=${data.activity_id}" style="color: #2563eb; text-decoration: underline; font-weight: 600;" title="View activity details">${data.code}</a>` : '-'}</span>
                 </div>
                 <div class="detail-item">
                     <label>Implementing Entity:</label>
@@ -447,6 +467,15 @@ function openIndicatorDetailsModal(id) {
         </div>
     `;
 
+    // Set the edit indicator link using Flask-generated URL
+    var editLink = document.getElementById('editIndicatorLink');
+    if (editLink && data.edit_url) {
+        editLink.href = data.edit_url;
+        console.log('Edit link set to:', editLink.href);
+    } else {
+        console.log('Could not set edit link. editLink:', editLink, 'data.edit_url:', data.edit_url);
+    }
+
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
@@ -458,5 +487,24 @@ function closeIndicatorDetailsModal() {
         document.body.style.overflow = '';
     }
 }
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeIndicatorDetailsModal();
+    }
+});
+
+// Auto-open indicator modal if indicator_id is in URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const indicatorId = urlParams.get('indicator_id');
+    if (indicatorId && indicatorData[indicatorId]) {
+        console.log('Auto-opening indicator modal for ID:', indicatorId);
+        openIndicatorDetailsModal(parseInt(indicatorId));
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search.replace(/([?&])indicator_id=[^&]*(&|$)/, '$1').replace(/[?&]$/, ''));
+    }
+});
 </script>
 {% endblock %}

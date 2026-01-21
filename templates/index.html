@@ -327,6 +327,25 @@
                                    onclick="event.stopPropagation();">
                                     Sub-activities
                                 </a>
+                                
+                                {% set activity_indicator = a.indicators[0] if a.indicators else None %}
+                                {% if activity_indicator %}
+                                <a href="{{ url_for('activity.indicators_list') }}?indicator_id={{ activity_indicator.id }}"
+                                   class="btn-edit"
+                                   style="margin-left: 0.25rem;"
+                                   onclick="event.stopPropagation();"
+                                   title="View indicator for this activity">
+                                    View Indicator
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('activity.new_indicator') }}?activity_code={{ a.code|urlencode if a.code else '' }}"
+                                   class="btn-edit"
+                                   style="margin-left: 0.25rem;"
+                                   onclick="event.stopPropagation();"
+                                   title="Add indicator for this activity">
+                                    Add Indicator
+                                </a>
+                                {% endif %}
                             {% endif %}
                         {% endif %}
                     </td>
@@ -368,6 +387,9 @@
 
 {% block scripts %}
 <script>
+// Flask-generated URLs
+var indicatorsUrl = {{ url_for('activity.indicators_list')|tojson }};
+
 // Activity data for modal (embedded in page)
 var activityData = {};
 console.log('Initializing activityData. activities_with_urls length:', {{ activities_with_urls|length if activities_with_urls else 0 }});
@@ -398,7 +420,8 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
             budget_used: Number({{ js_total_used|tojson }}) || 0,
             status: {{ (a.status or 'Unknown')|tojson }},
             progress: Number({{ (a.exec_pct if a.exec_pct is defined else 0)|tojson }}) || 0,
-                edit_url: {{ (item.edit_url or '#')|tojson }}
+                edit_url: {{ (item.edit_url or '#')|tojson }},
+                indicator_id: {{ a.indicator.id if a.indicator else 'null' }}
             };
             // Store with both number and string keys
             activityData[actId] = actData;
@@ -486,6 +509,18 @@ function openDetailsModal(activityId) {
                         <span class="progress-label">${data.progress || 0}%</span>
                     </div>
                 </div>
+                ${data.indicator_id ? `
+                <div class="detail-item">
+                    <label>Indicator:</label>
+                    <span>
+                        <a href="${indicatorsUrl}?indicator_id=${data.indicator_id}" 
+                           style="color: #2563eb; text-decoration: underline; font-weight: 600;" 
+                           title="View linked indicator">
+                            View Indicator Details
+                        </a>
+                    </span>
+                </div>
+                ` : ''}
             </div>
 
             <div class="detail-section">
@@ -585,6 +620,24 @@ console.log('openDetailsModal function defined:', typeof openDetailsModal);
 // Make table rows clickable
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
+    
+    // Check if we should auto-open a specific activity modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const activityIdParam = urlParams.get('activity_id');
+    if (activityIdParam) {
+        const activityId = parseInt(activityIdParam);
+        console.log('Auto-opening activity modal for ID:', activityId);
+        // Wait a bit for the page to fully render
+        setTimeout(function() {
+            if (activityId && typeof openDetailsModal === 'function') {
+                openDetailsModal(activityId);
+                // Remove the parameter from URL without reloading
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }, 300);
+    }
+    
     // Also add click handlers to View Details buttons directly
     const viewButtons = document.querySelectorAll('.btn-view-details');
     console.log('Found', viewButtons.length, 'View Details buttons');

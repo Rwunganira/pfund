@@ -2158,6 +2158,12 @@ def new_indicator():
         status_y2 = get_progress_status(progress_y2, indicator_type)
         status_y3 = get_progress_status(progress_y3, indicator_type)
         
+        # Check if activity already has an indicator (one-to-one relationship)
+        existing = Indicator.query.filter_by(activity_id=activity.id).first()
+        if existing:
+            flash(f"Activity '{activity_code}' already has an indicator. Each activity can have only one indicator. Please edit the existing indicator or delete it first.", "error")
+            return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
+        
         ind = Indicator(
             activity_id=activity.id,
             activity_code=activity.code,
@@ -2187,12 +2193,21 @@ def new_indicator():
             comment_addressed=ca_bool,
         )
         db.session.add(ind)
-        db.session.commit()
-        flash("Indicator created successfully.", "success")
-        return redirect(url_for("activity.indicators_list"))
+        try:
+            db.session.commit()
+            flash("Indicator created successfully.", "success")
+            return redirect(url_for("activity.indicators_list"))
+        except Exception as e:
+            db.session.rollback()
+            if "UNIQUE constraint" in str(e) or "unique constraint" in str(e).lower():
+                flash(f"Activity '{activity_code}' already has an indicator. Each activity can have only one indicator.", "error")
+            else:
+                flash(f"Error creating indicator: {str(e)}", "error")
+            return render_template("indicator_form.html", indicator=None, activity_code=activity_code)
 
-    # GET
-    return render_template("indicator_form.html", indicator=None)
+    # GET - pre-populate activity code if provided in query params
+    activity_code_param = request.args.get("activity_code", "")
+    return render_template("indicator_form.html", indicator=None, activity_code=activity_code_param)
 
 
 @activity_bp.route("/indicators/<int:indicator_id>/edit", methods=["GET", "POST"])
@@ -2284,6 +2299,13 @@ def edit_indicator(indicator_id):
         status_y1 = get_progress_status(progress_y1, indicator_type, qualitative_stage_y1)
         status_y2 = get_progress_status(progress_y2, indicator_type, qualitative_stage_y2)
         status_y3 = get_progress_status(progress_y3, indicator_type, qualitative_stage_y3)
+        
+        # Check if changing activity and if new activity already has an indicator
+        if activity.id != ind.activity_id:
+            existing = Indicator.query.filter_by(activity_id=activity.id).first()
+            if existing:
+                flash(f"Activity '{activity_code}' already has an indicator. Each activity can have only one indicator.", "error")
+                return render_template("indicator_form.html", indicator=ind, activity_code=activity_code)
         
         ind.activity_id = activity.id
         ind.activity_code = activity.code
@@ -2734,15 +2756,8 @@ def upload_indicators():
             ca_raw = get_val(row, "comment_addressed")
             new_indicator_text = get_val(row, "new_proposed_indicator")
 
-            # Upsert rule: match by (activity_id, new_proposed_indicator)
-            existing = None
-            if new_indicator_text:
-                existing = (
-                    Indicator.query.filter_by(
-                        activity_id=activity.id,
-                        new_proposed_indicator=new_indicator_text,
-                    ).first()
-                )
+            # Upsert rule: match by activity_id (one-to-one relationship)
+            existing = Indicator.query.filter_by(activity_id=activity.id).first()
 
             if existing:
                 # Update existing indicator
