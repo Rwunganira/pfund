@@ -691,6 +691,30 @@ tbody tr:hover {
     font-size: 0.9rem;
 }
 
+/* Sortable column headers */
+.compact-table th.sortable {
+    white-space: nowrap;
+}
+
+.compact-table .sort-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: inherit;
+    text-decoration: none;
+    padding: 0.1rem 0;
+}
+
+.compact-table .sort-link:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.compact-table .sort-arrow {
+    font-size: 0.7em;
+    opacity: 0.8;
+}
+
 .activity-row {
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;

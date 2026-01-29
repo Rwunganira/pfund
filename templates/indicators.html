@@ -145,15 +145,65 @@
         </form>
 
         <div class="table-wrapper">
-            <table class="compact-table">
+            <table class="compact-table sortable-table">
                 <thead>
                     <tr>
                         <th>Details</th>
-                        <th>Activity</th>
-                        <th>New Proposed Indicator</th>
-                        <th>Indicator Definition</th>
-                        <th>Comments</th>
-                        <th>Comment Addressed</th>
+                        <th class="sortable">
+                            {% set next_order = 'desc' if (sort_col == 'activity' and order_dir == 'asc') else 'asc' %}
+                            <a href="{{ url_for('activity.indicators_list', q=request.args.get('q'), indicator_type=request.args.get('indicator_type'), implementing_entity=request.args.getlist('implementing_entity'), sort='activity', order=next_order) }}"
+                               class="sort-link"
+                               title="Sort by Activity">
+                                Activity
+                                <span class="sort-arrow" aria-hidden="true">
+                                    {% if sort_col == 'activity' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}
+                                </span>
+                            </a>
+                        </th>
+                        <th class="sortable">
+                            {% set next_order = 'desc' if (sort_col == 'indicator' and order_dir == 'asc') else 'asc' %}
+                            <a href="{{ url_for('activity.indicators_list', q=request.args.get('q'), indicator_type=request.args.get('indicator_type'), implementing_entity=request.args.getlist('implementing_entity'), sort='indicator', order=next_order) }}"
+                               class="sort-link"
+                               title="Sort by New Proposed Indicator">
+                                New Proposed Indicator
+                                <span class="sort-arrow" aria-hidden="true">
+                                    {% if sort_col == 'indicator' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}
+                                </span>
+                            </a>
+                        </th>
+                        <th class="sortable">
+                            {% set next_order = 'desc' if (sort_col == 'definition' and order_dir == 'asc') else 'asc' %}
+                            <a href="{{ url_for('activity.indicators_list', q=request.args.get('q'), indicator_type=request.args.get('indicator_type'), implementing_entity=request.args.getlist('implementing_entity'), sort='definition', order=next_order) }}"
+                               class="sort-link"
+                               title="Sort by Indicator Definition">
+                                Indicator Definition
+                                <span class="sort-arrow" aria-hidden="true">
+                                    {% if sort_col == 'definition' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}
+                                </span>
+                            </a>
+                        </th>
+                        <th class="sortable">
+                            {% set next_order = 'desc' if (sort_col == 'comments' and order_dir == 'asc') else 'asc' %}
+                            <a href="{{ url_for('activity.indicators_list', q=request.args.get('q'), indicator_type=request.args.get('indicator_type'), implementing_entity=request.args.getlist('implementing_entity'), sort='comments', order=next_order) }}"
+                               class="sort-link"
+                               title="Sort by Comments">
+                                Comments
+                                <span class="sort-arrow" aria-hidden="true">
+                                    {% if sort_col == 'comments' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}
+                                </span>
+                            </a>
+                        </th>
+                        <th class="sortable">
+                            {% set next_order = 'desc' if (sort_col == 'addressed' and order_dir == 'asc') else 'asc' %}
+                            <a href="{{ url_for('activity.indicators_list', q=request.args.get('q'), indicator_type=request.args.get('indicator_type'), implementing_entity=request.args.getlist('implementing_entity'), sort='addressed', order=next_order) }}"
+                               class="sort-link"
+                               title="Sort by Comment Addressed">
+                                Comment Addressed
+                                <span class="sort-arrow" aria-hidden="true">
+                                    {% if sort_col == 'addressed' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}
+                                </span>
+                            </a>
+                        </th>
                         {% if current_user.role == 'admin' %}
                         <th>Actions</th>
                         {% endif %}

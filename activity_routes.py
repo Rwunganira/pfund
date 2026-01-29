@@ -129,6 +129,12 @@ def index():
     # Log user activity
     log_user_activity("view_activities")
     
+    # Sort params (used after filtering; default before any filter logic)
+    sort_col = (request.args.get("sort") or "category").strip().lower()
+    order_dir = (request.args.get("order") or "asc").strip().lower()
+    if order_dir not in ("asc", "desc"):
+        order_dir = "asc"
+
     # Start with absolute minimal setup
     try:
         # Try to get activities - if this fails, use empty list
@@ -167,7 +173,7 @@ def index():
         category_list = request.args.getlist("category")
         results_list = request.args.getlist("results_area")
         search_query = request.args.get("q", "") or ""
-        
+
         # For backward compatibility and display, also keep string versions (comma-separated)
         status_filter = ",".join(status_list) if status_list else ""
         entity_filter = ",".join(entity_list) if entity_list else ""
@@ -367,6 +373,37 @@ def index():
             except Exception:
                 a.exec_pct = 0
                 a.total_budget_used = 0
+
+        # Sort activities by selected column (after exec_pct is attached)
+        _rev = order_dir == "desc"
+        def _key_category(a):
+            return (getattr(a, "category", None) or "").lower()
+        def _key_proposed(a):
+            return (getattr(a, "proposed_activity", None) or "").lower()
+        def _key_entity(a):
+            return (getattr(a, "implementing_entity", None) or "").lower()
+        def _key_status(a):
+            return (getattr(a, "status", None) or "").lower()
+        def _key_progress(a):
+            return getattr(a, "exec_pct", 0) or 0
+        def _key_budget_total(a):
+            return float(getattr(a, "budget_total", None) or 0)
+        def _key_budget_used(a):
+            return float(getattr(a, "total_budget_used", None) or 0)
+        _sort_keys = {
+            "category": _key_category,
+            "proposed": _key_proposed,
+            "entity": _key_entity,
+            "status": _key_status,
+            "progress": _key_progress,
+            "budget_total": _key_budget_total,
+            "budget_used": _key_budget_used,
+        }
+        key_fn = _sort_keys.get(sort_col, _key_category)
+        try:
+            activities = sorted(activities, key=key_fn, reverse=_rev)
+        except Exception:
+            pass
 
         total_activities = len(activities) if activities else 0
         total_budget = sum((getattr(a, "budget_total", None) or 0) for a in activities) if activities else 0
@@ -605,6 +642,8 @@ def index():
             entities=entities or [],
             categories=categories or [],
             results_areas=results_areas or [],
+            sort_col=sort_col,
+            order_dir=order_dir,
         )
     except Exception as e:
         import traceback
@@ -1955,6 +1994,11 @@ def indicators_list():
     type_filter = (request.args.get("indicator_type") or "").strip()
     # Search query
     search_query = (request.args.get("q") or "").strip()
+    # Sort: activity, indicator, definition, comments, addressed
+    sort_col = (request.args.get("sort") or "activity").strip().lower()
+    order_dir = (request.args.get("order") or "asc").strip().lower()
+    if order_dir not in ("asc", "desc"):
+        order_dir = "asc"
 
     # Base query
     query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
@@ -1977,9 +2021,21 @@ def indicators_list():
             )
         )
 
-    # Simple read-only view of all indicators with their activities
+    # Order by selected column (nulls last for text)
+    _order = db.asc if order_dir == "asc" else db.desc
     try:
-        indicators = query.order_by(Activity.code, Indicator.id).all()
+        if sort_col == "indicator":
+            query = query.order_by(_order(Indicator.new_proposed_indicator).nulls_last(), Indicator.id)
+        elif sort_col == "definition":
+            query = query.order_by(_order(Indicator.indicator_definition).nulls_last(), Indicator.id)
+        elif sort_col == "comments":
+            query = query.order_by(_order(Indicator.comments).nulls_last(), Indicator.id)
+        elif sort_col == "addressed":
+            query = query.order_by(_order(Indicator.comment_addressed).nulls_last(), Indicator.id)
+        else:
+            # default: activity (Activity.code)
+            query = query.order_by(_order(Activity.code).nulls_last(), Indicator.id)
+        indicators = query.all()
     except Exception as e:
         import traceback
 
@@ -2075,6 +2131,8 @@ def indicators_list():
         entity_filter=",".join(entity_list) if entity_list else "",
         type_filter=type_filter,
         search_query=search_query,
+        sort_col=sort_col,
+        order_dir=order_dir,
     )
 
 

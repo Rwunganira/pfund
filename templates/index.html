@@ -247,16 +247,58 @@
     </div>
 
     <div class="table-wrapper">
-        <table class="compact-table">
+        <table class="compact-table sortable-table">
             <thead>
                 <tr>
-                    <th>Activity Type</th>
-                    <th>Proposed Activity</th>
-                    <th>Entity</th>
-                    <th>Status</th>
-                    <th>Progress</th>
-                    <th>Total Budget</th>
-                    <th>Budget Used</th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='category', order=('desc' if sort_col == 'category' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Activity Type">
+                            Activity Type
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'category' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='proposed', order=('desc' if sort_col == 'proposed' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Proposed Activity">
+                            Proposed Activity
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'proposed' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='entity', order=('desc' if sort_col == 'entity' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Entity">
+                            Entity
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'entity' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='status', order=('desc' if sort_col == 'status' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Status">
+                            Status
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'status' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='progress', order=('desc' if sort_col == 'progress' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Progress">
+                            Progress
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'progress' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='budget_total', order=('desc' if sort_col == 'budget_total' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Total Budget">
+                            Total Budget
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'budget_total' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
+                    <th class="sortable">
+                        <a href="{{ url_for('activity.index', q=request.args.get('q'), status=request.args.getlist('status'), implementing_entity=request.args.getlist('implementing_entity'), category=request.args.getlist('category'), results_area=request.args.getlist('results_area'), sort='budget_used', order=('desc' if sort_col == 'budget_used' and order_dir == 'asc' else 'asc')) }}"
+                           class="sort-link" title="Sort by Budget Used">
+                            Budget Used
+                            <span class="sort-arrow" aria-hidden="true">{% if sort_col == 'budget_used' %}{% if order_dir == 'asc' %}▲{% else %}▼{% endif %}{% else %}↕{% endif %}</span>
+                        </a>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
