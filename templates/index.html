@@ -433,6 +433,9 @@
             </tbody>
         </table>
     </div>
+    {% if pagination and pager_route %}
+    {% include '_pagination.html' with context %}
+    {% endif %}
 </section>
 
 <!-- Details Modal -->

@@ -134,6 +134,19 @@ def index():
     order_dir = (request.args.get("order") or "asc").strip().lower()
     if order_dir not in ("asc", "desc"):
         order_dir = "asc"
+    # Pagination
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
+    if request.args.get("per_page"):
+        try:
+            p = int(request.args.get("per_page"))
+            if p in (10, 25, 50, 100):
+                per_page = p
+        except (TypeError, ValueError):
+            pass
 
     # Start with absolute minimal setup
     try:
@@ -597,6 +610,29 @@ def index():
     except:
         results_areas = []
 
+    # Pagination: slice activities for current page (summary/status/budget use full list above)
+    total_count = len(activities) if activities else 0
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    activities = (activities or [])[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    pager_preserve = {
+        "q": request.args.get("q") or "",
+        "status": request.args.getlist("status"),
+        "implementing_entity": request.args.getlist("implementing_entity"),
+        "category": request.args.getlist("category"),
+        "results_area": request.args.getlist("results_area"),
+        "sort": request.args.get("sort") or "",
+        "order": request.args.get("order") or "",
+    }
+
     # Generate URLs - create both dictionary and list formats
     try:
         activity_urls = {}
@@ -644,6 +680,9 @@ def index():
             results_areas=results_areas or [],
             sort_col=sort_col,
             order_dir=order_dir,
+            pagination=pagination,
+            pager_route="activity.index",
+            pager_preserve=pager_preserve,
         )
     except Exception as e:
         import traceback
@@ -918,14 +957,37 @@ def add_challenge():
 def challenges_page():
     """Standalone page for viewing and managing implementation challenges."""
     try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
+    try:
         challenges = Challenge.query.order_by(Challenge.id.desc()).all()
     except Exception as e:
         import traceback
         print(f"Error loading challenges on challenges_page: {e}")
         print(traceback.format_exc())
         challenges = []
-
-    return render_template("challenges.html", challenges=challenges, admin_email=ADMIN_EMAIL)
+    total_count = len(challenges)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    challenges = challenges[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    return render_template(
+        "challenges.html",
+        challenges=challenges,
+        admin_email=ADMIN_EMAIL,
+        pagination=pagination,
+        pager_route="activity.challenges_page",
+        pager_preserve={},
+    )
 
 
 @activity_bp.route("/challenges/download", methods=["GET"])
@@ -1263,11 +1325,31 @@ def manage_subactivities(activity_id):
 
     # For display, load all sub-activities for this activity
     sub_activities = activity.sub_activities.order_by(SubActivity.id.asc()).all()
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
+    total_count = len(sub_activities)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    sub_activities = sub_activities[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
     return render_template(
         "subactivities.html",
         activity=activity,
         sub_activities=sub_activities,
         admin_email=ADMIN_EMAIL,
+        pagination=pagination,
+        pager_route="activity.manage_subactivities",
+        pager_preserve={"activity_id": activity_id},
     )
 
 
@@ -1694,7 +1776,7 @@ def indicators_progress():
         print(traceback.format_exc())
         indicators = []
 
-    # Progress-specific summary stats - per year
+    # Progress-specific summary stats - per year (from full filtered list)
     total = len(indicators)
     
     # Year 1 summaries
@@ -1777,6 +1859,30 @@ def indicators_progress():
     except Exception:
         entities = []
 
+    # Pagination: slice indicators for current page (summary uses full list above)
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
+    total_count = len(indicators)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    indicators = indicators[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    pager_preserve = {
+        "implementing_entity": request.args.getlist("implementing_entity"),
+        "indicator_type": request.args.get("indicator_type") or "",
+        "status": request.args.get("status") or "",
+    }
+
     return render_template(
         "indicator_progress.html",
         indicators=indicators,
@@ -1785,6 +1891,9 @@ def indicators_progress():
         entity_filter=",".join(entity_list) if entity_list else "",
         type_filter=type_filter,
         status_filter=status_filter,
+        pagination=pagination,
+        pager_route="activity.indicators_progress",
+        pager_preserve=pager_preserve,
     )
 
 
@@ -1999,6 +2108,12 @@ def indicators_list():
     order_dir = (request.args.get("order") or "asc").strip().lower()
     if order_dir not in ("asc", "desc"):
         order_dir = "asc"
+    # Pagination
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
 
     # Base query
     query = db.session.query(Indicator).join(Activity, Indicator.activity_id == Activity.id)
@@ -2107,6 +2222,27 @@ def indicators_list():
         "avg_progress": round(avg_progress, 1),
     }
 
+    # Pagination: slice indicators for current page (summary uses full list above)
+    total_count = len(indicators)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    indicators = indicators[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    pager_preserve = {
+        "q": request.args.get("q") or "",
+        "implementing_entity": request.args.getlist("implementing_entity"),
+        "indicator_type": request.args.get("indicator_type") or "",
+        "sort": request.args.get("sort") or "",
+        "order": request.args.get("order") or "",
+    }
+
     # Distinct implementing entities for filter dropdown
     try:
         entities = [
@@ -2133,6 +2269,9 @@ def indicators_list():
         search_query=search_query,
         sort_col=sort_col,
         order_dir=order_dir,
+        pagination=pagination,
+        pager_route="activity.indicators_list",
+        pager_preserve=pager_preserve,
     )
 
 
@@ -2982,6 +3121,12 @@ def roadmap():
     status = (request.args.get("status") or "").strip() or None
     results_area = (request.args.get("results_area") or "").strip() or None
     search = (request.args.get("search") or "").strip() or None
+    # Pagination (by quarter)
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 4  # quarters per page
 
     # Base query: activities that have at least one date
     activities_query = Activity.query.filter(
@@ -3033,6 +3178,26 @@ def roadmap():
         return (year, quarter)
 
     sorted_quarters = sorted(activities_by_quarter.keys(), key=quarter_sort_key)
+
+    # Pagination: slice quarters for current page
+    total_count = len(sorted_quarters)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    sorted_quarters = sorted_quarters[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    pager_preserve = {
+        "implementing_entity": request.args.get("implementing_entity") or "",
+        "status": request.args.get("status") or "",
+        "results_area": request.args.get("results_area") or "",
+        "search": request.args.get("search") or "",
+    }
 
     # Calculate date range for visualization including sub-activities
     all_dates = []
@@ -3142,5 +3307,8 @@ def roadmap():
         filters=filters,
         can_edit=can_edit,
         admin_email=ADMIN_EMAIL,
+        pagination=pagination,
+        pager_route="activity.roadmap",
+        pager_preserve=pager_preserve,
     )
 

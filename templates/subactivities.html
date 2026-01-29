@@ -72,6 +72,9 @@
             </tbody>
         </table>
     </div>
+    {% if pagination and pager_route %}
+    {% include '_pagination.html' with context %}
+    {% endif %}
 
     <form method="post" class="upload-form" style="margin-top: 1.5rem;">
         <h3>Add a new sub-activity</h3>

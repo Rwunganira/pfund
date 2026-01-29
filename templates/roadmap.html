@@ -267,6 +267,9 @@
             <p>No activities with dates found. Add start and end dates to activities to see them on the roadmap.</p>
         </div>
         {% endif %}
+        {% if pagination and pager_route %}
+        {% include '_pagination.html' with context %}
+        {% endif %}
     </div>
 </section>
 {% endblock %}

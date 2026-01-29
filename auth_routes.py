@@ -161,7 +161,30 @@ def manage_users():
                 flash("User role updated.", "success")
 
     users = User.query.order_by(User.username).all()
-    return render_template("users.html", users=users)
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    per_page = 25
+    total_count = len(users)
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    users = users[(page - 1) * per_page : page * per_page]
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+    return render_template(
+        "users.html",
+        users=users,
+        pagination=pagination,
+        pager_route="auth.manage_users",
+        pager_preserve={},
+    )
 
 
 @auth_bp.route("/resend-confirmation", methods=["GET", "POST"])
