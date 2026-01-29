@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="report-view-page">
+    <div class="report-view-header">
+        <h1>Report: {{ activity.code or 'Activity' }} — {{ activity.proposed_activity or activity.initial_activity or 'Untitled' }}</h1>
+        {% if report.title %}
+            <h2 class="report-view-title">{{ report.title }}</h2>
+        {% endif %}
+        <p class="report-meta">
+            Last updated {{ report.updated_at.strftime('%Y-%m-%d %H:%M') if report.updated_at else '' }}
+        </p>
+        <div class="report-view-actions">
+            <a href="{{ request.args.get('next') or url_for('activity.reports_list') }}" class="button secondary">Back to Reports</a>
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('activity.report_edit', activity_id=activity.id) }}?next={{ (request.args.get('next') or url_for('activity.reports_list'))|urlencode }}" class="button primary">Edit Report</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="report-view-content report-document">
+        {% if report.content_html %}
+            {{ report.content_html | safe }}
+        {% else %}
+            <p class="muted">No content.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

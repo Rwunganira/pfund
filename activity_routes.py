@@ -16,8 +16,9 @@ from sqlalchemy.exc import ProgrammingError
 
 from auth_routes import admin_required, login_required, ADMIN_EMAIL
 from functools import wraps
-from models import Activity, Challenge, SubActivity, Indicator, db
+from models import Activity, ActivityReport, Challenge, SubActivity, Indicator, db
 from usage_tracking import log_user_activity
+from report_utils import sanitize_report_html
 
 
 activity_bp = Blueprint("activity", __name__)
@@ -152,7 +153,7 @@ def index():
     try:
         # Try to get activities - if this fails, use empty list
         try:
-            activities = Activity.query.order_by(Activity.code).all()
+            activities = Activity.query.options(db.joinedload(Activity.report)).order_by(Activity.code).all()
             
             # One-time migration: Sync budget_used_year1 from budget_used for existing records
             # This handles records that existed before the new columns were added
@@ -3310,5 +3311,154 @@ def roadmap():
         pagination=pagination,
         pager_route="activity.roadmap",
         pager_preserve=pager_preserve,
+    )
+
+
+# ---- Reports (Activity reports: rich text per activity) ----
+
+@activity_bp.route("/reports", methods=["GET"])
+@login_required
+def reports_list():
+    """List activities that have a report. Filters: implementing_entity, results_area, status, category, q (search). Same multiselect style as dashboard."""
+    status_list = request.args.getlist("status")
+    entity_list = request.args.getlist("implementing_entity")
+    category_list = request.args.getlist("category")
+    results_list = request.args.getlist("results_area")
+    search = (request.args.get("q") or "").strip() or None
+
+    query = (
+        db.session.query(Activity)
+        .join(ActivityReport, Activity.id == ActivityReport.activity_id)
+        .order_by(ActivityReport.updated_at.desc())
+    )
+    if status_list:
+        query = query.filter(Activity.status.in_(status_list))
+    if entity_list:
+        query = query.filter(Activity.implementing_entity.in_(entity_list))
+    if category_list:
+        query = query.filter(Activity.category.in_(category_list))
+    if results_list:
+        query = query.filter(Activity.results_area.in_(results_list))
+    if search:
+        term = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Activity.code.ilike(term),
+                Activity.proposed_activity.ilike(term),
+                Activity.initial_activity.ilike(term),
+                ActivityReport.content_html.ilike(term),
+                ActivityReport.title.ilike(term),
+            )
+        )
+
+    activities_with_reports = query.options(db.joinedload(Activity.report)).all()
+
+    entities = sorted(
+        {row[0] for row in db.session.query(Activity.implementing_entity).distinct() if row[0]}
+    )
+    results_areas = sorted(
+        {row[0] for row in db.session.query(Activity.results_area).distinct() if row[0]}
+    )
+    categories = sorted(
+        {row[0] for row in db.session.query(Activity.category).distinct() if row[0]}
+    )
+    status_filter = ",".join(status_list) if status_list else ""
+    entity_filter = ",".join(entity_list) if entity_list else ""
+    category_filter = ",".join(category_list) if category_list else ""
+    results_filter = ",".join(results_list) if results_list else ""
+    can_edit = session.get("role") == "admin"
+    return render_template(
+        "reports_list.html",
+        activities=activities_with_reports,
+        implementing_entities=entities,
+        results_areas=results_areas,
+        categories=categories,
+        status_filter=status_filter,
+        entity_filter=entity_filter,
+        category_filter=category_filter,
+        results_filter=results_filter,
+        search_query=search or "",
+        can_edit=can_edit,
+    )
+
+
+@activity_bp.route("/activities/<int:activity_id>/report", methods=["GET"])
+@login_required
+def report_view(activity_id):
+    """View report in read-only mode."""
+    activity = Activity.query.get_or_404(activity_id)
+    report = ActivityReport.query.filter_by(activity_id=activity_id).first()
+    if not report:
+        flash("No report exists for this activity.", "info")
+        return redirect(url_for("activity.reports_list"))
+    return render_template("report_view.html", activity=activity, report=report)
+
+
+@activity_bp.route("/activities/<int:activity_id>/report/new", methods=["GET", "POST"])
+@admin_required
+def report_new(activity_id):
+    """Create a new report for an activity."""
+    activity = Activity.query.get_or_404(activity_id)
+    existing = ActivityReport.query.filter_by(activity_id=activity_id).first()
+    if existing:
+        flash("A report already exists for this activity. Redirecting to edit.", "info")
+        return redirect(url_for("activity.report_edit", activity_id=activity_id))
+
+    if request.method == "POST":
+        content_html = request.form.get("content_html") or ""
+        title = (request.form.get("title") or "").strip() or None
+        content_html = sanitize_report_html(content_html)
+        report = ActivityReport(
+            activity_id=activity_id,
+            title=title,
+            content_html=content_html or None,
+            created_by=session.get("user_id"),
+        )
+        report.created_at = datetime.utcnow()
+        report.updated_at = datetime.utcnow()
+        db.session.add(report)
+        db.session.commit()
+        log_user_activity("create_report", resource_type="activity", resource_id=activity_id)
+        flash("Report saved.", "success")
+        next_url = request.form.get("next") or request.args.get("next") or url_for("activity.reports_list")
+        return redirect(next_url)
+
+    return render_template(
+        "report_editor.html",
+        activity=activity,
+        report=None,
+        is_edit=False,
+        next_url=request.args.get("next") or url_for("activity.reports_list"),
+    )
+
+
+@activity_bp.route("/activities/<int:activity_id>/report/edit", methods=["GET", "POST"])
+@admin_required
+def report_edit(activity_id):
+    """Edit existing report."""
+    activity = Activity.query.get_or_404(activity_id)
+    report = ActivityReport.query.filter_by(activity_id=activity_id).first()
+    if not report:
+        flash("No report exists for this activity. Redirecting to create.", "info")
+        return redirect(url_for("activity.report_new", activity_id=activity_id))
+
+    if request.method == "POST":
+        content_html = request.form.get("content_html") or ""
+        title = (request.form.get("title") or "").strip() or None
+        report.content_html = sanitize_report_html(content_html) or None
+        report.title = title
+        report.updated_at = datetime.utcnow()
+        db.session.commit()
+        log_user_activity("edit_report", resource_type="activity", resource_id=activity_id)
+        flash("Report updated.", "success")
+        next_url = request.form.get("next") or request.args.get("next") or url_for("activity.reports_list")
+        return redirect(next_url)
+
+    return render_template(
+        "report_editor.html",
+        activity=activity,
+        report=report,
+        is_edit=True,
+        next_url=request.args.get("next") or url_for("activity.reports_list"),
     )
 

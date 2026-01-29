@@ -835,7 +835,7 @@ tbody tr:hover {
 
 .icon-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.25rem;
     align-items: center;
 }
@@ -1623,5 +1623,29 @@ tbody tr:hover {
     background: #fee2e2;
     color: #991b1b;
 }
+
+/* ---- Reports ---- */
+.reports-page .reports-header { margin-bottom: 1rem; }
+.reports-page .reports-hint { color: #6b7280; font-size: 0.9rem; margin-top: 0.25rem; }
+.reports-filters .reports-filter-form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+.reports-filters .filter-actions { display: flex; gap: 0.5rem; align-items: flex-end; }
+.reports-table .activity-name { display: block; font-weight: normal; color: #6b7280; font-size: 0.85rem; margin-top: 0.15rem; }
+.reports-page .reports-back { margin-top: 1.5rem; }
+.report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.report-view-page .report-view-header { margin-bottom: 1.5rem; }
+.report-view-title { font-size: 1.1rem; color: #475569; margin: 0.5rem 0; }
+.report-meta { color: #9ca3af; font-size: 0.85rem; margin: 0.25rem 0; }
+.report-view-actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+.report-view-content.report-document {
+    background: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    line-height: 1.6;
+}
+.report-document h1, .report-document h2, .report-document h3 { margin-top: 1.25rem; margin-bottom: 0.5rem; }
+.report-document ul, .report-document ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+.report-document p { margin: 0.5rem 0; }
+.report-document a { color: #0369a1; text-decoration: underline; }
 
 

@@ -49,6 +49,36 @@ class Activity(db.Model):
         cascade="all, delete-orphan",
         lazy="dynamic",
     )
+    # One-to-one: an activity can have one report
+    report = db.relationship(
+        "ActivityReport",
+        backref="activity",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+
+class ActivityReport(db.Model):
+    """Rich-text report for an activity (one-to-one)."""
+    __tablename__ = "activity_reports"
+
+    id = db.Column(db.Integer, primary_key=True)
+    activity_id = db.Column(
+        db.Integer,
+        db.ForeignKey("activities.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    title = db.Column(db.String(500), nullable=True)
+    content_html = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    def __repr__(self):
+        return f"<ActivityReport {self.id} activity_id={self.activity_id}>"
 
 
 class Challenge(db.Model):
