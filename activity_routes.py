@@ -2913,24 +2913,50 @@ def usage_statistics():
 @login_required
 def roadmap():
     """Display activities and subactivities roadmap with timeline visualization."""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
     from models import Activity, SubActivity
-    from collections import defaultdict
-    
+
     # Log user activity
     log_user_activity("view_roadmap")
-    
-    # Get all activities with dates
-    activities = Activity.query.filter(
+
+    # Read filters from query string
+    implementing_entity = (request.args.get("implementing_entity") or "").strip() or None
+    status = (request.args.get("status") or "").strip() or None
+    results_area = (request.args.get("results_area") or "").strip() or None
+    search = (request.args.get("search") or "").strip() or None
+
+    # Base query: activities that have at least one date
+    activities_query = Activity.query.filter(
         db.or_(
             Activity.start_date.isnot(None),
-            Activity.end_date.isnot(None)
+            Activity.end_date.isnot(None),
         )
-    ).order_by(Activity.start_date.asc()).all()
-    
+    )
+
+    if implementing_entity:
+        activities_query = activities_query.filter(Activity.implementing_entity == implementing_entity)
+    if status:
+        activities_query = activities_query.filter(Activity.status == status)
+    if results_area:
+        activities_query = activities_query.filter(Activity.results_area == results_area)
+    if search:
+        like = f"%{search}%"
+        activities_query = activities_query.filter(
+            db.or_(
+                Activity.code.ilike(like),
+                Activity.proposed_activity.ilike(like),
+                Activity.initial_activity.ilike(like),
+            )
+        )
+
+    activities = (
+        activities_query.order_by(Activity.start_date.asc(), Activity.id.asc()).all()
+    )
+
+    total_activities = len(activities)
+
     # Group activities by quarter
     activities_by_quarter = defaultdict(list)
-    
     for activity in activities:
         # Use start_date for quarter, fall back to end_date if no start_date
         date_for_quarter = activity.start_date or activity.end_date
@@ -2939,48 +2965,124 @@ def roadmap():
             quarter = (date_for_quarter.month - 1) // 3 + 1
             quarter_key = f"Q{quarter} {year}"
             activities_by_quarter[quarter_key].append(activity)
-    
+
     # Sort quarters chronologically
-    def quarter_sort_key(quarter_str):
+    def quarter_sort_key(quarter_str: str) -> tuple[int, int]:
         # Parse "Q1 2024" -> (2024, 1)
         parts = quarter_str.split()
         quarter = int(parts[0][1])  # Extract number from Q1, Q2, etc.
         year = int(parts[1])
         return (year, quarter)
-    
+
     sorted_quarters = sorted(activities_by_quarter.keys(), key=quarter_sort_key)
-    
+
     # Calculate date range for visualization including sub-activities
     all_dates = []
+    sub_activities_by_activity: dict[int, list[SubActivity]] = defaultdict(list)
+
     for activity in activities:
         if activity.start_date:
             all_dates.append(activity.start_date)
         if activity.end_date:
             all_dates.append(activity.end_date)
-        # Include dates from sub-activities
-        for sub in activity.sub_activities:
-            if sub.start_date:
-                all_dates.append(sub.start_date)
-            if sub.end_date:
-                all_dates.append(sub.end_date)
-    
+
+    if activities:
+        activity_ids = [a.id for a in activities]
+        sub_activities = (
+            SubActivity.query.filter(SubActivity.activity_id.in_(activity_ids)).all()
+        )
+        for sub in sub_activities:
+            # Only include sub-activities that have at least one date
+            if sub.start_date or sub.end_date:
+                sub_activities_by_activity[sub.activity_id].append(sub)
+                if sub.start_date:
+                    all_dates.append(sub.start_date)
+                if sub.end_date:
+                    all_dates.append(sub.end_date)
+    else:
+        sub_activities = []
+
     if all_dates:
-        min_date = min(all_dates)
-        max_date = max(all_dates)
-        # Add some padding
-        min_date = min_date - timedelta(days=30)
-        max_date = max_date + timedelta(days=30)
+        min_date = min(all_dates) - timedelta(days=30)
+        max_date = max(all_dates) + timedelta(days=30)
     else:
         # Default range
-        min_date = datetime.now().date()
-        max_date = min_date + timedelta(days=365)
-    
+        today = datetime.now().date()
+        min_date = today
+        max_date = today + timedelta(days=365)
+
+    total_days = (max_date - min_date).days
+    if total_days <= 0:
+        total_days = 1
+
+    today = datetime.now().date()
+    if today <= min_date:
+        today_offset_pct = 0
+    elif today >= max_date:
+        today_offset_pct = 100
+    else:
+        today_offset_pct = ((today - min_date).days / total_days) * 100
+
+    def compute_time_progress(item):
+        """Return time-based progress info for an item with start/end dates."""
+        if not (item.start_date and item.end_date):
+            return None
+        total = (item.end_date - item.start_date).days
+        if total <= 0:
+            total = 1
+        elapsed = (today - item.start_date).days
+        pct_elapsed = max(0.0, min(100.0, (elapsed / total) * 100.0))
+        days_remaining = (item.end_date - today).days
+        return {"pct_elapsed": pct_elapsed, "days_remaining": days_remaining}
+
+    for activity in activities:
+        activity.time_progress = compute_time_progress(activity)
+    for sub in sub_activities:
+        sub.time_progress = compute_time_progress(sub)
+
+    # Values for filter dropdowns
+    implementing_entities = sorted(
+        {
+            row[0]
+            for row in db.session.query(Activity.implementing_entity).distinct()
+            if row[0]
+        }
+    )
+    statuses = sorted(
+        {row[0] for row in db.session.query(Activity.status).distinct() if row[0]}
+    )
+    results_areas = sorted(
+        {
+            row[0]
+            for row in db.session.query(Activity.results_area).distinct()
+            if row[0]
+        }
+    )
+
+    filters = {
+        "implementing_entity": implementing_entity or "",
+        "status": status or "",
+        "results_area": results_area or "",
+        "search": search or "",
+    }
+
+    can_edit = session.get("role") == "admin"
+
     return render_template(
         "roadmap.html",
         activities_by_quarter=activities_by_quarter,
         sorted_quarters=sorted_quarters,
         min_date=min_date,
         max_date=max_date,
-        admin_email=ADMIN_EMAIL
+        total_activities=total_activities,
+        total_days=total_days,
+        today_offset_pct=today_offset_pct,
+        sub_activities_by_activity=sub_activities_by_activity,
+        implementing_entities=implementing_entities,
+        statuses=statuses,
+        results_areas=results_areas,
+        filters=filters,
+        can_edit=can_edit,
+        admin_email=ADMIN_EMAIL,
     )
 

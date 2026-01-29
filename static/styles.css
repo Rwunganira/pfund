@@ -13,6 +13,18 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* Touch-friendly tap targets */
 button,
 a,
@@ -128,6 +140,18 @@ textarea {
     border: 1px solid #d1d5db;
     padding: 0.5rem 0.6rem;
     font: inherit;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* Multi-select component styles */
@@ -716,6 +740,57 @@ tbody tr:hover {
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
+}
+
+.icon-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.icon-button {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #f3f4f6;
+    color: #374151;
+    text-decoration: none;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.icon-button svg {
+    width: 14px;
+    height: 14px;
+}
+
+.icon-button-view {
+    background: #0369a1;
+    color: #ffffff;
+}
+
+.icon-button-view:hover {
+    background: #0284c7;
+    transform: translateY(-1px);
+}
+
+.icon-button-edit:hover {
+    background: #e5e7eb;
+}
+
+.icon-button-delete {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.icon-button-delete:hover {
+    background: #fecaca;
 }
 
 .btn-view-details,

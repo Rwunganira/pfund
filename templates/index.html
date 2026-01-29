@@ -300,54 +300,85 @@
                     <td class="num budget-used">{{ "%.0f"|format(total_used) }}</td>
 
                     <td class="actions">
-                        <button
-                            class="btn-view-details"
-                            onclick="event.stopPropagation(); event.preventDefault(); openDetailsModal({{ a.id }});"
-                            type="button">
-                            View Details
-                        </button>
+                        <div class="icon-actions">
+                            <button
+                                class="icon-button icon-button-view btn-view-details"
+                                type="button"
+                                title="View details"
+                                onclick="event.stopPropagation(); event.preventDefault(); openDetailsModal({{ a.id }});">
+                                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                    <path d="M10 3C5.45455 3 1.72727 6.03 0.5 10C1.72727 13.97 5.45455 17 10 17C14.5455 17 18.2727 13.97 19.5 10C18.2727 6.03 14.5455 3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M10 13C11.6569 13 13 11.6569 13 10C13 8.34315 11.6569 7 10 7C8.34315 7 7 8.34315 7 10C7 11.6569 8.34315 13 10 13Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="sr-only">View details</span>
+                            </button>
 
-                        {% if current_user.role == 'admin' %}
-                            {% if a.id and activity_urls.get(a.id) %}
-                                {# Preserve current filters by passing the full path as `next` #}
-                                <a href="{{ activity_urls[a.id].edit_url }}?next={{ request.full_path|urlencode }}"
-                                   class="btn-edit"
-                                   onclick="event.stopPropagation();">Edit</a>
+                            {% if current_user.role == 'admin' %}
+                                {% if a.id and activity_urls.get(a.id) %}
+                                    {# Preserve current filters by passing the full path as `next` #}
+                                    <a href="{{ activity_urls[a.id].edit_url }}?next={{ request.full_path|urlencode }}"
+                                       class="icon-button icon-button-edit"
+                                       onclick="event.stopPropagation();"
+                                       title="Edit activity">
+                                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                            <path d="M11.333 2.00004C11.5085 1.82453 11.7163 1.68488 11.9451 1.58906C12.1739 1.49324 12.419 1.44305 12.6663 1.44305C12.9137 1.44305 13.1588 1.49324 13.3876 1.58906C13.6164 1.68488 13.8242 1.82453 13.9997 2.00004C14.1752 2.17555 14.3148 2.38334 14.4107 2.61213C14.5065 2.84093 14.5567 3.08601 14.5567 3.33337C14.5567 3.58074 14.5065 3.82582 14.4107 4.05461C14.3148 4.28341 14.1752 4.4912 13.9997 4.66671L5.33301 13.3334L1.66634 14.3334L2.66634 10.6667L11.333 2.00004Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span class="sr-only">Edit activity</span>
+                                    </a>
 
-                                <form action="{{ activity_urls[a.id].delete_url }}"
-                                      method="post"
-                                      style="display:inline;"
-                                      onsubmit="event.stopPropagation(); return confirm('Delete this activity?');">
-                                    <button class="btn-delete" type="submit">Delete</button>
-                                </form>
+                                    <form action="{{ activity_urls[a.id].delete_url }}"
+                                          method="post"
+                                          style="display:inline;"
+                                          onsubmit="event.stopPropagation(); return confirm('Delete this activity?');">
+                                        <button class="icon-button icon-button-delete btn-delete" type="submit" title="Delete activity">
+                                            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                                <path d="M3.5 4.5H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                                <path d="M6 2.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                                <path d="M5.5 4.5V12.5C5.5 13.0523 5.94772 13.5 6.5 13.5H9.5C10.0523 13.5 10.5 13.0523 10.5 12.5V4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            </svg>
+                                            <span class="sr-only">Delete activity</span>
+                                        </button>
+                                    </form>
 
-                                <a href="{{ url_for('activity.manage_subactivities', activity_id=a.id) }}"
-                                   class="btn-edit"
-                                   style="margin-left: 0.25rem;"
-                                   onclick="event.stopPropagation();">
-                                    Sub-activities
-                                </a>
-                                
-                                {% set activity_indicator = a.indicators[0] if a.indicators else None %}
-                                {% if activity_indicator %}
-                                <a href="{{ url_for('activity.indicators_list') }}?indicator_id={{ activity_indicator.id }}"
-                                   class="btn-edit"
-                                   style="margin-left: 0.25rem;"
-                                   onclick="event.stopPropagation();"
-                                   title="View indicator for this activity">
-                                    View Indicator
-                                </a>
-                                {% else %}
-                                <a href="{{ url_for('activity.new_indicator') }}?activity_code={{ a.code|urlencode if a.code else '' }}"
-                                   class="btn-edit"
-                                   style="margin-left: 0.25rem;"
-                                   onclick="event.stopPropagation();"
-                                   title="Add indicator for this activity">
-                                    Add Indicator
-                                </a>
+                                    <a href="{{ url_for('activity.manage_subactivities', activity_id=a.id) }}"
+                                       class="icon-button icon-button-edit"
+                                       onclick="event.stopPropagation();"
+                                       title="Manage sub-activities">
+                                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                            <path d="M3 4H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            <path d="M3 8H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            <path d="M3 12H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                        <span class="sr-only">Manage sub-activities</span>
+                                    </a>
+                                    
+                                    {% set activity_indicator = a.indicators[0] if a.indicators else None %}
+                                    {% if activity_indicator %}
+                                    <a href="{{ url_for('activity.indicators_list') }}?indicator_id={{ activity_indicator.id }}"
+                                       class="icon-button icon-button-edit"
+                                       onclick="event.stopPropagation();"
+                                       title="View indicator for this activity">
+                                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                            <path d="M2.5 11L6.5 5.5L9.5 9.5L13.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M10.5 4H13.5V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span class="sr-only">View indicator</span>
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('activity.new_indicator') }}?activity_code={{ a.code|urlencode if a.code else '' }}"
+                                       class="icon-button icon-button-edit"
+                                       onclick="event.stopPropagation();"
+                                       title="Add indicator for this activity">
+                                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                            <path d="M8 3V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            <path d="M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                        <span class="sr-only">Add indicator</span>
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
                             {% endif %}
-                        {% endif %}
+                        </div>
                     </td>
                 </tr>
 
