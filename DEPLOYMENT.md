@@ -132,6 +132,35 @@ heroku restart
 heroku pg:psql
 ```
 
+## Check if Heroku database was deleted
+
+Run these from your machine (with Heroku CLI installed and logged in):
+
+```bash
+# 1. Confirm you're on the right app
+heroku apps:info
+
+# 2. See if DATABASE_URL is set (if empty, the addon may be gone)
+heroku config:get DATABASE_URL
+
+# 3. List Postgres addons and status
+heroku addons
+
+# 4. Postgres addon info (plan, state, created_at)
+heroku pg:info
+
+# 5. Connect to DB and list tables (confirms DB exists and is reachable)
+heroku pg:psql -c "\dt"
+```
+
+**How to interpret:**
+- **`DATABASE_URL` is empty** → No Postgres addon; database was removed or never added. Re-add with: `heroku addons:create heroku-postgresql:mini` then `heroku run flask db upgrade`.
+- **`heroku addons`** shows no `heroku-postgresql` → Addon was destroyed. Re-add as above.
+- **`heroku pg:info`** shows "Available" and a plan → Addon exists; if the app still errors, check migrations and logs.
+- **`heroku pg:psql -c "\dt"`** lists tables → Database is there; if data is missing, only app data was deleted (e.g. via "Delete all activities"), not the DB itself.
+
+This app does **not** run any code that destroys the Heroku Postgres addon; it only deletes rows/tables inside the app (activities, challenges, etc.).
+
 ## Troubleshooting
 
 ### Database Issues

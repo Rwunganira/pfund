@@ -233,10 +233,6 @@
             </div>
             <button type="submit">Upload</button>
         </form>
-
-        <form method="post" action="{{ url_for('activity.delete_all_activities') }}" onsubmit="return confirm('Delete ALL activities? This cannot be undone.');">
-            <button type="submit" class="danger-all">Delete all activities</button>
-        </form>
     {% endif %}
 </section>
 
