@@ -115,6 +115,7 @@
                         <th>Implementing Entity</th>
                         <th>Results Area</th>
                         <th>Status</th>
+                        <th>Date Completed</th>
                         <th>Last updated</th>
                         <th>Actions</th>
                     </tr>
@@ -134,6 +135,13 @@
                                     {{ status_name }}
                                 </span>
                             </td>
+                            <td>
+                                {% if a.end_date %}
+                                    {{ a.end_date.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td>{{ a.report.updated_at.strftime('%Y-%m-%d %H:%M') if a.report and a.report.updated_at else '-' }}</td>
                             <td class="actions">
                                 <a href="{{ url_for('activity.report_view', activity_id=a.id) }}?next={{ request.full_path|urlencode }}" class="button small secondary">View</a>
@@ -144,7 +152,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6" class="empty">No reports found. Add a report from the <a href="{{ url_for('activity.index') }}">Activities dashboard</a>.</td>
+                            <td colspan="7" class="empty">No reports found. Add a report from the <a href="{{ url_for('activity.index') }}">Activities dashboard</a>.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

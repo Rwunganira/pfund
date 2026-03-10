@@ -3315,7 +3315,12 @@ def reports_list():
     query = (
         db.session.query(Activity)
         .join(ActivityReport, Activity.id == ActivityReport.activity_id)
-        .order_by(ActivityReport.updated_at.desc())
+        # Sort by activity completion date (most recent first), nulls last,
+        # then by report update time for a stable secondary order.
+        .order_by(
+            Activity.end_date.desc().nulls_last(),
+            ActivityReport.updated_at.desc(),
+        )
     )
     if status_list:
         query = query.filter(Activity.status.in_(status_list))
