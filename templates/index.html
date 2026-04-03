@@ -418,7 +418,7 @@
                                         <span class="sr-only">Manage sub-activities</span>
                                     </a>
                                     
-                                    {% set activity_indicator = a.indicators[0] if a.indicators else None %}
+                                    {% set activity_indicator = a.indicator %}
                                     {% if activity_indicator %}
                                     <a href="{{ url_for('activity.indicators_list') }}?indicator_id={{ activity_indicator.id }}"
                                        class="icon-button icon-button-edit"

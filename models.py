@@ -42,12 +42,13 @@ class Activity(db.Model):
         cascade="all, delete-orphan",
         lazy="dynamic",
     )
-    # One-to-many: an activity can have multiple indicators
-    indicators = db.relationship(
+    # One-to-one: an activity has at most one indicator
+    indicator = db.relationship(
         "Indicator",
         backref="activity",
+        uselist=False,
         cascade="all, delete-orphan",
-        lazy="dynamic",
+        lazy="select",
     )
     # One-to-one: an activity can have one report
     report = db.relationship(
