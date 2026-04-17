@@ -4,12 +4,14 @@ import os
 
 from activity_routes import activity_bp
 from auth_routes import auth_bp
+from flask_auth import auth_bp as pfund_auth_bp
+from auth_db import ensure_users_table
 from config import SECRET_KEY
 from models import db, init_db
 
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY
+app.secret_key = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
 
 # Initialise SQLAlchemy and create tables (first run) or connect to existing DB
 init_db(app)
@@ -20,9 +22,13 @@ migrate = Migrate(app, db)
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(activity_bp)
+app.register_blueprint(pfund_auth_bp)
 
-app.register_blueprint(auth_bp)
-app.secret_key = os.getenv("JWT_SECRET_KEY")
+# Bootstrap app_users table for Streamlit auth
+try:
+    ensure_users_table()
+except Exception as _e:
+    print(f"Warning: could not ensure app_users table: {_e}")
 
 
 
