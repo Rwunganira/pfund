@@ -21,6 +21,10 @@ migrate = Migrate(app, db)
 app.register_blueprint(auth_bp)
 app.register_blueprint(activity_bp)
 
+app.register_blueprint(auth_bp)
+app.secret_key = os.getenv("JWT_SECRET_KEY")
+
+
 
 @app.context_processor
 def inject_current_user():
