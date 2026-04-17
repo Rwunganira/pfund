@@ -6,9 +6,12 @@
     <div>
         <div class="hero-header">
             <div>
-                <h1>PFUND Implementation Dashboard</h1>
-                <p>Monitor project activities, budgets and delivery partners across the portfolio.</p>
+                <h1>Activity Data Management</h1>
+                <p>Enter and manage activities, budgets, indicators and challenges. For analytics and charts, use the M&amp;E Dashboard.</p>
             </div>
+            <a href="{{ url_for('pfund_auth.dashboard') }}" class="hero-dashboard-btn">
+                📊 Open M&amp;E Dashboard →
+            </a>
         </div>
 
         <div class="cards">
@@ -487,17 +490,12 @@
 
 {% block scripts %}
 <script>
-// Flask-generated URLs
 var indicatorsUrl = {{ url_for('activity.indicators_list')|tojson }};
-
-// Activity data for modal (embedded in page)
 var activityData = {};
-console.log('Initializing activityData. activities_with_urls length:', {{ activities_with_urls|length if activities_with_urls else 0 }});
 {% if activities_with_urls and activities_with_urls|length > 0 %}
     {% for item in activities_with_urls %}
         {% set a = item.activity %}
         {% if a and a.id is defined and a.id %}
-        // Store with both string and number keys for compatibility
         try {
             var actId = {{ a.id }};
             var actData = {
@@ -526,56 +524,20 @@ console.log('Initializing activityData. activities_with_urls length:', {{ activi
             // Store with both number and string keys
             activityData[actId] = actData;
             activityData[String(actId)] = actData;
-        } catch(e) {
-            console.error('Error loading activity {{ a.id }}:', e);
-        }
+        } catch(e) {}
         {% endif %}
     {% endfor %}
-{% else %}
-    console.warn('No activities_with_urls data available!');
 {% endif %}
 
-// Debug: Log how many activities were loaded
-console.log('Loaded activity data for', Object.keys(activityData).length, 'activities');
-console.log('Activity IDs (first 10):', Object.keys(activityData).slice(0, 10));
-console.log('Sample activity (first ID):', activityData[Object.keys(activityData)[0]]);
-// Test if ID 638 exists
-if (activityData[638] || activityData['638']) {
-    console.log('✓ Activity 638 found in data');
-} else {
-    console.warn('✗ Activity 638 NOT found in data');
-    console.log('All IDs:', Object.keys(activityData).map(k => parseInt(k)).sort((a,b) => a-b).slice(0, 20));
-}
-
-// Make function globally accessible - define it before DOMContentLoaded
 function openDetailsModal(activityId) {
-    // Convert to number and string for lookup
     const numId = parseInt(activityId);
     const strId = String(activityId);
-    
-    console.log('openDetailsModal called with ID:', activityId);
-    console.log('Looking for:', numId, 'or', strId);
-    console.log('Available activity keys:', Object.keys(activityData));
-    console.log('First few keys:', Object.keys(activityData).slice(0, 5));
-    
-    // Try number key first, then string key
-    let data = activityData[numId] || activityData[strId];
-    
+    let data = activityData[numId] || activityData[strId] || activityData[activityId];
+
     if (!data) {
-        // Try the original value as-is
-        data = activityData[activityId];
-    }
-    
-    if (!data) {
-        console.error('Activity data not found for ID:', activityId);
-        console.error('Tried keys:', numId, strId, activityId);
-        console.error('Available keys (first 10):', Object.keys(activityData).slice(0, 10));
-        console.error('Sample activity data:', activityData[Object.keys(activityData)[0]]);
-        alert('Activity details not available. Activity ID: ' + activityId + '. Please check console for details.');
+        alert('Activity details not available for ID: ' + activityId);
         return;
     }
-    
-    console.log('Found activity data:', data);
 
     const modal = document.getElementById('detailsModal');
     const modalBody = document.getElementById('modalBody');
@@ -702,62 +664,37 @@ function closeDetailsModal() {
     }
 }
 
-// Test if function is accessible
-console.log('openDetailsModal function defined:', typeof openDetailsModal);
-
-// Make table rows clickable
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up event listeners');
-    
     // Check if we should auto-open a specific activity modal
     const urlParams = new URLSearchParams(window.location.search);
     const activityIdParam = urlParams.get('activity_id');
     if (activityIdParam) {
         const activityId = parseInt(activityIdParam);
-        console.log('Auto-opening activity modal for ID:', activityId);
-        // Wait a bit for the page to fully render
         setTimeout(function() {
             if (activityId && typeof openDetailsModal === 'function') {
                 openDetailsModal(activityId);
-                // Remove the parameter from URL without reloading
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, newUrl);
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }, 300);
     }
-    
-    // Also add click handlers to View Details buttons directly
-    const viewButtons = document.querySelectorAll('.btn-view-details');
-    console.log('Found', viewButtons.length, 'View Details buttons');
-    viewButtons.forEach(button => {
+
+    document.querySelectorAll('.btn-view-details').forEach(button => {
         button.addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
             const row = this.closest('.activity-row');
             if (row) {
                 const activityId = parseInt(row.getAttribute('data-activity-id'));
-                console.log('Button clicked, activity ID:', activityId);
-                if (activityId) {
-                    openDetailsModal(activityId);
-                }
+                if (activityId) openDetailsModal(activityId);
             }
         });
     });
-    
-    const rows = document.querySelectorAll('.activity-row');
-    console.log('Found', rows.length, 'activity rows');
-    rows.forEach(row => {
+
+    document.querySelectorAll('.activity-row').forEach(row => {
         row.addEventListener('click', function(e) {
-            // Don't open modal if clicking on buttons/links/forms
-            if (e.target.closest('button, a, form, input, select')) {
-                console.log('Click on button/link/form, ignoring row click');
-                return;
-            }
+            if (e.target.closest('button, a, form, input, select')) return;
             const activityId = parseInt(this.getAttribute('data-activity-id'));
-            console.log('Row clicked, activity ID:', activityId);
-            if (activityId) {
-                openDetailsModal(activityId);
-            }
+            if (activityId) openDetailsModal(activityId);
         });
 
         // Add keyboard support

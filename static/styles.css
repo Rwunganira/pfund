@@ -47,6 +47,21 @@ input[type="checkbox"],
 .top-bar .brand {
     font-weight: 600;
     letter-spacing: 0.03em;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.brand-main {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.brand-sub {
+    font-size: 0.7rem;
+    color: #93c5fd;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .top-bar nav a {
@@ -62,6 +77,54 @@ input[type="checkbox"],
     background: #f97316;
     color: #111827;
     font-weight: 600;
+}
+
+.nav-dashboard-btn {
+    background: #2563eb !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem !important;
+}
+
+.nav-dashboard-btn:hover {
+    background: #1d4ed8 !important;
+}
+
+.nav-divider {
+    display: inline-block;
+    width: 1px;
+    height: 1.2rem;
+    background: rgba(255,255,255,0.2);
+    margin: 0 0.5rem;
+    vertical-align: middle;
+}
+
+.nav-group-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #7dd3fc;
+    margin-left: 1rem;
+    vertical-align: middle;
+}
+
+.hero-dashboard-btn {
+    display: inline-flex;
+    align-items: center;
+    background: #2563eb;
+    color: #fff !important;
+    text-decoration: none;
+    padding: 0.55rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.hero-dashboard-btn:hover {
+    background: #1d4ed8;
 }
 
 .container {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Project Activity Tracker</title>
+    <title>Pandemic Fund — Data Management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     {% block styles %}{% endblock %}
@@ -10,29 +10,34 @@
 <body>
 
 <header class="top-bar">
-    <div class="brand">Project Activity Tracker</div>
+    <div class="brand">
+        <span class="brand-main">Pandemic Fund</span>
+        <span class="brand-sub">Data Management</span>
+    </div>
     <nav>
-        <a href="{{ url_for('activity.index') }}">Dashboard</a>
-        <a href="{{ url_for('activity.challenges_page') }}">Follow-up</a>
-
         {% if current_user.id %}
+            <span class="nav-group-label">Data</span>
+            <a href="{{ url_for('activity.index') }}">Activities</a>
+            <a href="{{ url_for('activity.challenges_page') }}">Follow-up</a>
             <a href="{{ url_for('activity.indicators_list') }}">Indicators</a>
             <a href="{{ url_for('activity.indicators_progress') }}">Progress</a>
             <a href="{{ url_for('activity.roadmap') }}">Roadmap</a>
             <a href="{{ url_for('activity.reports_list') }}">Reports</a>
-            <a href="{{ url_for('pfund_auth.dashboard') }}" class="primary" style="background:#2c7be5">📊 M&amp;E Dashboard</a>
-        {% endif %}
-        
-        {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('activity.new_activity') }}" class="primary">New Activity</a>
-            <a href="{{ url_for('auth.manage_users') }}">Users</a>
-            <a href="{{ url_for('activity.usage_statistics') }}">Usage Stats</a>
-        {% endif %}
 
-        {% if current_user.id %}
-            <span class="user-label">
-                Signed in as {{ current_user.username }} ({{ current_user.role }})
-            </span>
+            {% if current_user.role == 'admin' %}
+                <span class="nav-divider"></span>
+                <a href="{{ url_for('activity.new_activity') }}">+ Activity</a>
+                <a href="{{ url_for('auth.manage_users') }}">Users</a>
+                <a href="{{ url_for('activity.usage_statistics') }}">Usage</a>
+            {% endif %}
+
+            <span class="nav-divider"></span>
+            <a href="{{ url_for('pfund_auth.dashboard') }}" class="nav-dashboard-btn">
+                📊 M&amp;E Dashboard
+            </a>
+
+            <span class="nav-divider"></span>
+            <span class="user-label">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
             <a href="{{ url_for('auth.login') }}">Login</a>
@@ -56,7 +61,6 @@
     {% block content %}{% endblock %}
 </main>
 
-<!-- Page-specific scripts -->
 {% block scripts %}{% endblock %}
 
 </body>
