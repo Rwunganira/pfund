@@ -20,6 +20,7 @@
             <a href="{{ url_for('activity.indicators_progress') }}">Progress</a>
             <a href="{{ url_for('activity.roadmap') }}">Roadmap</a>
             <a href="{{ url_for('activity.reports_list') }}">Reports</a>
+            <a href="{{ url_for('pfund_auth.dashboard') }}" class="primary" style="background:#2c7be5">📊 M&amp;E Dashboard</a>
         {% endif %}
         
         {% if current_user.role == 'admin' %}
