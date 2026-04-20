@@ -1,259 +1,293 @@
-## PFUND Implementation Dashboard & Indicator Tracker
+# PFUND — Implementation Dashboard & Activity Tracker
 
-This repository contains a Flask‑based web application (plus an optional Streamlit dashboard) for planning, tracking and reporting on project activities and indicators for the **Pandemic Fund (PFUND)** portfolio.  
-It combines:
+A Flask-based web application for planning, tracking and reporting on project activities, indicators and budgets for the **Pandemic Fund (PFUND)** portfolio.
 
-- **Web UI** for managing activities, sub‑activities, indicators and challenges  
-- **Role‑based access control** (admin vs. viewer) with email‑verified accounts  
-- **Budget and progress tracking** across multiple years  
-- **Indicator dashboards** (tables, charts and optional Streamlit visualizations)
+The system has two integrated layers:
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Data Management** | Flask + PostgreSQL | Enter and manage activities, budgets, indicators, challenges |
+| **M&E Dashboard** | Streamlit + Plotly | Interactive analytics, charts and indicator progress |
 
 ---
 
 ## Features
 
-- **User management & authentication**
-  - User registration with email + password
-  - Email confirmation flow (via `email_utils.py`)
-  - Role‑based access (`admin` and `viewer`)
-  - Login / logout and session management
+### Authentication & Access Control
+- User registration with email confirmation (Gmail SMTP app password)
+- Role-based access: `admin` and `viewer`
+- Password reset via email token
+- JWT-based single-sign-on between Flask and Streamlit (`jwt_utils.py`)
+- Separate `app_users` table for Streamlit users (`auth_db.py`)
 
-- **Activity & sub‑activity management**
-  - Create, edit and list project activities with codes, titles, descriptions and implementing entities
-  - Track multi‑year budgets (`Year 1–3`, total, used vs allocated)
-  - Define sub‑activities linked to a parent activity
+### Activity Management
+- Create, edit and delete activities with codes, titles, descriptions and implementing entities
+- Multi-year budget tracking (Year 1–3, allocated vs used)
+- Sub-activities linked to parent activities
+- Status tracking: Planned, In Progress, Completed, On Hold, Cancelled
 
-- **Indicator management**
-  - Define **quantitative** and **qualitative** indicators linked to activities
-  - Capture indicator definitions, data sources, baseline, targets (Y1–Y3), actuals and qualitative stages
- - Mark indicators as submitted / not submitted, track portal edits and comment resolution
+### Indicators
+- Define quantitative and qualitative indicators linked to activities
+- Capture baseline, targets (Y1–Y3), actuals and qualitative stages
+- Track submission status, portal edits and comment resolution
+- Export as CSV or Excel
 
-- **Progress tracking & dashboards**
-  - **Indicator list** page with filters (search, implementing entity, type)
-  - **Progress Tracking** page:
-    - Baseline, target and actual values by year
-    - Percentage progress bars for quantitative indicators
-    - Stage/status display for qualitative indicators (Not Started / At Risk / On Track / Behind)
-  - **Project dashboard** with:
-    - Activity counts and budget totals
-    - Status breakdown of activities
-    - Budget execution by year (allocated vs used)
+### Progress & Roadmap
+- **Progress Tracking** — baseline vs target vs actual per year, percentage bars
+- **Roadmap** — Gantt-style timeline grouped by quarter with today marker and sub-activity drill-down
+- **Challenges / Follow-up** — log and track follow-up actions
+- **Reports** — rich-text activity-level narrative reports
 
-- **Exports & integrations**
-  - Download indicators as **CSV** or **Excel**
-  - Optional **Streamlit** dashboard (`streamlit_app.py`) for richer interactive charts
+### Dashboard
+- Activity counts, budget totals and execution rates
+- Status breakdown table
+- Budget execution by year with progress bars
+- Link to M&E Streamlit dashboard
 
 ---
 
 ## Tech Stack
 
-- **Backend:** [Flask](https://flask.palletsprojects.com/), [Flask‑SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/), [Flask‑Migrate/Alembic](https://flask-migrate.readthedocs.io/)
-- **Database:** SQLite (default, via `project_activities.db`), can be configured for PostgreSQL (see `config.py` / `runtime.md`)
-- **Frontend:** Jinja2 templates + custom CSS (`static/styles.css`), Plotly charts for visualizations
-- **Optional analytics:** [Streamlit](https://streamlit.io/) + [Plotly](https://plotly.com/python/) via `streamlit_app.py`
-
-Key entry points:
-
-- `app.py` – main Flask application factory & server
-- `activity_routes.py` – activities, indicators, progress tracking & exports
-- `auth_routes.py` – authentication, registration, password reset, user management
-- `models.py` – SQLAlchemy models (Activity, SubActivity, Indicator, Challenge, User, etc.)
-- `templates/` – HTML templates for all pages
+| Component | Library / Tool |
+|---|---|
+| Backend | Flask, Flask-SQLAlchemy, Flask-Migrate (Alembic) |
+| Database | PostgreSQL (production), SQLite (local fallback) |
+| Auth tokens | PyJWT (`jwt_utils.py`) |
+| Frontend | Jinja2 templates, custom CSS design system |
+| Email | Python `smtplib` via Gmail SMTP app password |
+| Analytics | Streamlit + Plotly (`streamlit_app.py`) |
+| Deployment | Heroku (Procfile + gunicorn) |
 
 ---
 
-## Getting Started
+## Project Structure
 
-### 1. Prerequisites
+```
+pfund/
+├── app.py                    # Flask application factory
+├── activity_routes.py        # Activities, indicators, roadmap, reports, exports
+├── auth_routes.py            # Login, register, password reset, user management
+├── models.py                 # SQLAlchemy models (Activity, Indicator, User, …)
+├── auth_db.py                # Raw SQL helpers for Streamlit app_users table
+├── jwt_utils.py              # JWT sign/validate (Flask ↔ Streamlit SSO)
+├── email_utils.py            # SMTP email sending
+├── report_utils.py           # Report helpers
+├── usage_tracking.py         # User activity logging
+├── config.py                 # App configuration
+├── static/
+│   ├── styles.css            # Global design system (Palantir/Stripe/Notion-inspired)
+│   └── css/
+│       └── roadmap.css       # Roadmap page styles
+├── templates/                # Jinja2 HTML templates
+│   ├── base.html             # Shared layout and navigation
+│   ├── index.html            # Main dashboard
+│   ├── roadmap.html          # Gantt roadmap
+│   ├── indicators.html       # Indicator list
+│   ├── indicator_progress.html
+│   ├── form.html             # Activity create/edit
+│   ├── subactivity_form.html
+│   ├── challenge_form.html
+│   ├── report_editor.html
+│   ├── report_view.html
+│   ├── users.html
+│   └── auth/                 # login, register, reset, confirm
+├── migrations/               # Alembic migration scripts
+├── streamlit_app.py          # M&E Streamlit dashboard
+├── streamlit_chart.py        # Chart helpers
+├── run_streamlit.bat/.sh     # Launch helpers
+├── requirements.txt
+├── Procfile                  # Heroku: web: gunicorn app:app
+└── runtime.txt               # Python version pin
+```
 
-- **Python** 3.9+ (a `venv` folder is already present; you can use it or create your own)
-- **pip** installed
+---
 
-### 2. Clone the repository
+## Local Setup
+
+### Prerequisites
+
+- Python 3.9+
+- PostgreSQL (optional — falls back to SQLite if `DATABASE_URL` is not set)
+
+### 1. Clone and create virtual environment
 
 ```bash
-git clone <your-repo-url>.git
+git clone <repo-url>
 cd pfund
-```
-
-### 3. Create & activate a virtual environment (optional but recommended)
-
-On **Windows**:
-
-```bash
 python -m venv venv
+
+# Windows
 venv\Scripts\activate
-```
 
-On **macOS/Linux**:
-
-```bash
-python3 -m venv venv
+# macOS / Linux
 source venv/bin/activate
 ```
 
-### 4. Install dependencies
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+### 3. Configure environment
 
-## Configuration
-
-Configuration lives in `config.py` and environment variables. At minimum, you should set:
-
-- `SECRET_KEY` – secret key for Flask sessions and token signing  
-- `DATABASE_URL` (optional) – to use PostgreSQL in production (Heroku‑style URL, e.g. `postgresql://user:pass@host:5432/dbname`)  
-- `MAIL_*` settings – if you want email confirmation and reset to work (see `email_utils.py`)  
-- `ADMIN_EMAIL` – the email address that should receive admin rights on registration
-
-You can provide these via environment variables or a `.env` file (the project includes `python-dotenv`).
-
-Example `.env`:
+Create a `.flaskenv` file in the project root (Flask loads it automatically):
 
 ```env
+FLASK_APP=app.py
 FLASK_ENV=development
-SECRET_KEY=change-me
-DATABASE_URL=sqlite:///project_activities.db
-ADMIN_EMAIL=you@example.org
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USE_TLS=1
-MAIL_USERNAME=your@gmail.com
-MAIL_PASSWORD=your-app-password
+
+# Database — omit to fall back to SQLite (project_activities.db)
+DATABASE_URL=postgresql://user:password@localhost:5432/pfund_db
+
+# Shared between Flask and Streamlit — must match on both sides
+JWT_SECRET_KEY=your-random-secret
+
+# Flask session signing
+SECRET_KEY=your-flask-secret
+
+# Admin account — this email always gets admin role on registration
+ADMIN_EMAIL=you@example.com
+
+# Streamlit app URL (for SSO redirect link in navbar)
+FLASK_AUTH_URL=http://localhost:5000
+
+# Gmail SMTP (create an App Password at myaccount.google.com/apppasswords)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=you@gmail.com
 ```
 
----
+### 4. Set up the database
 
-## Database Setup & Migrations
-
-This project uses **Flask‑Migrate** (Alembic) with migration scripts in `migrations/`.
-
-1. **Initialize DB (first run):**
-
+**With PostgreSQL:**
 ```bash
 flask db upgrade
 ```
 
-> Tip: Ensure `FLASK_APP=app.py` or `FLASK_APP=app:app` is set in your environment before running `flask` commands.
-
-2. **Create a new migration (after changing models):**
-
+**With SQLite (first run, development only):**
 ```bash
-flask db migrate -m "Describe your change"
-flask db upgrade
+flask shell
+>>> from models import db; db.create_all()
+>>> exit()
+flask db stamp head
 ```
 
-The default SQLite database file is `project_activities.db` in the project root.
-
----
-
-## Running the Flask Web App
-
-With your virtual environment active:
+### 5. Run the Flask app
 
 ```bash
-set FLASK_APP=app.py        # Windows PowerShell: $env:FLASK_APP = "app.py"
-set FLASK_ENV=development   # or export FLASK_ENV=development on Linux/macOS
-
 flask run
 ```
 
-By default the app will be available at `http://127.0.0.1:5000/`.
-
-You can also run it directly via:
-
-```bash
-python app.py
-```
-
-### Login & Roles
-
-- The **first registered user** becomes an `admin` automatically.
-- Any subsequent user whose email matches `ADMIN_EMAIL` also becomes an `admin`; others are `viewer`s.
-- Admins can manage users (promote/demote), create/edit/delete activities, sub‑activities, indicators and challenges.
+App runs at `http://127.0.0.1:5000`.
 
 ---
 
-## Running the Optional Streamlit Dashboard
+## Running the M&E Dashboard (Streamlit)
 
-This project includes a separate Streamlit app for interactive indicator progress charts.
-
-1. **Install dependencies** (if not already done):
-
-```bash
-pip install streamlit plotly
-```
-
-2. **Run Streamlit (standalone):**
+The Streamlit app reads from the same database and authenticates via JWT tokens issued by Flask.
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-By default it runs at `http://localhost:8501`.
+Runs at `http://localhost:8501` by default.
 
-3. **Run alongside Flask with embedded chart (optional):**
+**Environment variables required by Streamlit** (same values as Flask):
 
-See `README_STREAMLIT.md` for step‑by‑step instructions on:
-
-- Running Streamlit on port `8501`
-- Embedding the Streamlit app into the Flask *Indicator Progress* page via `<iframe>`
-- Switching between Plotly‑only and Streamlit visualization
-
----
-
-## Project Structure (Overview)
-
-```text
-pfund/
-├─ app.py                 # Flask app setup and entry point
-├─ activity_routes.py     # Activity, indicator, challenge, progress routes & logic
-├─ auth_routes.py         # Authentication & user management routes
-├─ models.py              # SQLAlchemy models
-├─ config​.py             # Application configuration (DB URL, secrets, etc.)
-├─ static/
-│   └─ styles.css         # Global styles and table/dashboard layout
-├─ templates/             # Jinja2 templates (HTML)
-│   ├─ index.html         # Main dashboard
-│   ├─ indicators.html    # Indicator list & filters
-│   ├─ indicator_progress.html  # Indicator progress table & charts
-│   ├─ form.html, subactivity_form.html, challenge_form.html, ...
-│   └─ auth templates (login, register, reset, etc.)
-├─ streamlit_app.py       # Optional Streamlit dashboard
-├─ streamlit_chart​.py    # Alternate Streamlit example
-├─ requirements.txt       # Python dependencies
-├─ README_STREAMLIT.md    # Streamlit‑specific documentation
-├─ run_streamlit.bat/.sh  # Helper scripts to run Streamlit
-├─ migrations/            # Alembic migration scripts
-└─ project_activities.db  # Default SQLite database (local development)
+```env
+DATABASE_URL=...       # or WAREHOUSE_URL (same DB)
+WAREHOUSE_URL=...
+JWT_SECRET_KEY=...
+FLASK_AUTH_URL=https://your-flask-app.herokuapp.com
+SMTP_USER=...
+SMTP_PASSWORD=...
 ```
 
+The "M&E Dashboard" button in the Flask navbar redirects the logged-in user to Streamlit with a short-lived JWT token in the URL so the user is authenticated automatically.
+
 ---
 
-## Deployment Notes
+## Roles & Permissions
 
-- A sample `Procfile` and `runtime.txt` are included for deployment to **Heroku** or similar PaaS.
-- Ensure you set environment variables (especially `SECRET_KEY`, `DATABASE_URL`, and mail settings) in your hosting environment.
-- For production, disable `debug` mode and use a WSGI server (e.g. `gunicorn`) as configured in `Procfile`.
+| Action | Admin | Viewer |
+|---|---|---|
+| View activities, indicators, roadmap | ✓ | ✓ |
+| Create / edit / delete activities | ✓ | — |
+| Manage sub-activities & indicators | ✓ | — |
+| Upload Excel to bulk-import activities | ✓ (super-admin only) | — |
+| Manage users (promote / demote) | ✓ | — |
+| View usage statistics | ✓ | — |
 
-Example Heroku `Procfile` (already in repo):
+- The **first registered user** becomes `admin` automatically.
+- Any user whose email matches `ADMIN_EMAIL` also becomes `admin`.
+
+---
+
+## Database Notes
+
+### Flask models (`models.py` / `DATABASE_URL`)
+
+Managed by SQLAlchemy + Alembic:
+
+```bash
+# After editing models.py
+flask db migrate -m "describe change"
+flask db upgrade
+```
+
+Tables: `users`, `activities`, `sub_activities`, `indicators`, `challenges`, `reports`, `user_activity_log`
+
+### Streamlit users (`auth_db.py` / `WAREHOUSE_URL`)
+
+Managed by raw SQL (`auth_db.py`). The `app_users` table is created automatically on first use via `ensure_users_table()`.
+
+Both point to the same Heroku Postgres database in production.
+
+---
+
+## Deployment (Heroku)
+
+The repo includes a `Procfile` and `runtime.txt` for Heroku.
 
 ```Procfile
 web: gunicorn app:app
 ```
 
+**Required Heroku config vars:**
+
+```bash
+heroku config:set FLASK_ENV=production
+heroku config:set SECRET_KEY=...
+heroku config:set JWT_SECRET_KEY=...
+heroku config:set ADMIN_EMAIL=...
+heroku config:set FLASK_AUTH_URL=https://your-app.herokuapp.com
+heroku config:set SMTP_HOST=smtp.gmail.com
+heroku config:set SMTP_PORT=587
+heroku config:set SMTP_USER=...
+heroku config:set SMTP_PASSWORD=...
+heroku config:set SMTP_FROM=...
+```
+
+`DATABASE_URL` is set automatically by the Heroku Postgres add-on.
+
 ---
 
-## Contributing & Support
+## Key Environment Variables Reference
 
-If you plan to extend this project:
-
-- Use `flask db migrate` / `flask db upgrade` to manage schema changes.
-- Keep UI changes aligned with existing design tokens in `static/styles.css`.
-- Add/update tests (if you introduce them) and run them before committing.
-
-For questions or collaboration, please open an issue or contact the project maintainer (see `ADMIN_EMAIL` in `auth_routes.py` / `config.py`).
-
+| Variable | Required | Description |
+|---|---|---|
+| `FLASK_APP` | Yes | `app.py` |
+| `SECRET_KEY` | Yes | Flask session signing key |
+| `JWT_SECRET_KEY` | Yes | Shared Flask ↔ Streamlit token secret |
+| `DATABASE_URL` | Yes (prod) | PostgreSQL connection string |
+| `WAREHOUSE_URL` | No | Streamlit DB override (defaults to `DATABASE_URL`) |
+| `ADMIN_EMAIL` | Yes | Email that always receives admin role |
+| `FLASK_AUTH_URL` | Yes | Flask base URL used by Streamlit for SSO redirect |
+| `SMTP_HOST` | Yes (email) | SMTP server hostname |
+| `SMTP_PORT` | Yes (email) | `587` (TLS) or `465` (SSL) |
+| `SMTP_USER` | Yes (email) | SMTP login (Gmail address) |
+| `SMTP_PASSWORD` | Yes (email) | Gmail App Password |
+| `SMTP_FROM` | No | From address (defaults to `SMTP_USER`) |

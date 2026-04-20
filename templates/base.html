@@ -2,46 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Pandemic Fund — Data Management</title>
+    <title>PFUND — Activity Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     {% block styles %}{% endblock %}
 </head>
 <body>
 
 <header class="top-bar">
-    <div class="brand">
-        <span class="brand-main">Pandemic Fund</span>
-        <span class="brand-sub">Data Management</span>
-    </div>
+    <a href="{{ url_for('activity.index') }}" class="brand">PFUND</a>
+
     <nav>
         {% if current_user.id %}
-            <span class="nav-group-label">Data</span>
-            <a href="{{ url_for('activity.index') }}">Activities</a>
-            <a href="{{ url_for('activity.challenges_page') }}">Follow-up</a>
-            <a href="{{ url_for('activity.indicators_list') }}">Indicators</a>
-            <a href="{{ url_for('activity.indicators_progress') }}">Progress</a>
-            <a href="{{ url_for('activity.roadmap') }}">Roadmap</a>
-            <a href="{{ url_for('activity.reports_list') }}">Reports</a>
+            <a href="{{ url_for('activity.index') }}"
+               class="{{ 'active' if request.endpoint == 'activity.index' }}">Activities</a>
+
+            <a href="{{ url_for('activity.challenges_page') }}"
+               class="{{ 'active' if request.endpoint == 'activity.challenges_page' }}">Follow-up</a>
+
+            <a href="{{ url_for('activity.indicators_list') }}"
+               class="{{ 'active' if request.endpoint == 'activity.indicators_list' }}">Indicators</a>
+
+            <a href="{{ url_for('activity.indicators_progress') }}"
+               class="{{ 'active' if request.endpoint == 'activity.indicators_progress' }}">Progress</a>
+
+            <a href="{{ url_for('activity.roadmap') }}"
+               class="{{ 'active' if request.endpoint == 'activity.roadmap' }}">Roadmap</a>
+
+            <a href="{{ url_for('activity.reports_list') }}"
+               class="{{ 'active' if request.endpoint == 'activity.reports_list' }}">Reports</a>
+
+            <span class="nav-divider"></span>
+
+            <a href="{{ url_for('pfund_auth.dashboard') }}" class="primary">📊 M&amp;E Dashboard</a>
 
             {% if current_user.role == 'admin' %}
                 <span class="nav-divider"></span>
-                <a href="{{ url_for('activity.new_activity') }}">+ Activity</a>
-                <a href="{{ url_for('auth.manage_users') }}">Users</a>
-                <a href="{{ url_for('activity.usage_statistics') }}">Usage</a>
+                <a href="{{ url_for('activity.new_activity') }}"
+                   class="{{ 'active' if request.endpoint == 'activity.new_activity' }}">+ Activity</a>
+                <a href="{{ url_for('auth.manage_users') }}"
+                   class="{{ 'active' if request.endpoint == 'auth.manage_users' }}">Users</a>
+                <a href="{{ url_for('activity.usage_statistics') }}"
+                   class="{{ 'active' if request.endpoint == 'activity.usage_statistics' }}">Usage</a>
             {% endif %}
 
-            <span class="nav-divider"></span>
-            <a href="{{ url_for('pfund_auth.dashboard') }}" class="nav-dashboard-btn">
-                📊 M&amp;E Dashboard
-            </a>
-
-            <span class="nav-divider"></span>
-            <span class="user-label">{{ current_user.username }}</span>
-            <a href="{{ url_for('auth.logout') }}">Logout</a>
+            <div class="user-section">
+                <span class="user-label">
+                    <strong>{{ current_user.username }}</strong>
+                    &middot; {{ current_user.role }}
+                </span>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
+            </div>
         {% else %}
-            <a href="{{ url_for('auth.login') }}">Login</a>
-            <a href="{{ url_for('auth.register') }}">Register</a>
+            <div class="user-section">
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register') }}">Register</a>
+            </div>
         {% endif %}
     </nav>
 </header>

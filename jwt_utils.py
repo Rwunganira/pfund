@@ -4,6 +4,7 @@ jwt_utils.py
 JWT helpers: Flask signs, Streamlit validates.
 Requires JWT_SECRET_KEY env var (same value in both apps).
 """
+from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone

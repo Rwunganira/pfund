@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv\\\\Scripts\\\\pip install *)",
+      "Bash(venv/Scripts/pip install *)",
+      "Bash(python -c \"import os; from dotenv import load_dotenv; load_dotenv\\('.flaskenv'\\); print\\('DB URL:', os.getenv\\('DATABASE_URL', 'NOT SET'\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(cmd /c \"set DATABASE_URL\")"
+    ]
+  }
+}

@@ -4,6 +4,7 @@ auth_db.py
 Database functions for app_users table (Streamlit auth).
 Connects to WAREHOUSE_URL / DATABASE_URL (Heroku Postgres).
 """
+from __future__ import annotations
 
 import os
 from datetime import datetime
