@@ -204,15 +204,28 @@ def dashboard():
     if not username:
         return redirect(url_for("pfund_auth.login"))
 
-    user  = db_get_user(username)
-    if not user:
-        session.clear()
-        return redirect(url_for("pfund_auth.login"))
+    try:
+        user = db_get_user(username)
+    except Exception:
+        user = None
+
+    # Always use the Flask session role (from the authoritative `users` table).
+    # app_users may have a stale/default role if registered separately.
+    session_role = session.get("role", "analyst")
+
+    if user:
+        name  = user["name"]
+        email = user["email"]
+    else:
+        name  = session.get("name") or username
+        email = session.get("email", "")
+
+    role = session_role
 
     jwt_token = create_dashboard_token(
-        username = user["username"],
-        name     = user["name"],
-        role     = user["role"],
-        email    = user["email"],
+        username = username,
+        name     = name,
+        role     = role,
+        email    = email,
     )
     return redirect(f"{STREAMLIT_URL}?token={jwt_token}")
