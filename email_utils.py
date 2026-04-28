@@ -25,8 +25,9 @@ def send_email(to_email: str, subject: str, body: str) -> None:
     from_email = os.getenv("SMTP_FROM") or user
 
     if not (host and port and user and password and from_email):
-        print("SMTP CONFIG MISSING:", host, port, user, bool(password), from_email)
-        return
+        print("SMTP CONFIG MISSING — email not sent.")
+        print(f"  To: {to_email}\n  Subject: {subject}\n  Body:\n{body}")
+        raise RuntimeError("SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.")
 
     msg = _build_message(from_email, to_email, subject, body)
 

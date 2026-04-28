@@ -22,6 +22,7 @@
                 <td>{{ u.role }}</td>
                 <td>
                     <form method="post" style="display:inline-flex; gap:0.25rem; align-items:center;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="user_id" value="{{ u.id }}">
                         <select name="role">
                             <option value="viewer" {% if u.role == 'viewer' %}selected{% endif %}>viewer</option>

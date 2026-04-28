@@ -4,6 +4,7 @@
 <section class="form-card">
     <h1>Login</h1>
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="field-group">
             <label for="username">Username</label>
             <input id="username" name="username" required>

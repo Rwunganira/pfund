@@ -12,6 +12,7 @@ Auth routes:
 """
 
 import os
+import re
 import secrets
 from datetime import datetime, timedelta
 
@@ -30,9 +31,13 @@ from auth_db import (
     db_set_token,
     db_verify_token,
     db_mark_email_verified,
+    db_clear_token,
 )
+from extensions import limiter
 from flask_auth.email_utils import send_otp_email
 from jwt_utils import create_dashboard_token
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 STREAMLIT_URL = os.getenv("STREAMLIT_URL", "http://localhost:8501")
@@ -60,6 +65,7 @@ def _expiry(hours: int = 1) -> datetime:
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
     error = None
     if request.method == "POST":
@@ -76,6 +82,7 @@ def login():
             _send_verify_link(user, token)
             error = "Please verify your email first. A new link has been sent."
         else:
+            session.clear()
             session["username"] = username
             db_update_last_login(username)
             return redirect(url_for("pfund_auth.dashboard"))
@@ -86,6 +93,7 @@ def login():
 # ── Register ──────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"])
 def register():
     errors = []
     if request.method == "POST":
@@ -95,13 +103,14 @@ def register():
         password   = request.form.get("password", "")
         confirm_pw = request.form.get("confirm_password", "")
 
-        if not name:                        errors.append("Full name is required.")
-        if not username:                    errors.append("Username is required.")
-        elif db_username_exists(username):  errors.append("Username already taken.")
-        if not email:                       errors.append("Email is required.")
-        elif db_email_exists(email):        errors.append("Email already registered.")
-        if len(password) < 8:              errors.append("Password must be at least 8 characters.")
-        if password != confirm_pw:         errors.append("Passwords do not match.")
+        if not name:                              errors.append("Full name is required.")
+        if not username:                          errors.append("Username is required.")
+        elif db_username_exists(username):        errors.append("Username already taken.")
+        if not email:                             errors.append("Email is required.")
+        elif not _EMAIL_RE.match(email):          errors.append("Enter a valid email address.")
+        elif db_email_exists(email):              errors.append("Email already registered.")
+        if len(password) < 8:                    errors.append("Password must be at least 8 characters.")
+        if password != confirm_pw:               errors.append("Passwords do not match.")
 
         if not errors:
             ok, msg = db_register_user(username, name, email, password)
@@ -141,6 +150,7 @@ def verify_email():
 # ── Forgot password ───────────────────────────────────────────────────────────
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
 def forgot_password():
     sent = False
     if request.method == "POST":
@@ -179,7 +189,7 @@ def reset_password():
             error = "Passwords do not match."
         else:
             db_update_password(username, new_pw)
-            db_mark_email_verified(username)   # clears token
+            db_clear_token(username)
             return render_template("auth/reset_password.html",
                                    success=True, login_url=url_for("pfund_auth.login"))
 

@@ -1,5 +1,7 @@
 import os
+import re
 from functools import wraps
+from urllib.parse import urlparse, urljoin
 
 from flask import (
     Blueprint,
@@ -13,13 +15,21 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from email_utils import send_email
+from extensions import limiter
 from models import User, db
 from usage_tracking import log_user_activity
 
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "samuel.rwunganira@gmail.com")
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _is_safe_redirect(target: str) -> bool:
+    ref = urlparse(request.host_url)
+    test = urlparse(urljoin(request.host_url, target))
+    return test.scheme in ("http", "https") and ref.netloc == test.netloc
 
 
 def login_required(view_func):
@@ -48,6 +58,7 @@ def admin_required(view_func):
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"])
 def register():
     """Register a new user. The very first user becomes admin; others are viewers."""
     is_first_user = User.query.count() == 0
@@ -60,11 +71,14 @@ def register():
 
         if not username or not email or not password:
             flash("Username, email, and password are required.", "error")
+        elif not _EMAIL_RE.match(email):
+            flash("Enter a valid email address.", "error")
+        elif len(password) < 8:
+            flash("Password must be at least 8 characters.", "error")
         elif password != password_confirm:
             flash("Passwords do not match.", "error")
         else:
-            # Decide role: first ever user OR specific admin email gets admin rights
-            role = "admin" if (is_first_user or email.lower() == ADMIN_EMAIL.lower()) else "viewer"
+            role = "admin" if email.lower() == ADMIN_EMAIL.lower() else "viewer"
             try:
                 user = User(
                     username=username,
@@ -73,6 +87,10 @@ def register():
                     role=role,
                 )
                 db.session.add(user)
+                db.session.flush()  # get user.id before commit
+                # Make the very first user admin regardless of email
+                if User.query.count() == 1:
+                    user.role = "admin"
                 db.session.commit()
                 # Send confirmation email (best-effort)
                 try:
@@ -106,6 +124,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
     if request.method == "POST":
         username = (request.form.get("username") or "").strip()
@@ -118,13 +137,16 @@ def login():
                 flash("Please confirm your email address before logging in. Check your inbox.", "error")
                 return redirect(url_for("auth.login"))
 
+            session.clear()
             session["user_id"] = user.id
             session["username"] = user.username
             session["email"] = user.email
             session["role"] = user.role
             log_user_activity("login", details=f"User {user.username} logged in")
             flash("Logged in successfully.", "success")
-            next_url = request.args.get("next") or url_for("activity.index")
+            next_url = request.args.get("next") or ""
+            if not next_url or not _is_safe_redirect(next_url):
+                next_url = url_for("activity.index")
             return redirect(next_url)
 
         flash("Invalid username or password.", "error")
@@ -188,6 +210,7 @@ def manage_users():
 
 
 @auth_bp.route("/resend-confirmation", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
 def resend_confirmation():
     """Ask for an email and resend a confirmation link if needed."""
     if request.method == "POST":
@@ -196,7 +219,7 @@ def resend_confirmation():
             flash("Email is required.", "error")
             return redirect(url_for("auth.resend_confirmation"))
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(db.func.lower(User.email) == email.lower()).first()
         if user and not user.confirmed:
             try:
                 token = user.generate_confirmation_token()
@@ -247,6 +270,7 @@ def confirm_email(token):
 
 
 @auth_bp.route("/reset-password", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
 def reset_request():
     """Ask for an email and send a password-reset link."""
     if request.method == "POST":
@@ -255,7 +279,7 @@ def reset_request():
             flash("Email is required.", "error")
             return redirect(url_for("auth.reset_request"))
 
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter(db.func.lower(User.email) == email.lower()).first()
 
         # Always show the same message, whether or not the email exists
         if user:
@@ -313,7 +337,9 @@ def reset_with_token(token):
             flash("Passwords do not match.", "error")
         else:
             user.password_hash = generate_password_hash(password)
+            user.password_version = (user.password_version or 0) + 1
             db.session.commit()
+            session.clear()
             flash("Your password has been reset. You can now log in.", "success")
             return redirect(url_for("auth.login"))
 

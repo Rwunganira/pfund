@@ -118,15 +118,15 @@ class User(db.Model):
     password_hash = db.Column(db.String, nullable=False)
     role = db.Column(db.String, nullable=False)
     confirmed = db.Column(db.Boolean, default=False)
+    # Incremented on every password change so old reset tokens become invalid immediately.
+    password_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
 
     def generate_confirmation_token(self, expires_in: int = 3600) -> str:
-        """Return a signed confirmation token for this user."""
         s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         return s.dumps({"confirm": self.id}, salt="confirm-email-salt")
 
     @staticmethod
     def verify_confirmation_token(token: str, max_age: int = 3600):
-        """Return the user for a valid token, or None if invalid/expired."""
         s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         try:
             data = s.loads(token, salt="confirm-email-salt", max_age=max_age)
@@ -135,25 +135,27 @@ class User(db.Model):
         user_id = data.get("confirm")
         if not user_id:
             return None
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
 
     def generate_reset_token(self, expires_in: int = 3600) -> str:
-        """Return a signed password-reset token for this user."""
         s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
-        return s.dumps({"reset": self.id}, salt="reset-password-salt")
+        return s.dumps({"reset": self.id, "v": self.password_version}, salt="reset-password-salt")
 
     @staticmethod
     def verify_reset_token(token: str, max_age: int = 3600):
-        """Return the user for a valid reset token, or None if invalid/expired."""
         s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         try:
             data = s.loads(token, salt="reset-password-salt", max_age=max_age)
         except Exception:
             return None
         user_id = data.get("reset")
+        version = data.get("v")
         if not user_id:
             return None
-        return User.query.get(user_id)
+        user = db.session.get(User, user_id)
+        if user is None or user.password_version != version:
+            return None
+        return user
 
 
 class UserActivity(db.Model):

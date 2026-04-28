@@ -6,6 +6,7 @@ Connects to WAREHOUSE_URL / DATABASE_URL (Heroku Postgres).
 """
 from __future__ import annotations
 
+import hmac
 import os
 from datetime import datetime
 
@@ -114,7 +115,7 @@ def db_register_user(username, name, email, password, role="analyst"):
         msg = str(exc).lower()
         if "unique" in msg or "duplicate" in msg:
             return False, "Username or email already in use."
-        return False, f"Registration failed: {exc}"
+        return False, "Registration failed. Please try again."
 
 
 def db_update_last_login(username: str) -> None:
@@ -158,7 +159,7 @@ def db_verify_token(username: str, token: str) -> bool:
     if not row:
         return False
     stored, expires = row[0], row[1]
-    if stored != token:
+    if not hmac.compare_digest(stored, token):
         return False
     if expires and datetime.utcnow() > expires:
         return False
@@ -172,6 +173,19 @@ def db_mark_email_verified(username: str) -> None:
                 "UPDATE app_users "
                 "SET email_verified=TRUE, "
                 "    verification_token=NULL, token_expires_at=NULL "
+                "WHERE username=:u"
+            ),
+            {"u": username},
+        )
+
+
+def db_clear_token(username: str) -> None:
+    """Invalidate the current token without changing email_verified status."""
+    with _get_engine().begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE app_users "
+                "SET verification_token=NULL, token_expires_at=NULL "
                 "WHERE username=:u"
             ),
             {"u": username},
