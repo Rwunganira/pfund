@@ -1,6 +1,7 @@
 from flask import Flask, session
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 from activity_routes import activity_bp
@@ -14,6 +15,9 @@ from models import db, init_db
 
 app = Flask(__name__)
 app.secret_key = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
+
+# Trust Heroku's reverse proxy so url_for(_external=True) generates https:// URLs
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 csrf = CSRFProtect(app)
 limiter.init_app(app)
