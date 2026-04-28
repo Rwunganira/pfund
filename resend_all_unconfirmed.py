@@ -1,8 +1,10 @@
 """Run with: heroku run python resend_all_unconfirmed.py --app pfund"""
+import os
 from app import app
 
+BASE_URL = os.getenv("FLASK_AUTH_URL", "https://pfund-2f829dd9fade.herokuapp.com")
+
 with app.app_context():
-    from flask import url_for
     from models import User
     from email_utils import send_email
 
@@ -12,7 +14,7 @@ with app.app_context():
     for user in unconfirmed:
         try:
             token = user.generate_confirmation_token()
-            confirm_url = url_for("auth.confirm_email", token=token, _external=True)
+            confirm_url = f"{BASE_URL}/confirm/{token}"
             send_email(
                 user.email,
                 "Confirm your Project Activity Tracker account",
