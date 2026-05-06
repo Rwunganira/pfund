@@ -2,12 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import sys
 import os
-
-# Add the parent directory to the path to import Flask app modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from app import app
-from models import Indicator, Activity, db
+from dotenv import load_dotenv
 
 st.set_page_config(
     page_title="Indicator Progress Chart",
@@ -15,8 +10,18 @@ st.set_page_config(
     layout="centered"
 )
 
+load_dotenv(".flaskenv")  # must run before importing app so DATABASE_URL is set
+
+
+# Add the parent directory to the path to import Flask app modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from app import app
+from models import Indicator, Activity, db
+
 # All database operations need to be within Flask app context
 with app.app_context():
+    db.session.expire_all()  # force fresh read from DB each run
     st.title("📊 Indicator Progress by Year")
     
     # Sidebar filters
@@ -153,23 +158,20 @@ with app.app_context():
         # Display chart
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         
-        # Display summary statistics in compact columns
+        # Display summary statistics in compact columns (Year 1 figures)
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             st.metric("Total Indicators", len(indicators))
-        
+
         with col2:
-            total_on_track = on_track_y1 + on_track_y2 + on_track_y3
-            st.metric("On Track", total_on_track)
-        
+            st.metric("On Track (Y1)", on_track_y1)
+
         with col3:
-            total_at_risk = at_risk_y1 + at_risk_y2 + at_risk_y3
-            st.metric("At Risk", total_at_risk)
-        
+            st.metric("At Risk (Y1)", at_risk_y1)
+
         with col4:
-            total_behind = behind_y1 + behind_y2 + behind_y3
-            st.metric("Behind", total_behind)
+            st.metric("Behind (Y1)", behind_y1)
             
     except Exception as e:
         st.error(f"Error loading data: {e}")

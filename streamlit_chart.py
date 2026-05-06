@@ -2,12 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import sys
 import os
-
-# Add the parent directory to the path to import Flask app modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from app import app
-from models import Indicator, Activity, db
+from dotenv import load_dotenv
 
 st.set_page_config(
     page_title="Indicator Progress Chart",
@@ -15,10 +10,20 @@ st.set_page_config(
     layout="wide"
 )
 
+load_dotenv(".flaskenv")  # must run before importing app so DATABASE_URL is set
+
+
+# Add the parent directory to the path to import Flask app modules
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from app import app
+from models import Indicator, Activity, db
+
 st.title("📊 Indicator Progress by Year")
 
 # All database operations need to be within Flask app context
 with app.app_context():
+    db.session.expire_all()  # force fresh read from DB each run
     # Sidebar filters
     st.sidebar.header("Filters")
     
@@ -156,13 +161,10 @@ with app.app_context():
         st.metric("Total Indicators", len(indicators))
     
     with col2:
-        total_on_track = on_track_y1 + on_track_y2 + on_track_y3
-        st.metric("On Track (Total)", total_on_track)
-    
+        st.metric("On Track (Y1)", on_track_y1)
+
     with col3:
-        total_at_risk = at_risk_y1 + at_risk_y2 + at_risk_y3
-        st.metric("At Risk (Total)", total_at_risk)
-    
+        st.metric("At Risk (Y1)", at_risk_y1)
+
     with col4:
-        total_behind = behind_y1 + behind_y2 + behind_y3
-        st.metric("Behind (Total)", total_behind)
+        st.metric("Behind (Y1)", behind_y1)

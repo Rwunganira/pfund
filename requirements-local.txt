@@ -1,0 +1,9 @@
+# Local development only — NOT deployed to Heroku
+# Install after requirements.txt:
+#   pip install -r requirements-local.txt
+#
+# Required to run the local M&E Streamlit dashboard (streamlit_app.py).
+# Streamlit 1.12.0 is the latest version compatible with Python 3.9.
+
+streamlit==1.12.0
+altair>=4,<5
